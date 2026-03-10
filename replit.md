@@ -31,6 +31,15 @@ A multi-vendor activity and experience booking marketplace that helps people con
 - Vendor: vendor1@freespirit.com / vendor123
 - Customer: user@freespirit.com / customer123
 
+## Homepage Design
+- Premium cinematic hero with full-width background image (`/images/hero-bg.png`) and dark gradient overlay
+- Headline: "Adventure Starts Here" with amber gradient text
+- Large search bar in hero area
+- Promo banner above navbar: "Launch Offer — Free listings for early vendors"
+- Navbar: sticky positioning with transparent variant on homepage, search bar, cart icon, category sub-nav (Activities, Locations, Gift Ideas, New, Popular, Gift Vouchers)
+- Category shortcut cards below hero with background images
+- Popular Experiences grid, How it works steps, bottom CTA
+
 ## Key Pages
 - `/` - Home (hero, categories, featured, how it works)
 - `/search` - Browse with filters

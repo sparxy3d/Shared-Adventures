@@ -111,7 +111,7 @@ export default function ExperienceDetail() {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="pt-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="pt-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Skeleton className="h-8 w-48 mb-6" />
           <Skeleton className="aspect-[16/7] rounded-2xl mb-8" />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -145,7 +145,7 @@ export default function ExperienceDetail() {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <div className="pt-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+      <div className="pt-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         <div className="py-4">
           <button
             onClick={() => window.history.back()}

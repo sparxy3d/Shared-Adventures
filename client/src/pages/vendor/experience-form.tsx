@@ -111,7 +111,7 @@ export default function ExperienceForm() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="pt-24 pb-20 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="pt-8 pb-20 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <Link href="/vendor/experiences">
           <button className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6">
             <ArrowLeft className="w-4 h-4" /> Back to Experiences

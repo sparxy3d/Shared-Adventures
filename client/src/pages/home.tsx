@@ -1,5 +1,6 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -12,12 +13,14 @@ import {
   CalendarCheck,
   Users,
   ChevronRight,
+  Play,
 } from "lucide-react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import ExperienceCard from "@/components/experience-card";
 import type { Experience } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useState } from "react";
 
 const categories = [
   {
@@ -25,36 +28,32 @@ const categories = [
     slug: "sports",
     description: "Futsal, tennis, badminton, golf & more",
     icon: Dumbbell,
-    gradient: "from-blue-500 to-cyan-400",
-    bg: "bg-blue-50 dark:bg-blue-950/30",
-    iconColor: "text-blue-600 dark:text-blue-400",
+    image: "/images/volleyball.png",
+    gradient: "from-blue-600 to-cyan-500",
   },
   {
     name: "Adventure",
     slug: "adventure",
     description: "Rafting, go-karting, surfing & more",
     icon: Mountain,
-    gradient: "from-amber-500 to-orange-400",
-    bg: "bg-amber-50 dark:bg-amber-950/30",
-    iconColor: "text-amber-600 dark:text-amber-400",
+    image: "/images/rafting.png",
+    gradient: "from-amber-600 to-orange-500",
   },
   {
     name: "Arts & Classes",
     slug: "arts",
     description: "Pottery, painting, cooking & more",
     icon: Palette,
-    gradient: "from-purple-500 to-pink-400",
-    bg: "bg-purple-50 dark:bg-purple-950/30",
-    iconColor: "text-purple-600 dark:text-purple-400",
+    image: "/images/pottery.png",
+    gradient: "from-purple-600 to-pink-500",
   },
   {
     name: "Wellness",
     slug: "wellness",
     description: "Yoga, spa, group wellness & more",
     icon: Sparkles,
-    gradient: "from-emerald-500 to-teal-400",
-    bg: "bg-emerald-50 dark:bg-emerald-950/30",
-    iconColor: "text-emerald-600 dark:text-emerald-400",
+    image: "/images/yoga.png",
+    gradient: "from-emerald-600 to-teal-500",
   },
 ];
 
@@ -80,7 +79,7 @@ const steps = [
 ];
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 24 },
   visible: { opacity: 1, y: 0 },
 };
 
@@ -89,60 +88,110 @@ const stagger = {
 };
 
 export default function Home() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [, navigate] = useLocation();
+
   const { data: featured, isLoading } = useQuery<Experience[]>({
     queryKey: ["/api/experiences/featured"],
   });
 
+  const handleHeroSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      navigate("/search");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      <Navbar variant="transparent" />
 
-      <section className="relative overflow-hidden pt-16">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-orange-50/50 to-amber-50/30 dark:from-primary/10 dark:via-background dark:to-background" />
-        <div className="absolute top-20 right-0 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-primary/10 to-orange-200/20 dark:from-primary/5 dark:to-orange-900/10 blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-amber-200/30 to-primary/10 dark:from-amber-900/10 dark:to-primary/5 blur-3xl" />
+      <section className="relative min-h-[85vh] sm:min-h-[90vh] flex items-center overflow-hidden" data-testid="hero-section">
+        <div className="absolute inset-0">
+          <img
+            src="/images/hero-bg.png"
+            alt="Adventure background"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-transparent" />
+        </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20 lg:pt-32 lg:pb-28">
+        <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20">
           <motion.div
-            className="max-w-3xl mx-auto text-center"
+            className="max-w-3xl"
             initial="hidden"
             animate="visible"
             variants={stagger}
           >
-            <motion.div variants={fadeUp} transition={{ duration: 0.6 }}>
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-                <Sparkles className="w-4 h-4" />
-                Make plans that actually happen
+            <motion.div variants={fadeUp} transition={{ duration: 0.7 }}>
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-white text-sm font-medium mb-6 border border-white/20">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                Activities that bring people closer
               </span>
             </motion.div>
 
             <motion.h1
               variants={fadeUp}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-foreground leading-[1.1] tracking-tight mb-6"
+              transition={{ duration: 0.7, delay: 0.1 }}
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white leading-[1.05] tracking-tight mb-6"
             >
-              Book activities that bring{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-orange-500 to-amber-500">
-                people closer
+              Adventure{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-primary">
+                Starts Here
               </span>
             </motion.h1>
 
             <motion.p
               variants={fadeUp}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-lg sm:text-xl text-muted-foreground leading-relaxed mb-10 max-w-2xl mx-auto"
+              transition={{ duration: 0.7, delay: 0.2 }}
+              className="text-lg sm:text-xl text-white/80 leading-relaxed mb-8 max-w-xl"
             >
-              Discover sports, classes, adventures, and wellness experiences you can enjoy with friends, family, teams, or someone special.
+              Discover unforgettable adventures, classes, sports and wellness experiences to enjoy with the people who matter most.
             </motion.p>
+
+            <motion.form
+              variants={fadeUp}
+              transition={{ duration: 0.7, delay: 0.3 }}
+              className="mb-8"
+              onSubmit={handleHeroSearch}
+            >
+              <div className="flex flex-col sm:flex-row gap-3 max-w-xl">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    data-testid="input-hero-search"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search by activity, location or category..."
+                    className="pl-12 h-13 sm:h-14 rounded-xl sm:rounded-2xl bg-white text-foreground text-base border-0 shadow-2xl placeholder:text-muted-foreground/70"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  data-testid="button-hero-search"
+                  className="h-13 sm:h-14 px-8 rounded-xl sm:rounded-2xl text-base font-semibold shadow-2xl shadow-primary/30"
+                >
+                  <Search className="w-4 h-4 mr-2 sm:hidden" />
+                  <span className="hidden sm:inline">Search</span>
+                  <span className="sm:hidden">Search Activities</span>
+                </Button>
+              </div>
+            </motion.form>
 
             <motion.div
               variants={fadeUp}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="flex flex-col sm:flex-row items-center justify-center gap-4"
+              transition={{ duration: 0.7, delay: 0.4 }}
+              className="flex flex-col sm:flex-row items-start sm:items-center gap-4"
             >
               <Link href="/search" data-testid="button-explore-activities">
-                <Button size="lg" className="text-base px-8 h-12 rounded-xl gap-2 shadow-lg shadow-primary/25">
-                  Explore Activities
+                <Button
+                  size="lg"
+                  className="text-base px-8 h-12 rounded-xl gap-2 shadow-lg shadow-primary/30 bg-gradient-to-r from-primary to-orange-500 hover:from-primary/90 hover:to-orange-500/90"
+                >
+                  Explore Adventures
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
@@ -150,9 +199,9 @@ export default function Home() {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="text-base px-8 h-12 rounded-xl gap-2"
+                  className="text-base px-8 h-12 rounded-xl gap-2 border-white/30 text-white hover:bg-white/10 hover:text-white bg-white/5 backdrop-blur-sm"
                 >
-                  List Your Venue
+                  List Your Experience
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </Link>
@@ -160,71 +209,61 @@ export default function Home() {
 
             <motion.div
               variants={fadeUp}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="mt-12 flex items-center justify-center gap-8 text-sm text-muted-foreground"
+              transition={{ duration: 0.7, delay: 0.5 }}
+              className="mt-10 flex items-center gap-6 text-sm text-white/70"
             >
               <div className="flex items-center gap-2">
                 <div className="flex -space-x-2">
                   {[1, 2, 3, 4].map((i) => (
                     <div
                       key={i}
-                      className="w-8 h-8 rounded-full border-2 border-background bg-gradient-to-br from-primary/60 to-orange-400/60"
+                      className="w-8 h-8 rounded-full border-2 border-white/30 bg-gradient-to-br from-primary/80 to-orange-400/80"
                     />
                   ))}
                 </div>
                 <span>1,000+ happy groups</span>
+              </div>
+              <div className="hidden sm:flex items-center gap-1.5">
+                <div className="flex gap-0.5">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <svg key={i} className="w-4 h-4 text-amber-400 fill-amber-400" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                <span>4.9 average rating</span>
               </div>
             </motion.div>
           </motion.div>
         </div>
       </section>
 
-      <section className="py-20 lg:py-28 bg-background">
+      <section className="py-16 lg:py-20 bg-background relative -mt-16 z-10" data-testid="category-shortcuts">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
-            className="text-center mb-14"
+            className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={stagger}
-          >
-            <motion.h2
-              variants={fadeUp}
-              className="text-3xl sm:text-4xl font-bold text-foreground mb-4"
-            >
-              Find your kind of fun
-            </motion.h2>
-            <motion.p
-              variants={fadeUp}
-              className="text-muted-foreground text-lg max-w-lg mx-auto"
-            >
-              Whether it&apos;s action-packed or creatively inspiring, there&apos;s something for every group.
-            </motion.p>
-          </motion.div>
-
-          <motion.div
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: "-50px" }}
             variants={stagger}
           >
             {categories.map((cat) => (
-              <motion.div key={cat.slug} variants={fadeUp} transition={{ duration: 0.4 }}>
+              <motion.div key={cat.slug} variants={fadeUp} transition={{ duration: 0.5 }}>
                 <Link href={`/search?category=${cat.slug}`} data-testid={`card-category-${cat.slug}`}>
-                  <div
-                    className={`group relative rounded-2xl p-6 ${cat.bg} border border-transparent hover:border-border/50 cursor-pointer transition-all duration-300 hover:shadow-md overflow-hidden`}
-                  >
-                    <div className={`absolute inset-0 bg-gradient-to-br ${cat.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
-                    <div className="relative">
-                      <div className="w-12 h-12 rounded-xl bg-white dark:bg-background shadow-sm flex items-center justify-center mb-4">
-                        <cat.icon className={`w-6 h-6 ${cat.iconColor}`} />
+                  <div className="group relative rounded-2xl overflow-hidden cursor-pointer shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 aspect-[4/3] sm:aspect-[3/2]">
+                    <img
+                      src={cat.image}
+                      alt={cat.name}
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <div className={`absolute inset-0 bg-gradient-to-t ${cat.gradient} opacity-60 group-hover:opacity-70 transition-opacity duration-300`} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    <div className="relative h-full flex flex-col justify-end p-4 sm:p-5">
+                      <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
+                        <cat.icon className="w-5 h-5 text-white" />
                       </div>
-                      <h3 className="text-lg font-semibold text-foreground mb-1">{cat.name}</h3>
-                      <p className="text-sm text-muted-foreground">{cat.description}</p>
-                      <div className="mt-4 flex items-center gap-1 text-sm font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                        Browse <ArrowRight className="w-3 h-3" />
-                      </div>
+                      <h3 className="text-lg sm:text-xl font-bold text-white mb-0.5">{cat.name}</h3>
+                      <p className="text-xs sm:text-sm text-white/80 line-clamp-1">{cat.description}</p>
                     </div>
                   </div>
                 </Link>
@@ -234,7 +273,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-20 lg:py-28 bg-muted/30">
+      <section className="py-16 lg:py-24 bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-12 gap-4"
@@ -248,7 +287,7 @@ export default function Home() {
                 variants={fadeUp}
                 className="text-3xl sm:text-4xl font-bold text-foreground mb-2"
               >
-                Popular experiences
+                Popular Experiences
               </motion.h2>
               <motion.p variants={fadeUp} className="text-muted-foreground text-lg">
                 Activities people love doing together
@@ -395,7 +434,7 @@ export default function Home() {
                     size="lg"
                     className="border-white/30 text-white hover:bg-white/10 text-base px-8 h-12 rounded-xl"
                   >
-                    List Your Venue
+                    List Your Experience
                   </Button>
                 </Link>
               </motion.div>

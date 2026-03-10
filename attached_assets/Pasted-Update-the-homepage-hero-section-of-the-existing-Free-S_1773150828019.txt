@@ -1,0 +1,116 @@
+Update the homepage hero section of the existing Free Spirit project.
+
+The current landing section should be redesigned to look closer to a premium adventure marketplace like adrenaline.com.au.
+
+Do NOT rebuild the whole app. Only improve the landing hero area and header.
+
+Design goals:
+• Bold cinematic hero section
+• Full width background image
+• Large inspirational headline
+• Clean top navigation with search bar
+• Category navigation under the header
+• Premium adventure / experience marketplace feel
+• Modern UI similar to Klook or Adrenaline
+
+Brand:
+Product name: Free Spirit
+
+Positioning:
+Free Spirit helps people discover and book activities that bring people closer together.
+
+Hero requirements:
+
+1. Full width hero image
+Use a large high-quality image showing adventure or group activity.
+Add a dark gradient overlay so white text is readable.
+
+2. Hero headline
+Large bold heading centered or left aligned:
+
+"Adventure Starts Here"
+or
+"Find Your Next Experience"
+
+Subheading example:
+"Discover unforgettable adventures, classes, sports and experiences."
+
+3. Primary call to action buttons
+Two buttons:
+
+Primary:
+Explore Adventures
+
+Secondary:
+List Your Experience
+
+4. Search bar in hero
+Include a large search input similar to:
+
+Search by activity, location or category
+
+Example UI:
+
+[ 🔍 Search by location or adventure ]
+
+5. Header redesign
+Top navigation should include:
+
+Logo (Free Spirit)
+Search bar
+Nav links:
+Activities
+Locations
+Gift Ideas
+New
+Popular
+Gift Vouchers
+
+Right side icons:
+User account icon
+Cart icon
+
+6. Promo banner above header
+Add a small promotional banner above header similar to:
+
+"Launch Offer — Free listings for early vendors"
+
+7. Category shortcuts under hero
+Add a row of category icons:
+
+Sports
+Adventure
+Arts & Classes
+Wellness
+
+Each category should be clickable cards.
+
+8. Responsive layout
+Hero should scale well for:
+Desktop
+Tablet
+Mobile
+
+9. Styling
+Use Tailwind CSS.
+
+Visual style:
+Clean
+Premium
+Outdoor/adventure vibe
+Large typography
+Smooth hover animations
+
+10. Code structure
+Create reusable components:
+
+HeroSection
+TopPromoBar
+MainHeader
+CategoryShortcuts
+
+Only modify the homepage file and create components if needed.
+
+Do not change backend logic, database, or booking flow.
+
+Focus only on improving the landing experience.
