@@ -1,0 +1,338 @@
+Build a web-only MVP for a multi-vendor activity and experience booking platform called “Free Spirit”.
+
+Product direction:
+This is NOT primarily a tourism platform.
+The core idea is helping bring people closer together through shared offline activities.
+The platform should help friends, couples, families, teams, and communities discover and book activities they can do together.
+
+Examples of activities:
+- Sports: futsal, badminton, tennis, golf
+- Adventure: rafting, go-karting, surfing
+- Arts & classes: pottery, painting, cooking
+- Wellness: yoga, spa, group wellness sessions
+
+Long-term vision:
+- Start with a web-only MVP
+- Design the system to support expansion into multiple countries later
+- Support multiple regions, currencies, and country-specific vendors in the future
+
+Tech stack:
+- Next.js 14+ with App Router + TypeScript
+- Tailwind CSS
+- Supabase for Auth, Postgres DB, Storage
+- Use server actions where appropriate
+- No mobile app yet
+- No full online payment flow in MVP unless easily pluggable; implement “Request to Book” as default
+- Keep architecture payment-ready for future country-specific gateways
+
+Core product positioning:
+Free Spirit helps people connect through shared activities.
+The product should feel warm, modern, social, and human — but it is NOT a social media app.
+This MVP is a booking marketplace with light social/group planning elements.
+
+Primary user roles:
+- customer
+- vendor
+- admin
+
+Key MVP goals:
+1. Let customers discover and request bookings for activities they can do together
+2. Let vendors list and manage activity offerings
+3. Let admins verify vendors and moderate listings
+4. Support group-friendly booking flows
+5. Build the system in a way that can later scale to multiple countries
+
+Functional requirements:
+
+1) Public browsing
+- Home page with hero messaging centered on connection and shared experiences
+- Category cards: Sports, Adventure, Arts & Classes, Wellness
+- Search page with filters:
+  - category
+  - country
+  - city/region
+  - date
+  - group size
+  - price range
+- Experience details page:
+  - title
+  - description
+  - image gallery
+  - vendor info
+  - activity type/category
+  - price
+  - duration
+  - capacity
+  - age restrictions
+  - safety notes
+  - country and location
+  - ideal for (friends, couples, families, teams, solo)
+- “Book together” oriented call-to-action
+- “Share activity” button using Web Share API or copy link
+
+2) Auth
+- Email/password signup and login using Supabase Auth
+- Create a profiles row on signup with role=customer by default
+- Support role-based access for customer, vendor, admin
+- Admin can promote users to vendor/admin
+
+3) Customer portal
+- View and update basic profile
+- Browse and request bookings
+- Choose number of participants/group size
+- Add booking note
+- View booking history
+- View booking status: requested, confirmed, cancelled, completed
+- Save favorite experiences (simple wishlist/favorites if easy to include)
+- Share booking/activity link with friends
+
+4) Vendor portal
+- Vendor profile creation:
+  - business name
+  - description
+  - logo/image
+  - country
+  - city/region
+  - address
+  - contact info
+  - verification status
+- Experience creation:
+  - title
+  - category
+  - description
+  - photos
+  - pricing
+  - capacity
+  - duration
+  - age restrictions
+  - safety notes
+  - ideal audience tags
+  - country
+  - city/region
+  - published status
+- Availability management:
+  - create date/time slots
+  - set capacity per slot
+  - mark closed/open
+- Booking management:
+  - view booking requests
+  - confirm or cancel
+  - add vendor note
+- Revenue view placeholder for future payments
+
+5) Admin portal
+- Approve/reject vendors
+- Approve/reject/publish experiences
+- View all bookings
+- Manage users
+- Manage supported countries and regions
+- Moderate listings and vendor content
+- Basic analytics:
+  - total bookings
+  - bookings by category
+  - bookings by country
+  - top vendors
+  - top activities
+
+Internationalization / multi-country readiness:
+Design the system from day one to support multiple countries.
+Do not hardcode Sri Lanka anywhere in the schema or business logic.
+Add support for:
+- countries table
+- regions/cities table (or region fields that can later normalize)
+- currency_code on country and/or experience
+- country-specific vendor listings
+- future support for localized payment providers
+- future support for localization / multi-language
+
+MVP booking model:
+- Use “Request to Book” flow as default
+- Booking statuses:
+  - requested
+  - confirmed
+  - cancelled
+  - completed
+- Do not build advanced payment automation yet
+- Keep schema extensible for future payment transactions and payouts
+
+Database schema:
+Create SQL migrations for these tables:
+
+1. profiles
+- id (uuid, linked to auth.users)
+- full_name
+- phone
+- role (customer, vendor, admin)
+- created_at
+
+2. countries
+- id
+- name
+- code
+- currency_code
+- is_active
+
+3. vendors
+- id
+- owner_profile_id
+- business_name
+- description
+- logo_url
+- country_id
+- region
+- city
+- address
+- verification_status
+- created_at
+
+4. experiences
+- id
+- vendor_id
+- category
+- title
+- description
+- location_text
+- country_id
+- region
+- city
+- duration_minutes
+- price_amount
+- currency_code
+- capacity
+- age_min
+- safety_notes
+- ideal_for_tags (json or text array; e.g. friends, couples, teams, families)
+- status (draft, pending, published, paused)
+- created_at
+
+5. experience_images
+- id
+- experience_id
+- image_url
+- sort_order
+
+6. availability_slots
+- id
+- experience_id
+- date
+- start_time
+- end_time
+- capacity
+- status (open, closed)
+
+7. bookings
+- id
+- experience_id
+- customer_profile_id
+- slot_id
+- booking_date
+- start_time
+- qty
+- total_amount
+- currency_code
+- status (requested, confirmed, cancelled, completed)
+- customer_note
+- vendor_note
+- created_at
+
+8. favorites
+- id
+- customer_profile_id
+- experience_id
+- created_at
+
+9. reviews
+- id
+- booking_id
+- experience_id
+- customer_profile_id
+- rating
+- comment
+- created_at
+
+10. supported_audiences or use ideal_for_tags directly
+- support tags like friends, couples, families, teams, solo
+
+11. platform_fees
+- id
+- country_id
+- category
+- commission_percent
+
+Add row-level security (RLS) policies:
+- Public users can read published experiences
+- Customers can manage their own profile and bookings
+- Vendors can manage only their own vendor profile, experiences, images, availability slots, and view bookings for their own experiences
+- Admins can manage all records
+
+UI/UX requirements:
+- Modern, warm, clean design
+- Emphasize human connection and shared activities
+- Avoid tourism-heavy visuals
+- Avoid overly corporate tone
+- Use friendly homepage messaging such as:
+  - “Bring people closer through shared experiences”
+  - “Book activities worth doing together”
+  - “Make plans that actually happen”
+- Include category cards and featured experiences
+- Add subtle prompts for group booking and sharing
+- Ensure responsive design for desktop and mobile web
+
+Pages to build:
+Public:
+- /
+- /search
+- /experience/[id]
+- /login
+- /signup
+
+Customer:
+- /account
+- /bookings
+- /favorites
+
+Vendor:
+- /vendor
+- /vendor/profile
+- /vendor/experiences
+- /vendor/experiences/new
+- /vendor/experiences/[id]/edit
+- /vendor/experiences/[id]/availability
+- /vendor/bookings
+
+Admin:
+- /admin
+- /admin/vendors
+- /admin/experiences
+- /admin/bookings
+- /admin/countries
+
+Seed data:
+Add seed data for at least:
+- 2 countries
+- a few cities/regions
+- sample vendors
+- sample experiences across sports, arts, adventure, and wellness
+
+Important exclusions from MVP:
+- No mobile apps
+- No social feed
+- No chat or messaging system
+- No loyalty points
+- No referrals
+- No complex payout automation
+- No country-specific payment gateway implementation yet
+- No advanced AI recommendations
+
+Code quality requirements:
+- Use reusable components
+- Add loading states, empty states, and validation
+- Keep folder structure clean and production-friendly
+- Include a README with setup and deployment instructions for Replit
+- Use environment variables for Supabase credentials
+- Include comments where helpful
+- Prepare the app for later addition of payments, localization, and mobile apps
+
+Branding:
+Use “Free Spirit” as the product name in the UI.
+Tone should feel uplifting, energetic, and connection-focused.
