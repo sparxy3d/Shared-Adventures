@@ -34,15 +34,37 @@ A multi-vendor activity and experience booking marketplace that helps people con
 ## Homepage Design
 - Premium cinematic hero with full-width background image (`/images/hero-bg.png`) and dark gradient overlay
 - Headline: "Adventure Starts Here" with amber gradient text
-- Large search bar in hero area
+- Large search bar in hero area, "Explore Adventures" + "Surprise Us" CTAs
+- Scroll indicator: "What should we do right now?" bouncing arrow
 - Promo banner above navbar: "Launch Offer — Free listings for early vendors"
-- Navbar: sticky positioning with transparent variant on homepage, search bar, cart icon, category sub-nav (Activities, Locations, Gift Ideas, New, Popular, Gift Vouchers)
-- Category shortcut cards below hero with background images
-- Popular Experiences grid, How it works steps, bottom CTA
+- Navbar: sticky positioning with transparent variant on homepage, search bar, cart icon, category sub-nav
+- **Decision Engine** section: location input, group size chips (1/2/3-5/6+), time mode (Now/Tonight/Weekend), "Show Ideas" + "Surprise Us" buttons
+- Category shortcut cards with background images
+- **Open Near You** section (live-filtered from featured by open status)
+- Popular Right Now grid, How it works steps, bottom CTA
+- **Surprise Us** modal dialog: loading animation → random experience card → "View Details" / "Try Another"
+
+## Experience Cards
+- "Open Now" / next-session badges via `getOpenStatus()` (exported from experience-card.tsx)
+- Ideal-for tags with emoji icons: friends 👫, couples 💑, families 👨‍👩‍👧, teams 🏢, solo 🧘
+- Duration overlay, hover lift animation (framer-motion), premium rounded-2xl design
+- Category color badges, heart favorite button
+
+## Search Page
+- Discovery-first: dynamic headline changes based on filters ("Things you can do right now", "Weekend adventures", etc.)
+- Category chips, city input, collapsible advanced filters (time mode, group size)
+- Animated results grid with staggered entrance
+
+## Experience Detail
+- Hero image with Open Now/Closed badge, favorite + share buttons
+- "Perfect for" section with emoji ideal-for tags
+- "Share with Friends" copy-to-clipboard button
+- Gradient booking CTA ("Request Booking"), sticky sidebar on desktop
+- Duration/capacity badges, safety notes callout
 
 ## Key Pages
-- `/` - Home (hero, categories, featured, how it works)
-- `/search` - Browse with filters
+- `/` - Home (hero, decision engine, categories, open near you, popular, how it works)
+- `/search` - Discovery-first browse with filters
 - `/experience/:id` - Experience detail + booking
 - `/login`, `/signup` - Authentication
 - `/account`, `/bookings`, `/favorites` - Customer portal

@@ -51,6 +51,11 @@ export interface IStorage {
   createFavorite(data: InsertFavorite): Promise<Favorite>;
   deleteFavorite(customerId: number, experienceId: number): Promise<void>;
 
+  getRandomExperience(filters?: {
+    category?: string;
+    city?: string;
+  }): Promise<Experience | undefined>;
+
   getStats(): Promise<any>;
 }
 
@@ -270,6 +275,28 @@ export class DatabaseStorage implements IStorage {
     await db.delete(favorites).where(
       and(eq(favorites.customerProfileId, customerId), eq(favorites.experienceId, experienceId))
     );
+  }
+
+  async getRandomExperience(filters?: {
+    category?: string;
+    city?: string;
+  }): Promise<Experience | undefined> {
+    const conditions = [eq(experiences.status, "published")];
+    if (filters?.category) {
+      conditions.push(eq(experiences.category, filters.category));
+    }
+    if (filters?.city) {
+      conditions.push(ilike(experiences.city, `%${filters.city}%`));
+    }
+
+    let results = await db.select().from(experiences).where(and(...conditions));
+
+    if (results.length === 0 && filters?.category) {
+      results = await db.select().from(experiences).where(eq(experiences.status, "published"));
+    }
+
+    if (results.length === 0) return undefined;
+    return results[Math.floor(Math.random() * results.length)];
   }
 
   async getStats(): Promise<any> {

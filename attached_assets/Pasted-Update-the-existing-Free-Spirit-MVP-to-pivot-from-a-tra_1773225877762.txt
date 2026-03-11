@@ -1,0 +1,266 @@
+Update the existing Free Spirit MVP to pivot from a traditional activity booking marketplace into a “What should we do now?” discovery-first platform.
+
+Important:
+- DO NOT rebuild the whole app from scratch
+- REUSE the existing project structure, booking foundation, auth, database, and current activity pages where possible
+- This is a product pivot and homepage / flow redesign
+- Keep the existing booking capability, but make discovery the primary experience
+
+New product direction:
+Free Spirit is a platform that helps people quickly decide what to do right now, tonight, or this weekend based on location, time, and group size.
+
+Core value proposition:
+- Help groups decide what to do
+- Suggest activities that are open now or starting soon
+- Make spontaneous planning easier
+- Booking is secondary to discovery
+
+PRIMARY UX CHANGE:
+The homepage should no longer feel like a generic marketplace first.
+It should feel like a decision engine.
+
+Main homepage hero:
+Headline:
+What should we do right now?
+
+Subheadline:
+Find activities near you that are open, available, and worth doing together.
+
+Inputs in hero:
+1. Location
+   - text input with placeholder: Enter city or use current location
+   - include “Use my location” button if easy
+2. Group size
+   - chips or segmented options:
+     1
+     2
+     3–5
+     6+
+3. Time
+   - segmented options:
+     Now
+     Tonight
+     Weekend
+
+Primary CTA:
+Show Ideas
+
+Secondary CTA:
+Surprise Us
+
+Top-level product goal:
+Transform the current platform into a discovery-first activity finder with lightweight booking.
+
+PAGES / FEATURES TO UPDATE
+
+1) HOMEPAGE
+Replace current booking-first hero with a discovery-first hero.
+Below the hero, add:
+- “Popular right now” section
+- “Open now near you” section
+- category shortcuts:
+  Sports
+  Adventure
+  Arts & Classes
+  Wellness
+- optional “Perfect for groups” section
+
+2) SEARCH / RESULTS PAGE
+Update search results page to focus on suggestions rather than normal catalog browsing.
+
+Results page heading examples:
+- Things you can do right now
+- Open near you
+- Starting soon
+
+Each result card should show:
+- image
+- activity title
+- category
+- city/location
+- price
+- open now / next session label
+- ideal for badge (friends, couples, families, teams, solo)
+- button: View Details
+
+Include simple filtering:
+- category
+- city/region
+- time mode (Now / Tonight / Weekend)
+- group size
+- price range if already easy to support
+
+3) ACTIVITY DETAIL PAGE
+Keep the current booking page foundation, but update the presentation to support the new concept.
+
+Add or display:
+- open now / closed / next session
+- good for: friends / couples / families / teams / solo
+- duration
+- price
+- location
+- simple CTA:
+  Request Booking
+- secondary CTA:
+  Share with Friends
+
+Keep existing booking functionality if present.
+
+4) ADD “SURPRISE US” FLOW
+Implement a lightweight surprise mode.
+
+Behavior:
+- Use the selected location + time mode + group size
+- Show one random matching activity suggestion
+- If no exact match, broaden results slightly
+- Display a fun loading state:
+  Finding something fun...
+- Then show a result card with:
+  title
+  image
+  location
+  open now / next session
+  button: View Details
+  button: Try Another
+
+This can be implemented with simple random selection logic from filtered activities.
+
+5) DATA MODEL ENHANCEMENTS
+Do not destroy the current schema.
+Extend it minimally as needed.
+
+If not already present, add fields to activities / experiences:
+- country
+- city or region
+- ideal_for_tags (friends, couples, families, teams, solo)
+- duration_minutes
+- opening_hours_text OR structured open hours
+- is_open_now logic support
+- next_session_text or session support
+
+If easier, start with simple fields and computed labels instead of full scheduling complexity.
+
+6) SIMPLE “OPEN NOW” / “STARTING SOON” LOGIC
+Implement a practical MVP approach.
+
+If structured opening hours exist:
+- determine open now based on current day/time
+
+If not:
+- use simple fallback fields like:
+  open_time
+  close_time
+  next_session_text
+
+For MVP, it is acceptable to support:
+- open now
+- opens later
+- next session at X
+
+Do NOT overengineer real-time scheduling.
+
+7) GROUP / TOGETHER POSITIONING
+Across the UI, update copy to reflect connection and shared decisions.
+
+Examples of useful copy:
+- Book activities worth doing together
+- Find something fun near you
+- Make plans that actually happen
+- Perfect for groups, couples, families and friends
+
+8) KEEP EXISTING ADMIN / BOOKING FOUNDATION
+If the project already has admin, booking requests, activities, and categories:
+- preserve them
+- only adapt the UI and data model to support the new flow
+- booking still exists, but discovery comes first
+
+9) OPTIONAL LIGHTWEIGHT FEATURE: SHAREABLE PLAN MODE
+If feasible without major rebuild, add a very simple “Share with Friends” action from activity or results page.
+This can initially just copy the activity link.
+Do NOT build full voting flow yet unless very easy.
+
+10) UI / DESIGN DIRECTION
+Use Tailwind CSS.
+The homepage should look like a premium, modern discovery platform.
+Style direction:
+- bold hero
+- large search / selection box
+- warm, energetic, human feel
+- premium outdoor / social lifestyle feel
+- less like a generic admin product
+- more like a polished consumer startup
+
+COMPONENTS TO CREATE OR UPDATE
+- HeroDecisionBox
+- TimeSelector
+- GroupSizeSelector
+- SurpriseButton
+- ActivitySuggestionCard
+- OpenNowBadge
+- CategoryShortcutGrid
+
+ROUTING / FLOW
+Recommended flow:
+Homepage
+→ enter location + group size + time
+→ Show Ideas
+→ results page with filtered suggestions
+→ details page
+→ request booking
+
+Also support:
+Homepage
+→ Surprise Us
+→ random suggestion page or modal
+→ details page
+
+COPY UPDATES
+Update homepage messaging to:
+Headline:
+What should we do right now?
+
+Subheadline:
+Discover sports, classes, adventures and wellness experiences near you that are open and ready to enjoy.
+
+CTA buttons:
+Show Ideas
+Surprise Us
+
+CATEGORY LABELS
+Use:
+Sports
+Adventure
+Arts & Classes
+Wellness
+
+SEED / DEMO DATA
+Add or update demo data so the app feels aligned to this new concept.
+Include sample activities such as:
+- Bowling
+- Pottery workshop
+- Futsal booking
+- Sunset yoga
+- Rafting
+- Escape room
+- Karaoke
+- Cooking class
+
+For each sample activity include:
+- city
+- category
+- price
+- ideal for
+- open/next session info
+
+IMPORTANT EXCLUSIONS
+Do not add:
+- full social feed
+- messaging/chat
+- loyalty points
+- referrals
+- advanced payments
+- vendor marketplace rewrite
+- major backend rewrite
+
+Goal:
+Complete the MVP by transforming the current product into a discovery-first “What should we do now?” platform while preserving as much of the existing booking app as possible.

@@ -1,0 +1,125 @@
+Do not remove the existing hero section that resembles adrenaline.com.au.
+
+The hero image and layout should remain as the visual entry point of the site.
+
+Instead, introduce the new “What should we do right now?” discovery engine as the next section directly below the hero.
+
+Update the homepage with the following structure:
+
+SECTION 1 — HERO (KEEP EXISTING STYLE)
+Keep the current full-width adventure hero with:
+
+• background image
+• large inspirational headline
+• call-to-action button
+
+Update hero text to something like:
+
+Headline:
+Adventure Starts Here
+
+Subheadline:
+Discover unforgettable experiences, classes and activities near you.
+
+Primary button:
+Explore Experiences
+
+Secondary button:
+Surprise Us
+
+Add a small scroll indicator at the bottom of the hero:
+↓
+“What should we do right now?”
+
+OPTIONAL BEHAVIOR:
+After 3–4 seconds of page load, gently auto-scroll the page to the discovery section below.
+If the user interacts or scrolls first, cancel the auto-scroll.
+
+SECTION 2 — DECISION ENGINE (NEW CORE FEATURE)
+
+Immediately below the hero create a new section titled:
+
+What should we do right now?
+
+Subtext:
+Find something fun near you based on time, location and group size.
+
+Add a decision box with inputs:
+
+Location
+• text input
+• placeholder: Enter city or use current location
+
+Group size
+• buttons:
+1
+2
+3–5
+6+
+
+Time
+• buttons:
+Now
+Tonight
+Weekend
+
+Primary button:
+Show Ideas
+
+Secondary button:
+🎲 Surprise Us
+
+SECTION 3 — SUGGESTIONS
+
+Below the decision engine add:
+
+Popular Right Now
+
+Display activity cards in a horizontal scroll grid.
+
+Each card should show:
+
+• image
+• title
+• location
+• price
+• open now or next session
+• button: View
+
+SECTION 4 — CATEGORY SHORTCUTS
+
+Add category cards:
+
+Sports
+Adventure
+Arts & Classes
+Wellness
+
+Each should navigate to filtered results.
+
+SECTION 5 — OPEN NOW
+
+Add a section titled:
+
+Open Near You
+
+Display activities currently open based on the user's location.
+
+DESIGN NOTES
+
+Maintain the premium visual style similar to:
+
+• Adrenaline
+• Airbnb Experiences
+• Klook
+
+Use:
+
+• large imagery
+• spacious layout
+• modern typography
+• smooth hover effects
+
+Do not break existing booking functionality or activity pages.
+
+Focus only on improving the homepage experience and introducing the new decision engine below the hero.

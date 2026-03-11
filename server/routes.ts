@@ -150,6 +150,16 @@ export async function registerRoutes(
     res.json(result);
   });
 
+  app.get("/api/experiences/surprise", async (req, res) => {
+    const { category, city } = req.query;
+    const result = await storage.getRandomExperience({
+      category: category as string,
+      city: city as string,
+    });
+    if (!result) return res.status(404).json({ message: "No experiences found" });
+    res.json(result);
+  });
+
   app.get("/api/experiences/featured", async (_req, res) => {
     const result = await storage.getFeaturedExperiences();
     res.json(result);
