@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
@@ -61,7 +62,10 @@ app.use((req, res, next) => {
 
 (async () => {
   const { seedDatabase } = await import("./seed");
-  await seedDatabase().catch(err => console.error("Seed error:", err));
+  await seedDatabase().catch(err => {
+    console.error("Seed error (database may be offline):", err.message);
+    console.warn("Continuing without database...");
+  });
 
   await registerRoutes(httpServer, app);
 
@@ -96,8 +100,8 @@ app.use((req, res, next) => {
   httpServer.listen(
     {
       port,
-      host: "0.0.0.0",
-      reusePort: true,
+      host: "127.0.0.1",
+      reusePort: false,
     },
     () => {
       log(`serving on port ${port}`);
