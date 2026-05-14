@@ -13,8 +13,9 @@ import Footer from "@/components/footer";
 import { getOpenStatus } from "@/components/experience-card";
 import type { Experience, AvailabilitySlot, User as UserType } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { formatPrice } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 
@@ -116,10 +117,11 @@ export default function ExperienceDetail() {
     }
   };
 
-  const formatPrice = (amount: number | null, currency: string | null) => {
-    if (!amount) return "Free";
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: currency || "USD", minimumFractionDigits: 0 }).format(amount / 100);
-  };
+  useEffect(() => {
+    if (experience?.title) {
+      document.title = `${experience.title} · Free Spirit`;
+    }
+  }, [experience?.title]);
 
   const formatDuration = (mins: number) => {
     if (mins >= 60) {

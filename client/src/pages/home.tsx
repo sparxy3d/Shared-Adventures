@@ -14,6 +14,7 @@ import ExperienceCard, { getOpenStatus } from "@/components/experience-card";
 import type { Experience } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { formatPrice } from "@/lib/currency";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 
@@ -46,11 +47,6 @@ const timeModes = [
 const fadeUp = { hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0 } };
 const stagger = { visible: { transition: { staggerChildren: 0.08 } } };
 
-function formatPrice(amount: number | null, currency: string | null) {
-  if (!amount) return "Free";
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: currency || "USD", minimumFractionDigits: 0 }).format(amount / 100);
-}
-
 export default function Home() {
   const [, navigate] = useLocation();
   const [heroSearch, setHeroSearch] = useState("");
@@ -61,6 +57,10 @@ export default function Home() {
   const [surpriseLoading, setSurpriseLoading] = useState(false);
   const [surpriseResult, setSurpriseResult] = useState<Experience | null>(null);
   const decisionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    document.title = "Free Spirit — Find something fun to do right now";
+  }, []);
 
   const { data: featured, isLoading } = useQuery<Experience[]>({ queryKey: ["/api/experiences/featured"] });
 

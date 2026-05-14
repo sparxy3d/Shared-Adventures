@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation, useSearch } from "wouter";
+import { useLocation, useSearch, Link } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search as SearchIcon, X, MapPin, Sparkles, Clock, Users, SlidersHorizontal } from "lucide-react";
+import { Search as SearchIcon, X, MapPin, Sparkles, SlidersHorizontal } from "lucide-react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import ExperienceCard from "@/components/experience-card";
@@ -27,6 +27,10 @@ const groupOptions = [
   { value: "6+", label: "6+" },
 ];
 
+const ALLOWED_VIEWS = new Set(["", "locations"]);
+const ALLOWED_SORTS = new Set(["", "new", "popular"]);
+const ALLOWED_IDEAL = new Set(["friends", "couples", "families", "teams", "solo"]);
+
 export default function SearchPage() {
   const search = useSearch();
   const params = new URLSearchParams(search);
@@ -39,6 +43,20 @@ export default function SearchPage() {
   const [groupSize, setGroupSize] = useState(params.get("group") || "");
   const [showFilters, setShowFilters] = useState(false);
 
+  const rawView = params.get("view") || "";
+  const view = ALLOWED_VIEWS.has(rawView) ? rawView : "";
+  const rawSort = params.get("sort") || "";
+  const sort = ALLOWED_SORTS.has(rawSort) ? rawSort : "";
+  const idealForRaw = params.get("ideal_for") || "";
+  const idealForTags = idealForRaw
+    .split(",")
+    .map((t) => t.trim().toLowerCase())
+    .filter((t) => ALLOWED_IDEAL.has(t));
+
+  useEffect(() => {
+    document.title = "Discover activities · Free Spirit";
+  }, []);
+
   const queryString = new URLSearchParams({
     ...(category && { category }),
     ...(country && { country }),
@@ -46,7 +64,7 @@ export default function SearchPage() {
     ...(query && { q: query }),
   }).toString();
 
-  const { data: experiences, isLoading } = useQuery<Experience[]>({
+  const { data: experiencesRaw, isLoading } = useQuery<Experience[]>({
     queryKey: ["/api/experiences", queryString],
     queryFn: async () => {
       const url = queryString ? `/api/experiences?${queryString}` : "/api/experiences";
@@ -60,6 +78,38 @@ export default function SearchPage() {
     queryKey: ["/api/countries"],
   });
 
+  const experiences = useMemo(() => {
+    if (!experiencesRaw) return undefined;
+    let list = [...experiencesRaw];
+    if (idealForTags.length > 0) {
+      list = list.filter((e) =>
+        e.idealForTags?.some((tag) => idealForTags.includes(tag.toLowerCase()))
+      );
+    }
+    if (sort === "new") {
+      list.sort((a, b) => {
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : a.id;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : b.id;
+        return bTime - aTime;
+      });
+    } else if (sort === "popular") {
+      list.sort((a, b) => a.id - b.id);
+    }
+    return list;
+  }, [experiencesRaw, idealForTags.join(","), sort]);
+
+  const groupedByCity = useMemo(() => {
+    if (view !== "locations" || !experiences) return null;
+    const groups: Record<string, Experience[]> = {};
+    for (const exp of experiences) {
+      const key = exp.city || "Other";
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(exp);
+    }
+    return Object.entries(groups).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [experiences, view]);
+
+  const [, navigate] = useLocation();
   const clearFilters = () => {
     setCategory("");
     setCountry("");
@@ -67,11 +117,17 @@ export default function SearchPage() {
     setQuery("");
     setTimeMode("");
     setGroupSize("");
+    navigate("/search");
   };
 
-  const hasFilters = category || country || city || query || timeMode || groupSize;
+  const hasFilters = category || country || city || query || timeMode || groupSize ||
+    view || sort || idealForTags.length > 0;
 
   const getHeadline = () => {
+    if (view === "locations") return "Browse by location";
+    if (sort === "new") return "Newest experiences";
+    if (sort === "popular") return "Popular right now";
+    if (idealForTags.length > 0) return "Gift-worthy ideas";
     if (query) return `Results for "${query}"`;
     if (timeMode === "now") return "Things you can do right now";
     if (timeMode === "tonight") return "Plans for tonight";
@@ -84,6 +140,8 @@ export default function SearchPage() {
   };
 
   const getSubheadline = () => {
+    if (view === "locations") return "Discover what's happening in each city.";
+    if (idealForTags.length > 0) return "Activities perfect to share with the people you love.";
     if (hasFilters) return `${experiences?.length || 0} experiences found`;
     return "Discover activities that are open, available, and worth doing together.";
   };
@@ -273,6 +331,29 @@ export default function SearchPage() {
                 </div>
               </div>
             ))}
+          </div>
+        ) : groupedByCity ? (
+          <div className="space-y-12">
+            {groupedByCity.length === 0 ? (
+              <p className="text-center text-muted-foreground py-12">No locations found.</p>
+            ) : (
+              groupedByCity.map(([cityName, items]) => (
+                <section key={cityName} data-testid={`section-city-${cityName}`}>
+                  <div className="flex items-center justify-between mb-5">
+                    <h2 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-primary" />
+                      {cityName}
+                      <span className="text-sm font-medium text-muted-foreground">({items.length})</span>
+                    </h2>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
+                    {items.map((exp) => (
+                      <ExperienceCard key={exp.id} experience={exp} />
+                    ))}
+                  </div>
+                </section>
+              ))
+            )}
           </div>
         ) : experiences && experiences.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">

@@ -21,11 +21,10 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 
 const navCategories = [
   { name: "Activities", href: "/search", icon: Star },
-  { name: "Locations", href: "/search", icon: MapPin },
-  { name: "Gift Ideas", href: "/search?category=wellness", icon: Gift },
-  { name: "New", href: "/search", icon: Sparkles },
-  { name: "Popular", href: "/search", icon: TrendingUp },
-  { name: "Gift Vouchers", href: "/search", icon: Gift },
+  { name: "Locations", href: "/search?view=locations", icon: MapPin },
+  { name: "Gift Ideas", href: "/search?ideal_for=couples,families", icon: Gift },
+  { name: "New", href: "/search?sort=new", icon: Sparkles },
+  { name: "Popular", href: "/search?sort=popular", icon: TrendingUp },
 ];
 
 export default function Navbar({ variant = "default" }: { variant?: "default" | "transparent" }) {

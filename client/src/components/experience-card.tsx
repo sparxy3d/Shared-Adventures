@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Clock, MapPin, Users, Heart, Zap, ChevronRight } from "lucide-react";
 import type { Experience } from "@shared/schema";
 import { motion } from "framer-motion";
+import { formatPrice } from "@/lib/currency";
 
 const categoryColors: Record<string, string> = {
   sports: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
@@ -46,15 +47,6 @@ function getOpenStatus(exp: Experience): { label: string; isOpen: boolean } {
 }
 
 export default function ExperienceCard({ experience }: { experience: Experience }) {
-  const formatPrice = (amount: number | null, currency: string | null) => {
-    if (!amount) return "Free";
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: currency || "USD",
-      minimumFractionDigits: 0,
-    }).format(amount / 100);
-  };
-
   const status = getOpenStatus(experience);
 
   return (

@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { users, countries, vendors, experiences, availabilitySlots } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
 
@@ -16,6 +16,7 @@ export async function seedDatabase() {
   const existingCountries = await db.select().from(countries);
   if (existingCountries.length > 0) {
     console.log("Database already seeded, skipping...");
+    await standardizeCurrencyToLKR();
     return;
   }
 
@@ -148,8 +149,8 @@ export async function seedDatabase() {
       region: "New South Wales",
       city: "Sydney",
       durationMinutes: 75,
-      priceAmount: 3500,
-      currencyCode: "AUD",
+      priceAmount: 700000,
+      currencyCode: "LKR",
       capacity: 15,
       idealForTags: ["friends", "couples", "solo"],
       openTime: "05:30",
@@ -168,8 +169,8 @@ export async function seedDatabase() {
       region: "New South Wales",
       city: "Sydney",
       durationMinutes: 120,
-      priceAmount: 8500,
-      currencyCode: "AUD",
+      priceAmount: 1700000,
+      currencyCode: "LKR",
       capacity: 10,
       idealForTags: ["couples", "friends", "families"],
       openTime: "09:00",
@@ -188,8 +189,8 @@ export async function seedDatabase() {
       region: "New South Wales",
       city: "Sydney",
       durationMinutes: 360,
-      priceAmount: 25000,
-      currencyCode: "AUD",
+      priceAmount: 5000000,
+      currencyCode: "LKR",
       capacity: 6,
       ageMin: 18,
       idealForTags: ["friends", "couples"],
@@ -229,8 +230,8 @@ export async function seedDatabase() {
       region: "New South Wales",
       city: "Sydney",
       durationMinutes: 180,
-      priceAmount: 12000,
-      currencyCode: "AUD",
+      priceAmount: 2400000,
+      currencyCode: "LKR",
       capacity: 12,
       idealForTags: ["friends", "couples", "teams"],
       openTime: "10:00",
@@ -269,9 +270,25 @@ export async function seedDatabase() {
 
   await db.insert(availabilitySlots).values(slotData);
 
+  await standardizeCurrencyToLKR();
+
   console.log("Database seeded successfully!");
   console.log("Test accounts:");
   console.log("  Admin: admin@freespirit.com / admin123");
   console.log("  Vendor: vendor1@freespirit.com / vendor123");
   console.log("  Customer: user@freespirit.com / customer123");
+}
+
+async function standardizeCurrencyToLKR() {
+  // One-time normalization: convert any non-LKR experience prices to sensible LKR
+  // values so the demo grid is consistent. Approx FX: A$1 ≈ LKR 200.
+  const result = await db.execute(sql`
+    UPDATE experiences
+    SET price_amount = ROUND(price_amount * 200 / 1000) * 1000,
+        currency_code = 'LKR'
+    WHERE currency_code = 'AUD'
+  `);
+  if ((result as any).rowCount && (result as any).rowCount > 0) {
+    console.log(`Standardized ${(result as any).rowCount} experience prices to LKR.`);
+  }
 }
