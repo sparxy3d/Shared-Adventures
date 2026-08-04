@@ -120,7 +120,7 @@ export default function Navbar({ variant = "default" }: { variant?: "default" | 
               </Button>
               {user ? (
                 <>
-                  <Link href="/favorites" data-testid="link-favorites-icon">
+                  <Link href="/favorites" data-testid="link-favorites-icon" title="Bucket List">
                     <Button variant="ghost" size="icon" className={`rounded-full ${isTransparent ? "text-white hover:bg-white/10" : ""}`}>
                       <Heart className="w-5 h-5" />
                     </Button>
@@ -159,7 +159,7 @@ export default function Navbar({ variant = "default" }: { variant?: "default" | 
                       <DropdownMenuItem asChild>
                         <Link href="/favorites" data-testid="link-favorites" className="cursor-pointer rounded-lg">
                           <Heart className="w-4 h-4 mr-2" />
-                          Favorites
+                          Bucket List
                         </Link>
                       </DropdownMenuItem>
                       {user.role === "vendor" && (
@@ -256,7 +256,7 @@ export default function Navbar({ variant = "default" }: { variant?: "default" | 
                         <Link href="/favorites" onClick={() => setOpen(false)}>
                           <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm hover:bg-muted transition-colors text-left">
                             <Heart className="w-4 h-4 text-muted-foreground" />
-                            Favorites
+                            Bucket List
                           </button>
                         </Link>
                         {user.role === "vendor" && (

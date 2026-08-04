@@ -17,6 +17,7 @@ export async function seedDatabase() {
   if (existingCountries.length > 0) {
     console.log("Database already seeded, skipping...");
     await standardizeCurrencyToLKR();
+    await applyDemoUpgrades();
     return;
   }
 
@@ -271,6 +272,7 @@ export async function seedDatabase() {
   await db.insert(availabilitySlots).values(slotData);
 
   await standardizeCurrencyToLKR();
+  await applyDemoUpgrades();
 
   console.log("Database seeded successfully!");
   console.log("Test accounts:");
@@ -291,4 +293,141 @@ async function standardizeCurrencyToLKR() {
   if ((result as any).rowCount && (result as any).rowCount > 0) {
     console.log(`Standardized ${(result as any).rowCount} experience prices to LKR.`);
   }
+}
+
+// Idempotent upgrades so both fresh and already-seeded databases get the
+// Recreation category, ratings and offers.
+async function applyDemoUpgrades() {
+  // 1) Backfill ratings (stored as tenths: 42–49) and review counts.
+  await db.execute(sql`
+    UPDATE experiences
+    SET rating = 42 + (id * 7) % 8,
+        review_count = 38 + (id * 37) % 190
+    WHERE rating IS NULL OR review_count IS NULL
+  `);
+
+  // 2) Seed Recreation experiences if missing (checked per record by title).
+  {
+    const existingRecreation = await db.select().from(experiences).where(eq(experiences.category, "recreation"));
+    const existingTitles = new Set(existingRecreation.map((e) => e.title));
+    const [anyVendor] = await db.select().from(vendors).limit(1);
+    const [lk] = await db.select().from(countries).where(eq(countries.code, "LK"));
+    if (anyVendor && lk) {
+      const recreationSeeds = [
+        {
+          vendorId: anyVendor.id,
+          category: "recreation",
+          title: "Bowling Night — Colombo Lanes",
+          description: "Grab your crew for a night of strikes and spares at Colombo's favourite bowling alley. Shoe rental, lane snacks and a friendly scoreboard rivalry included. Great for birthdays, team nights and casual hangouts.",
+          locationText: "Colombo Lanes, Bambalapitiya",
+          countryId: lk.id,
+          region: "Western Province",
+          city: "Colombo",
+          durationMinutes: 90,
+          priceAmount: 2500,
+          currencyCode: "LKR",
+          capacity: 18,
+          idealForTags: ["friends", "teams"],
+          openTime: "10:00",
+          closeTime: "23:00",
+          nextSessionText: "Open late daily",
+          status: "published",
+          rating: 46,
+          reviewCount: 132,
+          imageUrl: "/images/recreation.png",
+        },
+        {
+          vendorId: anyVendor.id,
+          category: "recreation",
+          title: "Pool & Billiards Lounge",
+          description: "Rack 'em up in a relaxed lounge with pro tables, good music and cold drinks. Book a table for an hour or settle in for a tournament with friends. Cues and coaching tips available.",
+          locationText: "Cue Club, Kandy City Centre",
+          countryId: lk.id,
+          region: "Central Province",
+          city: "Kandy",
+          durationMinutes: 60,
+          priceAmount: 1800,
+          currencyCode: "LKR",
+          capacity: 8,
+          idealForTags: ["friends", "solo"],
+          openTime: "12:00",
+          closeTime: "23:30",
+          nextSessionText: "Next: Today 12 PM",
+          status: "published",
+          rating: 44,
+          reviewCount: 87,
+        },
+        {
+          vendorId: anyVendor.id,
+          category: "recreation",
+          title: "Arcade Group Pass",
+          description: "Unlimited arcade credits for two hours — racing sims, air hockey, claw machines and retro classics. The group pass covers up to six players, perfect for a rainy-day plan.",
+          locationText: "Galaxy Arcade, Colombo 03",
+          countryId: lk.id,
+          region: "Western Province",
+          city: "Colombo",
+          durationMinutes: 120,
+          priceAmount: 3200,
+          currencyCode: "LKR",
+          capacity: 6,
+          idealForTags: ["friends", "families", "teams"],
+          nextSessionText: "Next session: Tonight 6 PM",
+          status: "published",
+          rating: 48,
+          reviewCount: 156,
+        },
+        {
+          vendorId: anyVendor.id,
+          category: "recreation",
+          title: "Darts & Drinks Evening",
+          description: "A social darts night with casual boards, league-style scoring and mocktails on tap. Come solo and join a board, or bring your team for a bracket night.",
+          locationText: "Bullseye Bar, Galle Fort",
+          countryId: lk.id,
+          region: "Southern Province",
+          city: "Galle",
+          durationMinutes: 120,
+          priceAmount: 2000,
+          currencyCode: "LKR",
+          capacity: 12,
+          idealForTags: ["friends", "solo", "teams"],
+          nextSessionText: "Next: Friday 7 PM",
+          status: "published",
+          rating: 43,
+          reviewCount: 64,
+        },
+      ];
+
+      const missing = recreationSeeds.filter((s) => !existingTitles.has(s.title));
+      if (missing.length > 0) {
+      const recreation = await db.insert(experiences).values(missing).returning();
+
+      const today = new Date();
+      const recSlots = [];
+      for (const exp of recreation) {
+        for (let d = 1; d <= 7; d++) {
+          const date = new Date(today);
+          date.setDate(date.getDate() + d);
+          const dateStr = date.toISOString().split("T")[0];
+          for (const start of [14, 19]) {
+            recSlots.push({
+              experienceId: exp.id,
+              date: dateStr,
+              startTime: `${start}:00`,
+              endTime: `${Math.floor(start + (exp.durationMinutes || 60) / 60)}:${String((exp.durationMinutes || 60) % 60).padStart(2, "0")}`,
+              capacity: exp.capacity || 10,
+              status: "open" as const,
+            });
+          }
+        }
+      }
+      await db.insert(availabilitySlots).values(recSlots);
+      console.log(`Seeded ${recreation.length} Recreation experiences.`);
+      }
+    }
+  }
+
+  // 3) Backfill offers per target experience (only where no offer is set yet).
+  await db.execute(sql`UPDATE experiences SET offer_label = '20% off weekday pottery' WHERE title ILIKE '%pottery%' AND offer_label IS NULL`);
+  await db.execute(sql`UPDATE experiences SET offer_label = 'Group of 6+ — one goes free' WHERE title ILIKE '%rafting%' AND offer_label IS NULL`);
+  await db.execute(sql`UPDATE experiences SET offer_label = 'Sunset yoga — launch price' WHERE title ILIKE '%yoga%' AND offer_label IS NULL`);
 }

@@ -41,7 +41,7 @@ export default function SearchPage() {
   const [query, setQuery] = useState(params.get("q") || "");
   const [timeMode, setTimeMode] = useState(params.get("time") || "");
   const [groupSize, setGroupSize] = useState(params.get("group") || "");
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(params.get("filters") === "open");
 
   const rawView = params.get("view") || "";
   const view = ALLOWED_VIEWS.has(rawView) ? rawView : "";
@@ -136,6 +136,7 @@ export default function SearchPage() {
     if (category === "adventure") return "Adventures waiting for you";
     if (category === "arts") return "Arts & creative classes";
     if (category === "wellness") return "Wellness & relaxation";
+    if (category === "recreation") return "Recreation & good times";
     return "What should we do?";
   };
 
@@ -235,6 +236,7 @@ export default function SearchPage() {
                         <SelectItem value="adventure">Adventure</SelectItem>
                         <SelectItem value="arts">Arts & Classes</SelectItem>
                         <SelectItem value="wellness">Wellness</SelectItem>
+                        <SelectItem value="recreation">Recreation</SelectItem>
                       </SelectContent>
                     </Select>
 
@@ -299,6 +301,7 @@ export default function SearchPage() {
                 { label: "Adventure", cat: "adventure" },
                 { label: "Arts & Classes", cat: "arts" },
                 { label: "Wellness", cat: "wellness" },
+                { label: "Recreation", cat: "recreation" },
               ].map((c) => (
                 <button
                   key={c.cat}

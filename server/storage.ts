@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq, and, ilike, desc, sql } from "drizzle-orm";
+import { eq, and, ilike, desc, sql, isNotNull } from "drizzle-orm";
 import {
   users, countries, vendors, experiences, experienceImages,
   availabilitySlots, bookings, favorites, reviews,
@@ -31,6 +31,7 @@ export interface IStorage {
     q?: string;
   }): Promise<Experience[]>;
   getFeaturedExperiences(): Promise<Experience[]>;
+  getOfferExperiences(): Promise<Experience[]>;
   getExperience(id: number): Promise<Experience | undefined>;
   getExperiencesByVendor(vendorId: number): Promise<Experience[]>;
   getAllExperiences(): Promise<Experience[]>;
@@ -144,6 +145,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(experiences.status, "published"))
       .orderBy(desc(experiences.createdAt))
       .limit(8);
+  }
+
+  async getOfferExperiences(): Promise<Experience[]> {
+    return db.select().from(experiences)
+      .where(and(eq(experiences.status, "published"), isNotNull(experiences.offerLabel)))
+      .orderBy(desc(experiences.createdAt))
+      .limit(3);
   }
 
   async getExperience(id: number): Promise<Experience | undefined> {

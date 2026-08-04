@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, Dumbbell, Mountain, Palette, Sparkles, Search,
   CalendarCheck, Users, ChevronRight, ChevronDown, MapPin,
-  Clock, Dice5, Loader2, X, Zap, RefreshCw
+  Clock, Dice5, Loader2, X, Zap, RefreshCw, Gamepad2,
+  SlidersHorizontal, Tag
 } from "lucide-react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
@@ -23,6 +24,7 @@ const categories = [
   { name: "Adventure", slug: "adventure", description: "Rafting, go-karting, surfing & more", icon: Mountain, image: "/images/rafting.png", gradient: "from-amber-600 to-orange-500" },
   { name: "Arts & Classes", slug: "arts", description: "Pottery, painting, cooking & more", icon: Palette, image: "/images/pottery.png", gradient: "from-purple-600 to-pink-500" },
   { name: "Wellness", slug: "wellness", description: "Yoga, spa, group wellness & more", icon: Sparkles, image: "/images/yoga.png", gradient: "from-emerald-600 to-teal-500" },
+  { name: "Recreation", slug: "recreation", description: "Pool, billiards, bowling, arcade & more", icon: Gamepad2, image: "/images/recreation.png", gradient: "from-rose-600 to-red-500" },
 ];
 
 const steps = [
@@ -63,6 +65,7 @@ export default function Home() {
   }, []);
 
   const { data: featured, isLoading } = useQuery<Experience[]>({ queryKey: ["/api/experiences/featured"] });
+  const { data: offers } = useQuery<Experience[]>({ queryKey: ["/api/offers"] });
 
   const openExperiences = featured?.filter((exp) => {
     const s = getOpenStatus(exp);
@@ -211,8 +214,16 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="bg-white dark:bg-card rounded-3xl shadow-2xl shadow-black/5 border border-border/40 p-6 sm:p-8"
+            className="relative bg-white dark:bg-card rounded-3xl shadow-2xl shadow-black/5 border border-border/40 p-6 sm:p-8"
           >
+            <button
+              onClick={() => navigate("/search?filters=open")}
+              data-testid="button-decision-filters"
+              title="Advanced filters"
+              className="absolute top-4 right-4 w-9 h-9 rounded-xl border border-border/50 bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted flex items-center justify-center transition-colors"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+            </button>
             <div className="space-y-6">
               <div>
                 <label className="text-sm font-semibold text-foreground mb-2 block">Location</label>
@@ -293,7 +304,7 @@ export default function Home() {
             <motion.p variants={fadeUp} className="text-muted-foreground text-base">Whether it's action-packed or creatively inspiring</motion.p>
           </motion.div>
 
-          <motion.div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={stagger}>
+          <motion.div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-5" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={stagger}>
             {categories.map((cat) => (
               <motion.div key={cat.slug} variants={fadeUp} transition={{ duration: 0.5 }}>
                 <Link href={`/search?category=${cat.slug}`} data-testid={`card-category-${cat.slug}`}>
@@ -385,6 +396,53 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {offers && offers.length > 0 && (
+        <section className="py-14 lg:py-16 bg-background" data-testid="offers-section">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <motion.div className="flex items-end justify-between mb-8 gap-4" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
+              <div>
+                <motion.div variants={fadeUp} className="flex items-center gap-2 mb-2">
+                  <Badge variant="outline" className="border-orange-500 text-orange-600 text-xs font-semibold"><Tag className="w-3 h-3 mr-1" />Limited time</Badge>
+                </motion.div>
+                <motion.h2 variants={fadeUp} className="text-2xl sm:text-3xl font-bold text-foreground">Offers</motion.h2>
+              </div>
+            </motion.div>
+            <div className="flex gap-5 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:overflow-visible">
+              {offers.slice(0, 3).map((exp) => (
+                <Link key={exp.id} href={`/experience/${exp.id}`} data-testid={`card-offer-${exp.id}`} className="min-w-[280px] sm:min-w-0">
+                  <div className="group cursor-pointer rounded-2xl overflow-hidden bg-white dark:bg-card border border-orange-500/40 hover:border-orange-500 transition-all duration-300 hover:shadow-xl hover:shadow-orange-500/10 hover:-translate-y-1 flex flex-col h-full">
+                    <div className="relative aspect-[16/9] overflow-hidden">
+                      {exp.imageUrl ? (
+                        <img src={exp.imageUrl} alt={exp.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-orange-400 to-amber-500" />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                      <span className="absolute top-3 left-3 inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border border-orange-500 bg-white/95 dark:bg-black/70 text-orange-600 dark:text-orange-400 font-semibold shadow-sm">
+                        <Tag className="w-3 h-3" /> Offer
+                      </span>
+                    </div>
+                    <div className="p-4 flex flex-col flex-1">
+                      <p className="text-sm font-bold text-orange-600 dark:text-orange-400 mb-1">{exp.offerLabel}</p>
+                      <h3 className="font-bold text-[15px] text-foreground mb-2 line-clamp-1 group-hover:text-primary transition-colors">{exp.title}</h3>
+                      <div className="mt-auto flex items-center justify-between">
+                        <span className="text-sm font-semibold text-foreground">
+                          {formatPrice(exp.priceAmount, exp.currencyCode)}
+                          <span className="text-[11px] text-muted-foreground font-normal ml-1">/ person</span>
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                          View <ArrowRight className="w-3 h-3" />
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="py-16 lg:py-24 bg-muted/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

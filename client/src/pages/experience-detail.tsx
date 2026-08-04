@@ -24,6 +24,7 @@ const categoryColors: Record<string, string> = {
   adventure: "bg-amber-100 text-amber-700",
   arts: "bg-purple-100 text-purple-700",
   wellness: "bg-emerald-100 text-emerald-700",
+  recreation: "bg-rose-100 text-rose-700",
 };
 
 const categoryGradients: Record<string, string> = {
@@ -31,6 +32,7 @@ const categoryGradients: Record<string, string> = {
   adventure: "from-amber-400 to-orange-500",
   arts: "from-purple-400 to-pink-500",
   wellness: "from-emerald-400 to-teal-500",
+  recreation: "from-rose-400 to-red-500",
 };
 
 const idealForLabels: Record<string, { emoji: string; label: string }> = {
@@ -97,11 +99,11 @@ export default function ExperienceDetail() {
   const favMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/favorites", { experienceId: Number(id) }),
     onSuccess: () => {
-      toast({ title: "Added to favorites!" });
+      toast({ title: "Added to your Bucket List!" });
       queryClient.invalidateQueries({ queryKey: ["/api/favorites"] });
     },
     onError: (err: Error) => {
-      toast({ title: "Could not add favorite", description: err.message, variant: "destructive" });
+      toast({ title: "Could not add to Bucket List", description: err.message, variant: "destructive" });
     },
   });
 
@@ -197,7 +199,7 @@ export default function ExperienceDetail() {
             )}
           </div>
           <div className="absolute top-4 right-4 flex gap-2">
-            <button onClick={() => favMutation.mutate()} data-testid="button-favorite" className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white hover:scale-110 transition-all shadow-md">
+            <button onClick={() => favMutation.mutate()} data-testid="button-favorite" title="Add to Bucket List" className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white hover:scale-110 transition-all shadow-md">
               <Heart className="w-5 h-5 text-muted-foreground" />
             </button>
             <button onClick={handleShare} data-testid="button-share" className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white hover:scale-110 transition-all shadow-md">
@@ -228,6 +230,16 @@ export default function ExperienceDetail() {
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-foreground mb-4 tracking-tight leading-tight" data-testid="text-experience-title">
                 {experience.title}
               </h1>
+
+              {experience.rating != null && (
+                <div className="flex items-center gap-2 mb-4" data-testid="text-detail-rating">
+                  <span className="text-amber-500 text-xl">★</span>
+                  <span className="text-xl font-bold text-foreground">{(experience.rating / 10).toFixed(1)}</span>
+                  {experience.reviewCount != null && (
+                    <span className="text-muted-foreground">({experience.reviewCount} reviews)</span>
+                  )}
+                </div>
+              )}
 
               <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
                 {experience.locationText && (

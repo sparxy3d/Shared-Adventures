@@ -43,7 +43,7 @@ export default function Favorites() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="pt-8 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-foreground mb-8" data-testid="text-favorites-title">Favorites</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-8" data-testid="text-favorites-title">Bucket List</h1>
 
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -62,8 +62,9 @@ export default function Favorites() {
             <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
               <Heart className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-semibold text-foreground mb-2">No favorites yet</h3>
-            <p className="text-muted-foreground mb-6">Save activities you love to find them easily later</p>
+            <h3 className="text-xl font-semibold text-foreground mb-2" data-testid="text-empty-bucket-list">
+              Your bucket list is empty — go find something worth doing.
+            </h3>
             <Link href="/search">
               <Button className="rounded-xl gap-2">
                 Explore Activities <ArrowRight className="w-4 h-4" />

@@ -11,6 +11,7 @@ const categoryColors: Record<string, string> = {
   adventure: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
   arts: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
   wellness: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
+  recreation: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300",
 };
 
 const categoryGradients: Record<string, string> = {
@@ -18,6 +19,7 @@ const categoryGradients: Record<string, string> = {
   adventure: "from-amber-400 to-orange-500",
   arts: "from-purple-400 to-pink-500",
   wellness: "from-emerald-400 to-teal-500",
+  recreation: "from-rose-400 to-red-500",
 };
 
 const idealForIcons: Record<string, string> = {
@@ -92,6 +94,7 @@ export default function ExperienceCard({ experience }: { experience: Experience 
           <div className="absolute top-3 right-3">
             <button
               data-testid={`button-favorite-${experience.id}`}
+              title="Add to Bucket List"
               className="w-9 h-9 rounded-full bg-white/90 dark:bg-black/50 flex items-center justify-center backdrop-blur-sm hover:bg-white hover:scale-110 transition-all shadow-sm"
               onClick={(e) => e.preventDefault()}
             >
@@ -134,9 +137,17 @@ export default function ExperienceCard({ experience }: { experience: Experience 
             )}
           </div>
 
-          {experience.idealForTags && experience.idealForTags.length > 0 && (
+          {(experience.offerLabel || (experience.idealForTags && experience.idealForTags.length > 0)) && (
             <div className="flex flex-wrap gap-1.5 mb-3">
-              {experience.idealForTags.slice(0, 3).map((tag) => (
+              {experience.offerLabel && (
+                <span
+                  data-testid={`chip-offer-${experience.id}`}
+                  className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border border-orange-500 text-orange-600 dark:text-orange-400 font-semibold bg-transparent"
+                >
+                  {experience.offerLabel}
+                </span>
+              )}
+              {(experience.idealForTags || []).slice(0, 3).map((tag) => (
                 <span
                   key={tag}
                   className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-muted/80 text-muted-foreground font-medium"
@@ -149,11 +160,19 @@ export default function ExperienceCard({ experience }: { experience: Experience 
           )}
 
           <div className="mt-auto pt-3 border-t border-border/40 flex items-center justify-between">
-            <div>
+            <div className="flex items-baseline gap-2 flex-wrap">
               <span className="text-lg font-bold text-foreground">
                 {formatPrice(experience.priceAmount, experience.currencyCode)}
               </span>
-              <span className="text-[11px] text-muted-foreground ml-1">/ person</span>
+              <span className="text-[11px] text-muted-foreground">/ person</span>
+              {experience.rating != null && (
+                <span className="text-xs font-semibold text-foreground" data-testid={`text-rating-${experience.id}`}>
+                  <span className="text-amber-500">★</span> {(experience.rating / 10).toFixed(1)}
+                  {experience.reviewCount != null && (
+                    <span className="text-muted-foreground font-normal"> ({experience.reviewCount})</span>
+                  )}
+                </span>
+              )}
             </div>
             <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
               View <ChevronRight className="w-3 h-3" />

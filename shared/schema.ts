@@ -70,6 +70,9 @@ export const experiences = pgTable("experiences", {
   nextSessionText: text("next_session_text"),
   status: text("status").notNull().default("draft"),
   imageUrl: text("image_url"),
+  rating: integer("rating"),
+  reviewCount: integer("review_count"),
+  offerLabel: text("offer_label"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

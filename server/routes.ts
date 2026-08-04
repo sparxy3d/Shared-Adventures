@@ -165,6 +165,11 @@ export async function registerRoutes(
     res.json(result);
   });
 
+  app.get("/api/offers", async (_req, res) => {
+    const result = await storage.getOfferExperiences();
+    res.json(result);
+  });
+
   app.get("/api/experiences", async (req, res) => {
     const { category, country, city, q } = req.query;
     const result = await storage.getPublishedExperiences({
