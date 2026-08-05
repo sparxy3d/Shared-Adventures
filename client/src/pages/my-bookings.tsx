@@ -61,11 +61,8 @@ export default function MyBookings() {
 
   const formatPrice = (amount: number | null, currency: string | null) => {
     if (!amount) return "Free";
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: currency || "USD",
-      minimumFractionDigits: 0,
-    }).format(amount / 100);
+    // Amounts are stored as whole currency units, not minor units.
+    return `${currency || "LKR"} ${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(amount)}`;
   };
 
   return (

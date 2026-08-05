@@ -6,6 +6,7 @@ import { Link } from "wouter";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatPrice } from "@/lib/currency";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -96,15 +97,9 @@ export default function VendorBookings() {
                     <Users className="w-3 h-3" />
                     {booking.qty} {booking.qty === 1 ? "person" : "people"}
                   </span>
-                  {booking.totalAmount && (
-                    <span className="font-medium text-foreground">
-                      {new Intl.NumberFormat("en-US", {
-                        style: "currency",
-                        currency: booking.currencyCode || "USD",
-                        minimumFractionDigits: 0,
-                      }).format(booking.totalAmount / 100)}
-                    </span>
-                  )}
+                  <span className="font-medium text-foreground">
+                    {formatPrice(booking.totalAmount, booking.currencyCode)}
+                  </span>
                 </div>
 
                 {booking.customerNote && (

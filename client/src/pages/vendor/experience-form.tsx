@@ -61,7 +61,7 @@ export default function ExperienceForm() {
         region: existing.region || "",
         city: existing.city || "",
         durationMinutes: existing.durationMinutes?.toString() || "",
-        priceAmount: existing.priceAmount ? (existing.priceAmount / 100).toString() : "",
+        priceAmount: existing.priceAmount ? existing.priceAmount.toString() : "",
         currencyCode: existing.currencyCode || "USD",
         capacity: existing.capacity?.toString() || "",
         ageMin: existing.ageMin?.toString() || "",
@@ -79,7 +79,7 @@ export default function ExperienceForm() {
         ...form,
         countryId: form.countryId ? Number(form.countryId) : undefined,
         durationMinutes: form.durationMinutes ? Number(form.durationMinutes) : undefined,
-        priceAmount: form.priceAmount ? Math.round(Number(form.priceAmount) * 100) : undefined,
+        priceAmount: form.priceAmount ? Math.round(Number(form.priceAmount)) : undefined,
         capacity: form.capacity ? Number(form.capacity) : undefined,
         ageMin: form.ageMin ? Number(form.ageMin) : undefined,
       };

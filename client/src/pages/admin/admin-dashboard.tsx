@@ -254,11 +254,7 @@ export default function AdminDashboard() {
                   <p className="text-sm text-muted-foreground">
                     {b.qty} people &middot;{" "}
                     {b.totalAmount
-                      ? new Intl.NumberFormat("en-US", {
-                          style: "currency",
-                          currency: b.currencyCode || "USD",
-                          minimumFractionDigits: 0,
-                        }).format(b.totalAmount / 100)
+                      ? `${b.currencyCode || "LKR"} ${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(b.totalAmount)}`
                       : "Free"}
                   </p>
                 </div>

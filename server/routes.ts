@@ -194,8 +194,18 @@ export async function registerRoutes(
 
   app.post("/api/bookings", requireAuth, async (req, res) => {
     try {
+      // Recompute the total server-side from the canonical experience price —
+      // never trust a client-supplied totalAmount.
+      const experience = await storage.getExperience(Number(req.body.experienceId));
+      if (!experience) {
+        return res.status(400).json({ message: "Invalid experience" });
+      }
+      const qty = Math.max(1, Number(req.body.qty) || 1);
       const booking = await storage.createBooking({
         ...req.body,
+        qty,
+        totalAmount: (experience.priceAmount || 0) * qty,
+        currencyCode: experience.currencyCode,
         customerProfileId: req.session.userId!,
         status: "requested",
       });
