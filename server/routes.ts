@@ -204,8 +204,24 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid experience" });
       }
       const qty = Math.max(1, Number(req.body.qty) || 1);
+      // Validate the slot server-side: it must exist, belong to this
+      // experience, be open with spots left, and not be in the past.
+      let slot = null;
+      if (req.body.slotId != null) {
+        const slots = await storage.getSlotsByExperience(experience.id);
+        slot = slots.find((s) => s.id === Number(req.body.slotId)) || null;
+        if (!slot) {
+          return res.status(400).json({ message: "Invalid slot" });
+        }
+        const today = new Date().toISOString().split("T")[0];
+        if (slot.status !== "open" || slot.capacity <= 0 || slot.date < today) {
+          return res.status(409).json({ message: "That session is no longer available" });
+        }
+      }
       const booking = await storage.createBooking({
         ...req.body,
+        bookingDate: slot?.date ?? req.body.bookingDate,
+        startTime: slot?.startTime ?? req.body.startTime,
         qty,
         totalAmount: (experience.priceAmount || 0) * qty,
         currencyCode: experience.currencyCode,

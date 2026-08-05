@@ -534,6 +534,34 @@ async function applyDemoUpgrades() {
       )
   `);
 
+  // 5b) Prune stale past slots that have no bookings (keeps detail pages clean).
+  await db.execute(sql`
+    DELETE FROM availability_slots s
+    WHERE s.date < to_char(CURRENT_DATE, 'YYYY-MM-DD')
+      AND NOT EXISTS (SELECT 1 FROM bookings b WHERE b.slot_id = s.id)
+  `);
+
+  // 5c) Vary availability deterministically so seeded slots don't all show the
+  // same spot count. hashtext of (experience, date, time) buckets each slot:
+  // ~10% full, ~10% almost full (1-2 spots), rest 4-8 spots. Deterministic =>
+  // recomputing on every boot yields identical values (idempotent).
+  await db.execute(sql`
+    UPDATE availability_slots s SET
+      status = CASE WHEN mod(abs(hashtext(s.experience_id || ':' || s.date || ':' || s.start_time)), 10) = 0
+                    THEN 'full' ELSE 'open' END,
+      capacity = CASE mod(abs(hashtext(s.experience_id || ':' || s.date || ':' || s.start_time)), 10)
+        WHEN 0 THEN 0
+        WHEN 1 THEN 1 + mod(abs(hashtext('c' || s.experience_id || ':' || s.date || ':' || s.start_time)), 2)
+        ELSE 4 + mod(abs(hashtext('c' || s.experience_id || ':' || s.date || ':' || s.start_time)), 5)
+      END
+    FROM experiences e
+    WHERE s.experience_id = e.id
+      AND e.status = 'published'
+      AND s.date >= to_char(CURRENT_DATE, 'YYYY-MM-DD')
+      AND s.status IN ('open', 'full')
+      AND NOT EXISTS (SELECT 1 FROM bookings b WHERE b.slot_id = s.id)
+  `);
+
   // 6) Backfill offers per target experience (only where no offer is set yet).
   await db.execute(sql`UPDATE experiences SET offer_label = '20% off weekday pottery' WHERE title ILIKE '%pottery%' AND offer_label IS NULL`);
   await db.execute(sql`UPDATE experiences SET offer_label = 'Group of 6+ — one goes free' WHERE title ILIKE '%rafting%' AND offer_label IS NULL`);

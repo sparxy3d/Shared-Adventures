@@ -13,7 +13,8 @@ import Footer from "@/components/footer";
 import { getOpenStatus } from "@/components/experience-card";
 import type { Experience, AvailabilitySlot, User as UserType } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { toLocalDateStr, formatDayHeading, formatTime12h } from "@/lib/dates";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatPrice } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
@@ -71,6 +72,42 @@ export default function ExperienceDetail() {
   const { data: slots } = useQuery<AvailabilitySlot[]>({
     queryKey: ["/api/experiences", id, "slots"],
   });
+
+  const [showAllDays, setShowAllDays] = useState(false);
+
+  // Upcoming slots grouped per day, sorted; full slots kept (rendered disabled).
+  const slotDays = useMemo(() => {
+    if (!slots) return [] as [string, AvailabilitySlot[]][];
+    const today = toLocalDateStr(new Date());
+    const upcoming = slots
+      .filter((s) => s.date >= today)
+      .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
+    const byDay = new Map<string, AvailabilitySlot[]>();
+    for (const s of upcoming) {
+      if (!byDay.has(s.date)) byDay.set(s.date, []);
+      byDay.get(s.date)!.push(s);
+    }
+    return Array.from(byDay.entries());
+  }, [slots]);
+
+  // Drop a stale selection if its slot became full/past after a refresh.
+  useEffect(() => {
+    if (selectedSlot == null || !slots) return;
+    const today = toLocalDateStr(new Date());
+    const s = slots.find((sl) => sl.id === selectedSlot);
+    if (!s || s.status !== "open" || s.capacity <= 0 || s.date < today) {
+      setSelectedSlot(null);
+    }
+  }, [slots, selectedSlot]);
+
+  // Soonest bookable slot gets the "Next session" badge.
+  const nextSessionId = useMemo(() => {
+    for (const [, daySlots] of slotDays) {
+      const open = daySlots.find((s) => s.status === "open" && s.capacity > 0);
+      if (open) return open.id;
+    }
+    return null;
+  }, [slotDays]);
 
   const bookMutation = useMutation({
     mutationFn: async () => {
@@ -286,32 +323,64 @@ export default function ExperienceDetail() {
               </div>
             )}
 
-            {slots && slots.filter(s => s.status === "open").length > 0 && (
+            {slotDays.length > 0 && (
               <div>
                 <h2 className="text-lg font-bold text-foreground mb-4">Available Slots</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {slots.filter(s => s.status === "open").map((slot) => (
-                    <button
-                      key={slot.id}
-                      onClick={() => setSelectedSlot(slot.id === selectedSlot ? null : slot.id)}
-                      data-testid={`button-slot-${slot.id}`}
-                      className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
-                        selectedSlot === slot.id
-                          ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-sm"
-                          : "border-border/40 hover:border-primary/40 hover:shadow-sm"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <div className="text-left">
-                          <div className="text-sm font-semibold">{slot.date}</div>
-                          <div className="text-xs text-muted-foreground">{slot.startTime} - {slot.endTime}</div>
-                        </div>
+                <div className="space-y-5">
+                  {(showAllDays ? slotDays : slotDays.slice(0, 7)).map(([day, daySlots]) => (
+                    <div key={day} data-testid={`slot-day-${day}`}>
+                      <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                        <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                        {formatDayHeading(day)}
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {daySlots.map((slot) => {
+                          const isFull = slot.status !== "open" || slot.capacity <= 0;
+                          const almostFull = !isFull && slot.capacity <= 2;
+                          return (
+                            <button
+                              key={slot.id}
+                              disabled={isFull}
+                              onClick={() => setSelectedSlot(slot.id === selectedSlot ? null : slot.id)}
+                              data-testid={`button-slot-${slot.id}`}
+                              className={`relative flex flex-col items-start px-4 py-2.5 rounded-xl border-2 transition-all text-left ${
+                                isFull
+                                  ? "border-border/30 bg-muted/40 opacity-50 cursor-not-allowed"
+                                  : selectedSlot === slot.id
+                                    ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-sm"
+                                    : "border-border/40 hover:border-primary/40 hover:shadow-sm"
+                              }`}
+                            >
+                              {slot.id === nextSessionId && (
+                                <span className="absolute -top-2.5 left-3 px-2 py-0.5 rounded-full bg-primary text-white text-[10px] font-bold uppercase tracking-wide" data-testid="badge-next-session">
+                                  Next session
+                                </span>
+                              )}
+                              <span className="text-sm font-semibold">
+                                {formatTime12h(slot.startTime)} – {formatTime12h(slot.endTime)}
+                              </span>
+                              <span className={`text-xs font-medium ${
+                                isFull ? "text-muted-foreground" : almostFull ? "text-orange-600" : "text-muted-foreground"
+                              }`}>
+                                {isFull ? "Full" : almostFull ? `Almost full · ${slot.capacity} ${slot.capacity === 1 ? "spot" : "spots"}` : `${slot.capacity} spots`}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
-                      <span className="text-xs text-muted-foreground font-medium">{slot.capacity} spots</span>
-                    </button>
+                    </div>
                   ))}
                 </div>
+                {slotDays.length > 7 && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowAllDays(!showAllDays)}
+                    data-testid="button-show-more-dates"
+                    className="mt-4 rounded-xl"
+                  >
+                    {showAllDays ? "Show fewer dates" : `Show more dates (${slotDays.length - 7} more)`}
+                  </Button>
+                )}
               </div>
             )}
           </div>
@@ -367,7 +436,10 @@ export default function ExperienceDetail() {
                           </p>
                           {selectedSlot && slots && (
                             <p className="text-sm text-muted-foreground">
-                              {slots.find(s => s.id === selectedSlot)?.date}, {slots.find(s => s.id === selectedSlot)?.startTime}
+                              {(() => {
+                                const s = slots.find(sl => sl.id === selectedSlot);
+                                return s ? `${formatDayHeading(s.date)}, ${formatTime12h(s.startTime)}` : null;
+                              })()}
                             </p>
                           )}
                         </div>
