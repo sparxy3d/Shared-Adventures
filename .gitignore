@@ -1,5 +1,28 @@
-node_modules
-.DS_Store
-server/public
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+server/public/
+
+# Environment & secrets — never commit
+.env
+.env.*
+
+# Replit / tooling state
+.cache/
+.config/
+.local/
+.upm/
 vite.config.ts.*
+
+# Pasted prompt dumps & uploads (noise for AI context)
+attached_assets/
+
+# Logs & temp
+*.log
+tmp/
 *.tar.gz
+
+# OS
+.DS_Store
