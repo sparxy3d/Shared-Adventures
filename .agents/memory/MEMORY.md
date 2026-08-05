@@ -1,0 +1,1 @@
+- [Seed idempotency](seed-idempotency.md) — demo seed re-runs on every boot; all upgrades/migrations must be per-record idempotent with guards, and pg params must be integer-typed for int columns.

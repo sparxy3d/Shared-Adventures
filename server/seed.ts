@@ -281,17 +281,35 @@ export async function seedDatabase() {
   console.log("  Customer: user@freespirit.com / customer123");
 }
 
+// Prices above this are not believable LKR amounts for this demo; they can only
+// be the result of an already-converted value being converted again.
+const LKR_SANE_CEILING = 100000;
+
 async function standardizeCurrencyToLKR() {
   // One-time normalization: convert any non-LKR experience prices to sensible LKR
-  // values so the demo grid is consistent. Approx FX: A$1 ≈ LKR 200.
+  // values so the demo grid is consistent. Approx FX: A$1 ≈ LKR 300.
+  // Guard: skip rows whose price is already above the sane LKR ceiling — those
+  // are already-converted values that must never be multiplied again.
   const result = await db.execute(sql`
     UPDATE experiences
-    SET price_amount = ROUND(price_amount * 200 / 1000) * 1000,
+    SET price_amount = ROUND(price_amount * 300 / 100) * 100,
         currency_code = 'LKR'
     WHERE currency_code = 'AUD'
+      AND price_amount <= ${Math.floor(LKR_SANE_CEILING / 300)}
   `);
   if ((result as any).rowCount && (result as any).rowCount > 0) {
     console.log(`Standardized ${(result as any).rowCount} experience prices to LKR.`);
+  }
+
+  // Repair rows that were double-converted in the past: any LKR price above the
+  // sane ceiling was multiplied twice, so divide the extra factor back out.
+  const repaired = await db.execute(sql`
+    UPDATE experiences
+    SET price_amount = ROUND(price_amount * 3 / 200 / 100) * 100
+    WHERE currency_code = 'LKR' AND price_amount > ${LKR_SANE_CEILING}
+  `);
+  if ((repaired as any).rowCount && (repaired as any).rowCount > 0) {
+    console.log(`Repaired ${(repaired as any).rowCount} double-converted prices.`);
   }
 }
 
@@ -356,6 +374,7 @@ async function applyDemoUpgrades() {
           status: "published",
           rating: 44,
           reviewCount: 87,
+          imageUrl: "/images/billiards.png",
         },
         {
           vendorId: anyVendor.id,
@@ -375,6 +394,7 @@ async function applyDemoUpgrades() {
           status: "published",
           rating: 48,
           reviewCount: 156,
+          imageUrl: "/images/arcade.png",
         },
         {
           vendorId: anyVendor.id,
@@ -394,6 +414,7 @@ async function applyDemoUpgrades() {
           status: "published",
           rating: 43,
           reviewCount: 64,
+          imageUrl: "/images/darts.png",
         },
       ];
 
@@ -426,7 +447,12 @@ async function applyDemoUpgrades() {
     }
   }
 
-  // 3) Backfill offers per target experience (only where no offer is set yet).
+  // 3) Backfill images for recreation experiences that were seeded without one.
+  await db.execute(sql`UPDATE experiences SET image_url = '/images/billiards.png' WHERE title = 'Pool & Billiards Lounge' AND image_url IS NULL`);
+  await db.execute(sql`UPDATE experiences SET image_url = '/images/arcade.png' WHERE title = 'Arcade Group Pass' AND image_url IS NULL`);
+  await db.execute(sql`UPDATE experiences SET image_url = '/images/darts.png' WHERE title = 'Darts & Drinks Evening' AND image_url IS NULL`);
+
+  // 4) Backfill offers per target experience (only where no offer is set yet).
   await db.execute(sql`UPDATE experiences SET offer_label = '20% off weekday pottery' WHERE title ILIKE '%pottery%' AND offer_label IS NULL`);
   await db.execute(sql`UPDATE experiences SET offer_label = 'Group of 6+ — one goes free' WHERE title ILIKE '%rafting%' AND offer_label IS NULL`);
   await db.execute(sql`UPDATE experiences SET offer_label = 'Sunset yoga — launch price' WHERE title ILIKE '%yoga%' AND offer_label IS NULL`);

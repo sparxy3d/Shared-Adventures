@@ -180,13 +180,7 @@ export default function ExperienceDetail() {
         </div>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative aspect-[16/7] sm:aspect-[16/6] rounded-2xl sm:rounded-3xl overflow-hidden mb-8">
-          {experience.imageUrl ? (
-            <img src={experience.imageUrl} alt={experience.title} className="w-full h-full object-cover" />
-          ) : (
-            <div className={`w-full h-full bg-gradient-to-br ${categoryGradients[experience.category] || "from-gray-400 to-gray-500"} flex items-center justify-center`}>
-              <span className="text-white/40 text-[120px] font-light">{experience.title.charAt(0)}</span>
-            </div>
-          )}
+          <img src={experience.imageUrl || "/images/fallback.png"} alt={experience.title} className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
           <div className="absolute top-4 left-4 flex gap-2">
             {status.label && (

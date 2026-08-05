@@ -60,19 +60,11 @@ export default function ExperienceCard({ experience }: { experience: Experience 
         transition={{ duration: 0.25, ease: "easeOut" }}
       >
         <div className="relative aspect-[4/3] overflow-hidden">
-          {experience.imageUrl ? (
-            <img
-              src={experience.imageUrl}
-              alt={experience.title}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-            />
-          ) : (
-            <div className={`w-full h-full bg-gradient-to-br ${categoryGradients[experience.category] || "from-gray-400 to-gray-500"} flex items-center justify-center`}>
-              <span className="text-white/80 text-6xl font-light">
-                {experience.title.charAt(0)}
-              </span>
-            </div>
-          )}
+          <img
+            src={experience.imageUrl || "/images/fallback.png"}
+            alt={experience.title}
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
 
           <div className="absolute top-3 left-3 flex items-center gap-2">
