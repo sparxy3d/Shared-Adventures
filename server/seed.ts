@@ -65,12 +65,12 @@ export async function seedDatabase() {
       ownerProfileId: vendor2User.id,
       businessName: "Zen Collective",
       description: "A wellness studio offering yoga, meditation, and spa experiences for individuals and groups seeking balance and connection.",
-      countryId: australia.id,
-      region: "New South Wales",
-      city: "Sydney",
-      address: "18 Bondi Junction",
-      contactEmail: "namaste@zencollective.au",
-      contactPhone: "+61 4 9876 5432",
+      countryId: sriLanka.id,
+      region: "Western Province",
+      city: "Colombo",
+      address: "18 Marine Drive, Mount Lavinia",
+      contactEmail: "namaste@zencollective.lk",
+      contactPhone: "+94 77 987 6543",
       verificationStatus: "approved",
     },
   ]).returning();
@@ -143,12 +143,12 @@ export async function seedDatabase() {
     {
       vendorId: vendorWellness.id,
       category: "wellness",
-      title: "Sunrise Yoga on Bondi Beach",
-      description: "Start your day with a rejuvenating group yoga session overlooking the iconic Bondi Beach. Suitable for all levels. Mats provided. A beautiful way to connect with yourself and your friends.",
-      locationText: "Bondi Beach South End",
-      countryId: australia.id,
-      region: "New South Wales",
-      city: "Sydney",
+      title: "Sunrise Yoga on Mount Lavinia Beach",
+      description: "Start your day with a rejuvenating group yoga session overlooking the golden sands of Mount Lavinia Beach. Suitable for all levels. Mats provided. A beautiful way to connect with yourself and your friends.",
+      locationText: "Mount Lavinia Beach, South End",
+      countryId: sriLanka.id,
+      region: "Western Province",
+      city: "Colombo",
       durationMinutes: 75,
       priceAmount: 700000,
       currencyCode: "LKR",
@@ -165,10 +165,10 @@ export async function seedDatabase() {
       category: "arts",
       title: "Pottery Workshop for Couples & Friends",
       description: "Get your hands dirty in our cozy pottery studio! This 2-hour workshop teaches you the basics of wheel throwing. Take home your creations. A perfect bonding activity.",
-      locationText: "Zen Collective Studio",
-      countryId: australia.id,
-      region: "New South Wales",
-      city: "Sydney",
+      locationText: "Zen Collective Studio, Galle Fort",
+      countryId: sriLanka.id,
+      region: "Southern Province",
+      city: "Galle",
       durationMinutes: 120,
       priceAmount: 1700000,
       currencyCode: "LKR",
@@ -185,10 +185,10 @@ export async function seedDatabase() {
       category: "wellness",
       title: "Group Spa & Wellness Day",
       description: "Treat your group to a full day of pampering. Includes sauna, aromatherapy massage, facial treatment, and a healthy lunch. The ultimate bonding experience for those who deserve some relaxation.",
-      locationText: "Zen Collective Wellness Centre",
-      countryId: australia.id,
-      region: "New South Wales",
-      city: "Sydney",
+      locationText: "Zen Collective Wellness Centre, Kandy",
+      countryId: sriLanka.id,
+      region: "Central Province",
+      city: "Kandy",
       durationMinutes: 360,
       priceAmount: 5000000,
       currencyCode: "LKR",
@@ -224,12 +224,12 @@ export async function seedDatabase() {
     {
       vendorId: vendorWellness.id,
       category: "arts",
-      title: "Cooking Class - Asian Fusion",
-      description: "Learn to cook delicious Asian fusion dishes in a fun, social setting. Includes a welcome drink, all ingredients, recipes to take home, and of course, you get to eat everything you cook!",
-      locationText: "Zen Collective Kitchen Studio",
-      countryId: australia.id,
-      region: "New South Wales",
-      city: "Sydney",
+      title: "Cooking Class - Sri Lankan Classics",
+      description: "Learn to cook classic Sri Lankan dishes — rice and curry, hoppers and sambols — in a fun, social setting. Includes a welcome drink, all ingredients, recipes to take home, and of course, you get to eat everything you cook!",
+      locationText: "Zen Collective Kitchen Studio, Colombo",
+      countryId: sriLanka.id,
+      region: "Western Province",
+      city: "Colombo",
       durationMinutes: 180,
       priceAmount: 2400000,
       currencyCode: "LKR",
@@ -452,7 +452,50 @@ async function applyDemoUpgrades() {
   await db.execute(sql`UPDATE experiences SET image_url = '/images/arcade.png' WHERE title = 'Arcade Group Pass' AND image_url IS NULL`);
   await db.execute(sql`UPDATE experiences SET image_url = '/images/darts.png' WHERE title = 'Darts & Drinks Evening' AND image_url IS NULL`);
 
-  // 4) Backfill offers per target experience (only where no offer is set yet).
+  // 4) Relocate the former Sydney experiences (and their vendor) to Sri Lanka.
+  // Each UPDATE is guarded by the pre-relocation value, so re-runs are no-ops.
+  const [lkCountry] = await db.select().from(countries).where(eq(countries.code, "LK"));
+  if (lkCountry) {
+    await db.execute(sql`
+      UPDATE experiences SET
+        title = 'Sunrise Yoga on Mount Lavinia Beach',
+        description = 'Start your day with a rejuvenating group yoga session overlooking the golden sands of Mount Lavinia Beach. Suitable for all levels. Mats provided. A beautiful way to connect with yourself and your friends.',
+        location_text = 'Mount Lavinia Beach, South End',
+        country_id = ${lkCountry.id}, region = 'Western Province', city = 'Colombo'
+      WHERE title = 'Sunrise Yoga on Bondi Beach'
+    `);
+    await db.execute(sql`
+      UPDATE experiences SET
+        location_text = 'Zen Collective Wellness Centre, Kandy',
+        country_id = ${lkCountry.id}, region = 'Central Province', city = 'Kandy'
+      WHERE title = 'Group Spa & Wellness Day' AND city = 'Sydney'
+    `);
+    await db.execute(sql`
+      UPDATE experiences SET
+        location_text = 'Zen Collective Studio, Galle Fort',
+        country_id = ${lkCountry.id}, region = 'Southern Province', city = 'Galle'
+      WHERE title = 'Pottery Workshop for Couples & Friends' AND city = 'Sydney'
+    `);
+    await db.execute(sql`
+      UPDATE experiences SET
+        title = 'Cooking Class - Sri Lankan Classics',
+        description = 'Learn to cook classic Sri Lankan dishes — rice and curry, hoppers and sambols — in a fun, social setting. Includes a welcome drink, all ingredients, recipes to take home, and of course, you get to eat everything you cook!',
+        location_text = 'Zen Collective Kitchen Studio, Colombo',
+        country_id = ${lkCountry.id}, region = 'Western Province', city = 'Colombo'
+      WHERE title = 'Cooking Class - Asian Fusion'
+    `);
+    await db.execute(sql`
+      UPDATE vendors SET
+        country_id = ${lkCountry.id}, region = 'Western Province', city = 'Colombo',
+        address = '18 Marine Drive, Mount Lavinia',
+        contact_email = 'namaste@zencollective.lk',
+        contact_phone = '+94 77 987 6543'
+      WHERE business_name = 'Zen Collective'
+        AND (city = 'Sydney' OR contact_email = 'namaste@zencollective.au')
+    `);
+  }
+
+  // 5) Backfill offers per target experience (only where no offer is set yet).
   await db.execute(sql`UPDATE experiences SET offer_label = '20% off weekday pottery' WHERE title ILIKE '%pottery%' AND offer_label IS NULL`);
   await db.execute(sql`UPDATE experiences SET offer_label = 'Group of 6+ — one goes free' WHERE title ILIKE '%rafting%' AND offer_label IS NULL`);
   await db.execute(sql`UPDATE experiences SET offer_label = 'Sunset yoga — launch price' WHERE title ILIKE '%yoga%' AND offer_label IS NULL`);
