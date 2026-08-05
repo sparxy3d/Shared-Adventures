@@ -17,7 +17,11 @@ Stack: React (wouter, TanStack Query, framer-motion, shadcn/ui, Tailwind) + Expr
 ## What to SKIP (do not read — noise, not product logic)
 
 - `client/src/components/ui/**` — stock shadcn/ui boilerplate, unmodified generated components
-- `client/public/images/**`, `*.png` — binary image assets (~26 MB)
+- `client/public/images/**`, `*.png` — binary image assets (~26 MB). **These are deliberately not shared in this context.** Everything you need to know about them:
+  - They are AI-generated experience photos, served statically at `/images/<name>.png` (e.g. `/images/yoga.png`, `/images/arcade.png`)
+  - Each experience row has an `imageUrl` column pointing at one of them; the seed backfills it by title
+  - UI always renders `experience.imageUrl || "/images/fallback.png"` — never assume an image is missing from the app just because the file isn't visible to you
+  - Never generate, inline, or reference new image paths without confirming the file exists in `client/public/images/`
 - `package-lock.json` — generated lockfile
 - `dist/`, `attached_assets/`, `.agents/`, `.local/`, `.cache/`, `.config/` — build output, prompt dumps, agent memory, tooling state
 - `.env` — secrets, never read or suggest committing
