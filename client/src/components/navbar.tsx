@@ -4,7 +4,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import {
   Menu, User, LogOut, LayoutDashboard, Heart, CalendarCheck,
-  Search, ShoppingBag, ChevronDown,
+  Search, ShoppingBag, ChevronDown, CalendarDays,
   Dumbbell, Mountain, Palette, Sparkles, TrendingUp, Gift, Star, MapPin
 } from "lucide-react";
 import { useState } from "react";
@@ -115,6 +115,11 @@ export default function Navbar({ variant = "default" }: { variant?: "default" | 
             </form>
 
             <div className="hidden md:flex items-center gap-1">
+              <Link href="/search?filters=open&focus=date" data-testid="link-nav-calendar" title="Find by date">
+                <Button variant="ghost" size="icon" className={`rounded-full ${isTransparent ? "text-white hover:bg-white/10" : ""}`}>
+                  <CalendarDays className="w-5 h-5" />
+                </Button>
+              </Link>
               <Button variant="ghost" size="icon" data-testid="button-cart" className={`rounded-full ${isTransparent ? "text-white hover:bg-white/10" : ""}`}>
                 <ShoppingBag className="w-5 h-5" />
               </Button>

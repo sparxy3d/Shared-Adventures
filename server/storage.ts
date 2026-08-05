@@ -119,9 +119,10 @@ export class DatabaseStorage implements IStorage {
     countryId?: number;
     city?: string;
     q?: string;
+    time?: string;
+    group?: string;
+    date?: string;
   }): Promise<Experience[]> {
-    let query = db.select().from(experiences).where(eq(experiences.status, "published"));
-
     const conditions = [eq(experiences.status, "published")];
 
     if (filters?.category) {
@@ -135,6 +136,52 @@ export class DatabaseStorage implements IStorage {
     }
     if (filters?.q) {
       conditions.push(ilike(experiences.title, `%${filters.q}%`));
+    }
+
+    // Group size → minimum capacity required.
+    if (filters?.group) {
+      const minCapacity = { "1": 1, "2": 2, "3-5": 5, "6+": 6 }[filters.group];
+      if (minCapacity) {
+        conditions.push(sql`${experiences.capacity} >= ${minCapacity}`);
+      }
+    }
+
+    const now = new Date();
+    const toDateStr = (d: Date) => d.toISOString().split("T")[0];
+    const todayStr = toDateStr(now);
+    const hhmm = `${String(now.getUTCHours()).padStart(2, "0")}:${String(now.getUTCMinutes()).padStart(2, "0")}`;
+
+    const hasOpenSlotOn = (dates: string[]) => sql`EXISTS (
+      SELECT 1 FROM ${availabilitySlots} s
+      WHERE s.experience_id = ${experiences.id}
+        AND s.status = 'open'
+        AND s.date IN (${sql.join(dates.map((d) => sql`${d}`), sql`, `)})
+    )`;
+
+    if (filters?.date) {
+      conditions.push(hasOpenSlotOn([filters.date]));
+    } else if (filters?.time === "now") {
+      conditions.push(sql`${experiences.openTime} IS NOT NULL
+        AND ${experiences.openTime} <= ${hhmm}
+        AND ${experiences.closeTime} >= ${hhmm}`);
+    } else if (filters?.time === "tonight") {
+      conditions.push(sql`EXISTS (
+        SELECT 1 FROM ${availabilitySlots} s
+        WHERE s.experience_id = ${experiences.id}
+          AND s.status = 'open'
+          AND s.date = ${todayStr}
+          AND s.start_time >= ${hhmm}
+          AND s.start_time <= '23:59'
+      )`);
+    } else if (filters?.time === "weekend") {
+      // Coming Saturday and Sunday (if today is Sat/Sun, this weekend).
+      const day = now.getUTCDay(); // 0=Sun..6=Sat
+      const saturday = new Date(now);
+      saturday.setUTCDate(now.getUTCDate() + ((6 - day + 7) % 7));
+      const sunday = new Date(saturday);
+      sunday.setUTCDate(saturday.getUTCDate() + 1);
+      const weekendDates = day === 0 ? [todayStr] : [toDateStr(saturday), toDateStr(sunday)];
+      conditions.push(hasOpenSlotOn(weekendDates));
     }
 
     return db.select().from(experiences).where(and(...conditions)).orderBy(desc(experiences.createdAt));

@@ -7,8 +7,10 @@ import {
   ArrowRight, Dumbbell, Mountain, Palette, Sparkles, Search,
   CalendarCheck, Users, ChevronRight, ChevronDown, MapPin,
   Clock, Dice5, Loader2, X, Zap, RefreshCw, Gamepad2,
-  SlidersHorizontal, Tag
+  SlidersHorizontal, Tag, CalendarDays
 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { toLocalDateStr } from "@/lib/dates";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import ExperienceCard, { getOpenStatus } from "@/components/experience-card";
@@ -46,6 +48,22 @@ const timeModes = [
   { value: "weekend", label: "Weekend", icon: CalendarCheck },
 ];
 
+const next30Days = () => {
+  const days: { value: string; label: string }[] = [];
+  const fmt = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  for (let i = 0; i < 30; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    days.push({ value: toLocalDateStr(d), label: fmt.format(d) });
+  }
+  return days;
+};
+
+const formatPickedDate = (iso: string) => {
+  const d = new Date(`${iso}T12:00:00`);
+  return new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short" }).format(d);
+};
+
 const fadeUp = { hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0 } };
 const stagger = { visible: { transition: { staggerChildren: 0.08 } } };
 
@@ -55,6 +73,10 @@ export default function Home() {
   const [decisionLocation, setDecisionLocation] = useState("");
   const [decisionGroup, setDecisionGroup] = useState("");
   const [decisionTime, setDecisionTime] = useState("");
+  const [decisionDate, setDecisionDate] = useState("");
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [showIdeas, setShowIdeas] = useState(false);
+  const ideasRef = useRef<HTMLDivElement>(null);
   const [showSurprise, setShowSurprise] = useState(false);
   const [surpriseLoading, setSurpriseLoading] = useState(false);
   const [surpriseResult, setSurpriseResult] = useState<Experience | null>(null);
@@ -78,12 +100,35 @@ export default function Home() {
     else navigate("/search");
   };
 
+  // Live filtered ideas for the Decision Engine (server applies all filters AND-ed).
+  const ideasParams = new URLSearchParams();
+  if (decisionLocation.trim()) ideasParams.set("city", decisionLocation.trim());
+  if (decisionDate) ideasParams.set("date", decisionDate);
+  else if (decisionTime) ideasParams.set("time", decisionTime);
+  if (decisionGroup) ideasParams.set("group", decisionGroup);
+  const ideasQueryString = ideasParams.toString();
+
+  const { data: ideas, isLoading: ideasLoading } = useQuery<Experience[]>({
+    queryKey: ["/api/experiences", ideasQueryString],
+    queryFn: async () => {
+      const res = await fetch(`/api/experiences${ideasQueryString ? `?${ideasQueryString}` : ""}`);
+      if (!res.ok) throw new Error("Failed to fetch experiences");
+      return res.json();
+    },
+  });
+  const ideasCount = ideas?.length;
+  const hasDecisionFilters = Boolean(decisionLocation.trim() || decisionTime || decisionDate || decisionGroup);
+
+  const clearDecisionFilters = () => {
+    setDecisionLocation("");
+    setDecisionGroup("");
+    setDecisionTime("");
+    setDecisionDate("");
+  };
+
   const handleShowIdeas = () => {
-    const params = new URLSearchParams();
-    if (decisionLocation) params.set("city", decisionLocation);
-    if (decisionTime) params.set("time", decisionTime);
-    if (decisionGroup) params.set("group", decisionGroup);
-    navigate(`/search?${params.toString()}`);
+    setShowIdeas(true);
+    setTimeout(() => ideasRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   };
 
   const handleSurprise = useCallback(async () => {
@@ -270,9 +315,12 @@ export default function Home() {
                     <button
                       key={t.value}
                       data-testid={`button-decision-time-${t.value}`}
-                      onClick={() => setDecisionTime(decisionTime === t.value ? "" : t.value)}
+                      onClick={() => {
+                        setDecisionTime(decisionTime === t.value ? "" : t.value);
+                        setDecisionDate("");
+                      }}
                       className={`flex-1 h-12 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
-                        decisionTime === t.value
+                        decisionTime === t.value && !decisionDate
                           ? "bg-primary text-white shadow-md shadow-primary/25 scale-[1.02]"
                           : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground border border-border/30"
                       }`}
@@ -281,12 +329,72 @@ export default function Home() {
                       {t.label}
                     </button>
                   ))}
+                  <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                    <PopoverTrigger asChild>
+                      <button
+                        data-testid="button-decision-date"
+                        className={`flex-1 h-12 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                          decisionDate
+                            ? "bg-primary text-white shadow-md shadow-primary/25 scale-[1.02]"
+                            : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground border border-border/30"
+                        }`}
+                      >
+                        <CalendarDays className="w-4 h-4" />
+                        {decisionDate ? formatPickedDate(decisionDate) : "Pick a date"}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-72 p-3 rounded-2xl">
+                      <p className="text-xs font-semibold text-muted-foreground mb-2 px-1">Next 30 days</p>
+                      <div className="grid grid-cols-3 gap-1.5 max-h-64 overflow-y-auto" data-testid="date-picker-grid">
+                        {next30Days().map((d) => (
+                          <button
+                            key={d.value}
+                            data-testid={`button-date-${d.value}`}
+                            onClick={() => {
+                              setDecisionDate(d.value);
+                              setDecisionTime("");
+                              setDatePickerOpen(false);
+                            }}
+                            className={`px-1 py-2 rounded-lg text-xs font-medium transition-colors ${
+                              decisionDate === d.value
+                                ? "bg-primary text-white"
+                                : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
+                            }`}
+                          >
+                            {d.label}
+                          </button>
+                        ))}
+                      </div>
+                      {decisionDate && (
+                        <button
+                          onClick={() => { setDecisionDate(""); setDatePickerOpen(false); }}
+                          className="mt-2 w-full text-xs font-medium text-muted-foreground hover:text-foreground underline underline-offset-2"
+                        >
+                          Clear date
+                        </button>
+                      )}
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <Button onClick={handleShowIdeas} data-testid="button-show-ideas" size="lg" className="flex-1 h-13 rounded-xl text-base font-semibold gap-2 shadow-lg shadow-primary/25 bg-gradient-to-r from-primary to-orange-500 hover:from-primary/90 hover:to-orange-500/90">
-                  <Search className="w-4 h-4" /> Show Ideas
+                <Button
+                  onClick={hasDecisionFilters && ideasCount === 0 ? handleSurprise : handleShowIdeas}
+                  data-testid="button-show-ideas"
+                  size="lg"
+                  className="flex-1 h-13 rounded-xl text-base font-semibold gap-2 shadow-lg shadow-primary/25 bg-gradient-to-r from-primary to-orange-500 hover:from-primary/90 hover:to-orange-500/90"
+                >
+                  {hasDecisionFilters && ideasCount === 0 ? (
+                    <><Dice5 className="w-4 h-4" /> Surprise Us instead</>
+                  ) : (
+                    <>
+                      <Search className="w-4 h-4" />
+                      {hasDecisionFilters && ideasCount !== undefined
+                        ? `Show ${ideasCount} idea${ideasCount === 1 ? "" : "s"}`
+                        : "Show Ideas"}
+                    </>
+                  )}
                 </Button>
                 <Button onClick={handleSurprise} data-testid="button-surprise-decision" variant="outline" size="lg" className="flex-1 h-13 rounded-xl text-base font-semibold gap-2 border-2 border-primary/20 hover:bg-primary/5">
                   <Dice5 className="w-4 h-4" /> Surprise Us
@@ -294,6 +402,49 @@ export default function Home() {
               </div>
             </div>
           </motion.div>
+
+          {showIdeas && (
+            <div ref={ideasRef} className="pt-12 scroll-mt-24" data-testid="your-ideas-section">
+              <div className="flex items-end justify-between mb-6 gap-4">
+                <div>
+                  <h3 className="text-2xl sm:text-3xl font-bold text-foreground">Your ideas</h3>
+                  <p className="text-muted-foreground text-sm mt-1" data-testid="text-ideas-count">
+                    {ideasLoading ? "Finding ideas…" : `${ideasCount ?? 0} experience${ideasCount === 1 ? "" : "s"} found`}
+                  </p>
+                </div>
+                {hasDecisionFilters && (
+                  <button onClick={clearDecisionFilters} data-testid="button-clear-decision-filters" className="text-sm font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground whitespace-nowrap">
+                    Clear filters
+                  </button>
+                )}
+              </div>
+
+              {ideasLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  {[1, 2].map((i) => <Skeleton key={i} className="h-72 rounded-2xl" />)}
+                </div>
+              ) : ideas && ideas.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5" data-testid="your-ideas-grid">
+                  {ideas.map((exp) => (
+                    <ExperienceCard key={exp.id} experience={exp} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-14 rounded-2xl border border-dashed border-border/60 bg-muted/20" data-testid="ideas-empty-state">
+                  <h4 className="text-xl font-bold text-foreground mb-2">No exact match — try Surprise Us</h4>
+                  <p className="text-muted-foreground text-sm mb-6">Nothing fits that exact combination, but there's still plenty worth doing.</p>
+                  <div className="flex items-center justify-center gap-4">
+                    <Button onClick={handleSurprise} data-testid="button-surprise-empty-ideas" className="rounded-xl px-6 gap-2">
+                      <Dice5 className="w-4 h-4" /> Surprise Us
+                    </Button>
+                    <button onClick={clearDecisionFilters} data-testid="link-clear-decision-filters" className="text-sm font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground">
+                      Clear filters
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
 

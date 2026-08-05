@@ -4,13 +4,14 @@ import { useLocation, useSearch, Link } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search as SearchIcon, X, MapPin, Sparkles, SlidersHorizontal } from "lucide-react";
+import { Search as SearchIcon, X, MapPin, Sparkles, SlidersHorizontal, Dice5 } from "lucide-react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import ExperienceCard from "@/components/experience-card";
 import type { Experience, Country } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
+import { toLocalDateStr } from "@/lib/dates";
 
 const timeOptions = [
   { value: "", label: "Any Time" },
@@ -39,9 +40,14 @@ export default function SearchPage() {
   const [country, setCountry] = useState(params.get("country") || "");
   const [city, setCity] = useState(params.get("city") || "");
   const [query, setQuery] = useState(params.get("q") || "");
-  const [timeMode, setTimeMode] = useState(params.get("time") || "");
+  // If both time and date arrive via URL, date wins (matches query behavior).
+  const initialDate = params.get("date") || "";
+  const [timeMode, setTimeMode] = useState(initialDate ? "" : params.get("time") || "");
   const [groupSize, setGroupSize] = useState(params.get("group") || "");
-  const [showFilters, setShowFilters] = useState(params.get("filters") === "open");
+  const [dateFilter, setDateFilter] = useState(initialDate);
+  const [showFilters, setShowFilters] = useState(
+    params.get("filters") === "open" || params.get("focus") === "date"
+  );
 
   const rawView = params.get("view") || "";
   const view = ALLOWED_VIEWS.has(rawView) ? rawView : "";
@@ -62,6 +68,9 @@ export default function SearchPage() {
     ...(country && { country }),
     ...(city && { city }),
     ...(query && { q: query }),
+    ...(timeMode && !dateFilter && { time: timeMode }),
+    ...(groupSize && { group: groupSize }),
+    ...(dateFilter && { date: dateFilter }),
   }).toString();
 
   const { data: experiencesRaw, isLoading } = useQuery<Experience[]>({
@@ -117,11 +126,12 @@ export default function SearchPage() {
     setQuery("");
     setTimeMode("");
     setGroupSize("");
+    setDateFilter("");
     navigate("/search");
   };
 
   const hasFilters = category || country || city || query || timeMode || groupSize ||
-    view || sort || idealForTags.length > 0;
+    dateFilter || view || sort || idealForTags.length > 0;
 
   const getHeadline = () => {
     if (view === "locations") return "Browse by location";
@@ -226,7 +236,7 @@ export default function SearchPage() {
                   transition={{ duration: 0.2 }}
                   className="overflow-hidden"
                 >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-2">
                     <Select value={category} onValueChange={setCategory}>
                       <SelectTrigger data-testid="select-category" className="h-11 rounded-xl bg-white dark:bg-card border-border/50 shadow-sm">
                         <SelectValue placeholder="Category" />
@@ -259,7 +269,7 @@ export default function SearchPage() {
                           <button
                             key={t.value}
                             data-testid={`button-time-${t.value || "any"}`}
-                            onClick={() => setTimeMode(t.value)}
+                            onClick={() => { setTimeMode(t.value); if (t.value) setDateFilter(""); }}
                             className={`flex-1 rounded-lg text-xs font-medium transition-all ${
                               timeMode === t.value
                                 ? "bg-primary text-white shadow-sm"
@@ -270,6 +280,19 @@ export default function SearchPage() {
                           </button>
                         ))}
                       </div>
+                    </div>
+
+                    <div>
+                      <Input
+                        type="date"
+                        data-testid="input-date-filter"
+                        value={dateFilter}
+                        min={toLocalDateStr(new Date())}
+                        max={toLocalDateStr(new Date(Date.now() + 29 * 86400000))}
+                        onChange={(e) => { setDateFilter(e.target.value); if (e.target.value) setTimeMode(""); }}
+                        autoFocus={params.get("focus") === "date"}
+                        className="h-11 rounded-xl bg-white dark:bg-card border-border/50 shadow-sm"
+                      />
                     </div>
 
                     <div>
@@ -380,15 +403,34 @@ export default function SearchPage() {
             <div className="w-20 h-20 rounded-2xl bg-muted/60 flex items-center justify-center mx-auto mb-5">
               <Sparkles className="w-10 h-10 text-muted-foreground/60" />
             </div>
-            <h3 className="text-2xl font-bold text-foreground mb-2">No experiences found</h3>
+            <h3 className="text-2xl font-bold text-foreground mb-2" data-testid="text-no-results">
+              No exact match — try Surprise Us
+            </h3>
             <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-              Try adjusting your filters or search terms to discover more activities
+              Nothing fits that exact combination, but there's still plenty worth doing.
             </p>
-            {hasFilters && (
-              <Button variant="outline" onClick={clearFilters} className="rounded-xl px-6">
-                Clear all filters
+            <div className="flex items-center justify-center gap-4">
+              <Button
+                onClick={async () => {
+                  try {
+                    const res = await fetch(`/api/experiences/surprise${city ? `?city=${encodeURIComponent(city)}` : ""}`);
+                    if (res.ok) {
+                      const exp = await res.json();
+                      if (exp?.id) navigate(`/experience/${exp.id}`);
+                    }
+                  } catch {}
+                }}
+                data-testid="button-surprise-empty"
+                className="rounded-xl px-6 gap-2"
+              >
+                <Dice5 className="w-4 h-4" /> Surprise Us
               </Button>
-            )}
+              {hasFilters && (
+                <button onClick={clearFilters} data-testid="link-clear-filters" className="text-sm font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground">
+                  Clear filters
+                </button>
+              )}
+            </div>
           </motion.div>
         )}
       </div>

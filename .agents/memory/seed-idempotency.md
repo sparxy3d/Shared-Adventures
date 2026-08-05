@@ -12,3 +12,5 @@ The seed (`seedDatabase`) runs on every server boot, including the "already seed
 **Why:** a currency migration keyed on `currency_code = 'AUD'` re-ran on converted rows once, inflating four prices ~200×; and a non-integer bound param later aborted the repair pass on first deploy.
 
 **How to apply:** when adding any new seed upgrade, write it so running it twice is a no-op, and check startup logs for "Seed error" after deploying.
+
+Also: availability slots are topped up on every boot for the next 30 days per experience (reusing existing session times) with realistic schedules — pottery/cooking weekdays only, volleyball weekends only. Time/date search filters depend on this rolling window; without the top-up, old slot dates go stale and time filters return nothing.

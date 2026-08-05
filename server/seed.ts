@@ -495,7 +495,46 @@ async function applyDemoUpgrades() {
     `);
   }
 
-  // 5) Backfill offers per target experience (only where no offer is set yet).
+  // 5) Keep availability rolling: ensure every published experience has open
+  // slots for the next 30 days, reusing each experience's existing session
+  // times (guarded per (experience, date, start_time), so re-runs are no-ops).
+  await db.execute(sql`
+    INSERT INTO availability_slots (experience_id, date, start_time, end_time, capacity, status)
+    SELECT e.id, to_char(d, 'YYYY-MM-DD'), t.start_time, t.end_time, COALESCE(e.capacity, 10), 'open'
+    FROM experiences e
+    CROSS JOIN generate_series(CURRENT_DATE, CURRENT_DATE + 29, interval '1 day') d
+    CROSS JOIN LATERAL (
+      SELECT DISTINCT s.start_time, s.end_time
+      FROM availability_slots s WHERE s.experience_id = e.id
+    ) t
+    WHERE e.status = 'published'
+      -- Realistic schedules: pottery & cooking run weekdays only,
+      -- the volleyball tournament runs weekends only.
+      AND NOT ((e.title ILIKE '%pottery%' OR e.title ILIKE '%cooking%') AND EXTRACT(DOW FROM d) IN (0, 6))
+      AND NOT (e.title ILIKE '%volleyball%' AND EXTRACT(DOW FROM d) NOT IN (0, 6))
+      AND NOT EXISTS (
+        SELECT 1 FROM availability_slots s2
+        WHERE s2.experience_id = e.id
+          AND s2.date = to_char(d, 'YYYY-MM-DD')
+          AND s2.start_time = t.start_time
+      )
+  `);
+
+  // Remove previously generated slots that violate those schedules (only
+  // untouched open slots with no bookings; idempotent by construction).
+  await db.execute(sql`
+    DELETE FROM availability_slots s
+    USING experiences e
+    WHERE s.experience_id = e.id
+      AND s.status = 'open'
+      AND NOT EXISTS (SELECT 1 FROM bookings b WHERE b.slot_id = s.id)
+      AND (
+        ((e.title ILIKE '%pottery%' OR e.title ILIKE '%cooking%') AND EXTRACT(DOW FROM s.date::date) IN (0, 6))
+        OR (e.title ILIKE '%volleyball%' AND EXTRACT(DOW FROM s.date::date) NOT IN (0, 6))
+      )
+  `);
+
+  // 6) Backfill offers per target experience (only where no offer is set yet).
   await db.execute(sql`UPDATE experiences SET offer_label = '20% off weekday pottery' WHERE title ILIKE '%pottery%' AND offer_label IS NULL`);
   await db.execute(sql`UPDATE experiences SET offer_label = 'Group of 6+ — one goes free' WHERE title ILIKE '%rafting%' AND offer_label IS NULL`);
   await db.execute(sql`UPDATE experiences SET offer_label = 'Sunset yoga — launch price' WHERE title ILIKE '%yoga%' AND offer_label IS NULL`);

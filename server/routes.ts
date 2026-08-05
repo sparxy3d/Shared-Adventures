@@ -171,12 +171,15 @@ export async function registerRoutes(
   });
 
   app.get("/api/experiences", async (req, res) => {
-    const { category, country, city, q } = req.query;
+    const { category, country, city, q, time, group, date } = req.query;
     const result = await storage.getPublishedExperiences({
       category: category as string,
       countryId: country ? Number(country) : undefined,
       city: city as string,
       q: q as string,
+      time: time as string,
+      group: group as string,
+      date: typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : undefined,
     });
     res.json(result);
   });
