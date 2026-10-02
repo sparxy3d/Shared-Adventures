@@ -61,11 +61,15 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  const { seedDatabase } = await import("./seed");
-  await seedDatabase().catch(err => {
-    console.error("Seed error (database may be offline):", err.message);
-    console.warn("Continuing without database...");
-  });
+  if (process.env.ENABLE_SEED === "true") {
+    const { seedDatabase } = await import("./seed");
+    await seedDatabase().catch(err => {
+      console.error("Seed error (database may be offline):", err.message);
+      console.warn("Continuing without database...");
+    });
+  } else {
+    console.log("Seeding skipped (ENABLE_SEED is not \"true\").");
+  }
 
   await registerRoutes(httpServer, app);
 
