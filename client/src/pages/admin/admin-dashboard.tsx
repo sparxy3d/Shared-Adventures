@@ -152,13 +152,16 @@ export default function AdminDashboard() {
 
   const saveExperienceDetails = () => {
     if (!editingExperience || !experienceDraft) return;
+    if (!experienceDraft.title.trim() || !experienceNumbersValid) return;
     const changes = getExperienceChanges();
     if (Object.keys(changes).length === 0) return;
     updateExperienceDetails.mutate({ expId: editingExperience.id, changes });
   };
   const experienceNumbersValid = !experienceDraft || (
     ["priceAmount", "capacity", "durationMinutes", "ageMin"] as const
-  ).every((field) => experienceDraft[field] === "" || /^\d+$/.test(experienceDraft[field]));
+  ).every((field) => experienceDraft[field] === "" || (
+    /^\d+$/.test(experienceDraft[field]) && Number.isSafeInteger(Number(experienceDraft[field]))
+  ));
 
   const [newCountry, setNewCountry] = useState({ name: "", code: "", currencyCode: "" });
   const addCountry = useMutation({
@@ -336,7 +339,7 @@ export default function AdminDashboard() {
             <Dialog
               open={!!editingExperience}
               onOpenChange={(open) => {
-                if (!open) {
+                if (!open && !updateExperienceDetails.isPending) {
                   setEditingExperience(null);
                   setExperienceDraft(null);
                 }
@@ -347,7 +350,7 @@ export default function AdminDashboard() {
                   <DialogTitle>Edit experience</DialogTitle>
                 </DialogHeader>
                 {experienceDraft && (
-                  <div className="space-y-4">
+                  <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); saveExperienceDetails(); }}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="sm:col-span-2">
                         <Label htmlFor="admin-exp-title">Title</Label>
@@ -387,6 +390,7 @@ export default function AdminDashboard() {
                       <div>
                         <Label htmlFor="admin-exp-price">Price per person (LKR)</Label>
                         <Input id="admin-exp-price" type="number" min="0" step="1" value={experienceDraft.priceAmount} onChange={(e) => setExperienceDraft({ ...experienceDraft, priceAmount: e.target.value })} className="mt-1" data-testid="input-admin-exp-price" />
+                        <p className="text-xs text-muted-foreground mt-1">Whole Sri Lankan rupees, no decimal places.</p>
                       </div>
                       <div>
                         <Label htmlFor="admin-exp-capacity">Capacity</Label>
@@ -421,10 +425,15 @@ export default function AdminDashboard() {
                         <Input id="admin-exp-offer" value={experienceDraft.offerLabel} onChange={(e) => setExperienceDraft({ ...experienceDraft, offerLabel: e.target.value })} className="mt-1" data-testid="input-admin-exp-offer" />
                       </div>
                     </div>
+                    {!experienceNumbersValid && (
+                      <p className="text-sm text-destructive" role="alert">Price, capacity, duration and minimum age must be whole, non-negative numbers.</p>
+                    )}
                     <div className="flex justify-end gap-2 pt-2">
                       <Button
+                        type="button"
                         variant="outline"
                         className="rounded-xl"
+                        disabled={updateExperienceDetails.isPending}
                         onClick={() => {
                           setEditingExperience(null);
                           setExperienceDraft(null);
@@ -434,15 +443,15 @@ export default function AdminDashboard() {
                         Cancel
                       </Button>
                       <Button
+                        type="submit"
                         className="rounded-xl"
-                        onClick={saveExperienceDetails}
-                        disabled={updateExperienceDetails.isPending || !experienceNumbersValid || Object.keys(getExperienceChanges()).length === 0}
+                        disabled={updateExperienceDetails.isPending || !experienceDraft.title.trim() || !experienceNumbersValid || Object.keys(getExperienceChanges()).length === 0}
                         data-testid="button-save-edit-experience"
                       >
                         {updateExperienceDetails.isPending ? "Saving..." : "Save"}
                       </Button>
                     </div>
-                  </div>
+                  </form>
                 )}
               </DialogContent>
             </Dialog>
