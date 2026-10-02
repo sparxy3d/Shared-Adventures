@@ -5,8 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  Store, LayoutGrid, CalendarCheck, Globe, Users, Check, X,
+  Store, LayoutGrid, CalendarCheck, Globe, Users, Check, X, Pencil,
   Shield, TrendingUp
 } from "lucide-react";
 import Navbar from "@/components/navbar";
@@ -19,9 +21,47 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 
+type ExperienceEditForm = {
+  title: string;
+  description: string;
+  category: string;
+  city: string;
+  region: string;
+  locationText: string;
+  priceAmount: string;
+  capacity: string;
+  durationMinutes: string;
+  openTime: string;
+  closeTime: string;
+  ageMin: string;
+  safetyNotes: string;
+  imageUrl: string;
+  offerLabel: string;
+};
+
+const experienceEditForm = (exp: Experience): ExperienceEditForm => ({
+  title: exp.title || "",
+  description: exp.description || "",
+  category: exp.category || "sports",
+  city: exp.city || "",
+  region: exp.region || "",
+  locationText: exp.locationText || "",
+  priceAmount: exp.priceAmount == null ? "" : String(exp.priceAmount),
+  capacity: exp.capacity == null ? "" : String(exp.capacity),
+  durationMinutes: exp.durationMinutes == null ? "" : String(exp.durationMinutes),
+  openTime: exp.openTime || "",
+  closeTime: exp.closeTime || "",
+  ageMin: exp.ageMin == null ? "" : String(exp.ageMin),
+  safetyNotes: exp.safetyNotes || "",
+  imageUrl: exp.imageUrl || "",
+  offerLabel: exp.offerLabel || "",
+});
+
 export default function AdminDashboard() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const [editingExperience, setEditingExperience] = useState<Experience | null>(null);
+  const [experienceDraft, setExperienceDraft] = useState<ExperienceEditForm | null>(null);
 
   const { data: user } = useQuery<User | null>({
     queryKey: ["/api/auth/me"],
@@ -74,6 +114,51 @@ export default function AdminDashboard() {
       toast({ title: "Experience status updated" });
     },
   });
+
+  const updateExperienceDetails = useMutation({
+    mutationFn: ({ expId, changes }: { expId: number; changes: Partial<Experience> }) =>
+      apiRequest("PATCH", `/api/admin/experiences/${expId}`, changes),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/experiences"] });
+      setEditingExperience(null);
+      setExperienceDraft(null);
+      toast({ title: "Experience updated" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Could not update experience", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const getExperienceChanges = () => {
+    if (!editingExperience || !experienceDraft) return {};
+    const changes: Partial<Experience> = {};
+    const stringFields = [
+      "title", "description", "category", "city", "region", "locationText",
+      "openTime", "closeTime", "safetyNotes", "imageUrl", "offerLabel",
+    ] as const;
+    for (const field of stringFields) {
+      const currentValue = editingExperience[field] ?? "";
+      const nextValue = experienceDraft[field];
+      if (currentValue !== nextValue) changes[field] = nextValue;
+    }
+    const numberFields = ["priceAmount", "capacity", "durationMinutes", "ageMin"] as const;
+    for (const field of numberFields) {
+      const rawValue = experienceDraft[field];
+      const nextValue = rawValue === "" ? null : Number(rawValue);
+      if (editingExperience[field] !== nextValue) changes[field] = nextValue;
+    }
+    return changes;
+  };
+
+  const saveExperienceDetails = () => {
+    if (!editingExperience || !experienceDraft) return;
+    const changes = getExperienceChanges();
+    if (Object.keys(changes).length === 0) return;
+    updateExperienceDetails.mutate({ expId: editingExperience.id, changes });
+  };
+  const experienceNumbersValid = !experienceDraft || (
+    ["priceAmount", "capacity", "durationMinutes", "ageMin"] as const
+  ).every((field) => experienceDraft[field] === "" || /^\d+$/.test(experienceDraft[field]));
 
   const [newCountry, setNewCountry] = useState({ name: "", code: "", currencyCode: "" });
   const addCountry = useMutation({
@@ -229,6 +314,18 @@ export default function AdminDashboard() {
                         <SelectItem value="paused">Paused</SelectItem>
                       </SelectContent>
                     </Select>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 rounded-lg gap-1"
+                      data-testid={`button-edit-experience-${exp.id}`}
+                      onClick={() => {
+                        setEditingExperience(exp);
+                        setExperienceDraft(experienceEditForm(exp));
+                      }}
+                    >
+                      <Pencil className="w-3 h-3" /> Edit
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -236,6 +333,119 @@ export default function AdminDashboard() {
                 <p className="text-center text-muted-foreground py-8">No experiences yet</p>
               )}
             </div>
+            <Dialog
+              open={!!editingExperience}
+              onOpenChange={(open) => {
+                if (!open) {
+                  setEditingExperience(null);
+                  setExperienceDraft(null);
+                }
+              }}
+            >
+              <DialogContent className="max-h-[85vh] overflow-y-auto rounded-2xl sm:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Edit experience</DialogTitle>
+                </DialogHeader>
+                {experienceDraft && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="sm:col-span-2">
+                        <Label htmlFor="admin-exp-title">Title</Label>
+                        <Input id="admin-exp-title" value={experienceDraft.title} onChange={(e) => setExperienceDraft({ ...experienceDraft, title: e.target.value })} className="mt-1" data-testid="input-admin-exp-title" />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <Label htmlFor="admin-exp-description">Description</Label>
+                        <Textarea id="admin-exp-description" value={experienceDraft.description} onChange={(e) => setExperienceDraft({ ...experienceDraft, description: e.target.value })} className="mt-1" data-testid="input-admin-exp-description" />
+                      </div>
+                      <div>
+                        <Label htmlFor="admin-exp-category">Category</Label>
+                        <Select value={experienceDraft.category} onValueChange={(category) => setExperienceDraft({ ...experienceDraft, category })}>
+                          <SelectTrigger id="admin-exp-category" className="mt-1" data-testid="select-admin-exp-category">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sports">Sports</SelectItem>
+                            <SelectItem value="adventure">Adventure</SelectItem>
+                            <SelectItem value="arts">Arts &amp; Classes</SelectItem>
+                            <SelectItem value="wellness">Wellness</SelectItem>
+                            <SelectItem value="recreation">Recreation</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="admin-exp-city">City</Label>
+                        <Input id="admin-exp-city" value={experienceDraft.city} onChange={(e) => setExperienceDraft({ ...experienceDraft, city: e.target.value })} className="mt-1" data-testid="input-admin-exp-city" />
+                      </div>
+                      <div>
+                        <Label htmlFor="admin-exp-region">Region</Label>
+                        <Input id="admin-exp-region" value={experienceDraft.region} onChange={(e) => setExperienceDraft({ ...experienceDraft, region: e.target.value })} className="mt-1" data-testid="input-admin-exp-region" />
+                      </div>
+                      <div>
+                        <Label htmlFor="admin-exp-location">Location text</Label>
+                        <Input id="admin-exp-location" value={experienceDraft.locationText} onChange={(e) => setExperienceDraft({ ...experienceDraft, locationText: e.target.value })} className="mt-1" data-testid="input-admin-exp-location" />
+                      </div>
+                      <div>
+                        <Label htmlFor="admin-exp-price">Price per person (LKR)</Label>
+                        <Input id="admin-exp-price" type="number" min="0" step="1" value={experienceDraft.priceAmount} onChange={(e) => setExperienceDraft({ ...experienceDraft, priceAmount: e.target.value })} className="mt-1" data-testid="input-admin-exp-price" />
+                      </div>
+                      <div>
+                        <Label htmlFor="admin-exp-capacity">Capacity</Label>
+                        <Input id="admin-exp-capacity" type="number" min="0" step="1" value={experienceDraft.capacity} onChange={(e) => setExperienceDraft({ ...experienceDraft, capacity: e.target.value })} className="mt-1" data-testid="input-admin-exp-capacity" />
+                      </div>
+                      <div>
+                        <Label htmlFor="admin-exp-duration">Duration (minutes)</Label>
+                        <Input id="admin-exp-duration" type="number" min="0" step="1" value={experienceDraft.durationMinutes} onChange={(e) => setExperienceDraft({ ...experienceDraft, durationMinutes: e.target.value })} className="mt-1" data-testid="input-admin-exp-duration" />
+                      </div>
+                      <div>
+                        <Label htmlFor="admin-exp-open-time">Opening time</Label>
+                        <Input id="admin-exp-open-time" type="time" value={experienceDraft.openTime} onChange={(e) => setExperienceDraft({ ...experienceDraft, openTime: e.target.value })} className="mt-1" data-testid="input-admin-exp-open-time" />
+                      </div>
+                      <div>
+                        <Label htmlFor="admin-exp-close-time">Closing time</Label>
+                        <Input id="admin-exp-close-time" type="time" value={experienceDraft.closeTime} onChange={(e) => setExperienceDraft({ ...experienceDraft, closeTime: e.target.value })} className="mt-1" data-testid="input-admin-exp-close-time" />
+                      </div>
+                      <div>
+                        <Label htmlFor="admin-exp-age">Minimum age</Label>
+                        <Input id="admin-exp-age" type="number" min="0" step="1" value={experienceDraft.ageMin} onChange={(e) => setExperienceDraft({ ...experienceDraft, ageMin: e.target.value })} className="mt-1" data-testid="input-admin-exp-age" />
+                      </div>
+                      <div>
+                        <Label htmlFor="admin-exp-image">Image URL</Label>
+                        <Input id="admin-exp-image" value={experienceDraft.imageUrl} onChange={(e) => setExperienceDraft({ ...experienceDraft, imageUrl: e.target.value })} className="mt-1" data-testid="input-admin-exp-image" />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <Label htmlFor="admin-exp-safety">Safety notes</Label>
+                        <Textarea id="admin-exp-safety" value={experienceDraft.safetyNotes} onChange={(e) => setExperienceDraft({ ...experienceDraft, safetyNotes: e.target.value })} className="mt-1" data-testid="input-admin-exp-safety" />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <Label htmlFor="admin-exp-offer">Offer label</Label>
+                        <Input id="admin-exp-offer" value={experienceDraft.offerLabel} onChange={(e) => setExperienceDraft({ ...experienceDraft, offerLabel: e.target.value })} className="mt-1" data-testid="input-admin-exp-offer" />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        className="rounded-xl"
+                        onClick={() => {
+                          setEditingExperience(null);
+                          setExperienceDraft(null);
+                        }}
+                        data-testid="button-cancel-edit-experience"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        className="rounded-xl"
+                        onClick={saveExperienceDetails}
+                        disabled={updateExperienceDetails.isPending || !experienceNumbersValid || Object.keys(getExperienceChanges()).length === 0}
+                        data-testid="button-save-edit-experience"
+                      >
+                        {updateExperienceDetails.isPending ? "Saving..." : "Save"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           <TabsContent value="bookings">
