@@ -24,21 +24,31 @@ function listingFormData(form: FormState, status: string): ListingInput {
 }
 function isValidInteger(value: string, min: number, max: number) { return value === "" || (/^\d+$/.test(value) && Number(value) >= min && Number(value) <= max); }
 
-export default function ListingEditor() {
+export interface ListingEditorProps {
+  adminVendorId?: number;
+  adminListingId?: number | "new";
+  backHref?: string;
+}
+
+export default function ListingEditor({ adminVendorId, adminListingId, backHref }: ListingEditorProps = {}) {
   const { id } = useParams<{id:string}>();
-  const editing = !!id;
-  const listingId = id ? Number(id) : 0;
+  const adminMode = adminVendorId !== undefined;
+  const effectiveId = adminMode ? (adminListingId === "new" || adminListingId == null ? undefined : String(adminListingId)) : id;
+  const editing = !!effectiveId;
+  const listingId = effectiveId ? Number(effectiveId) : 0;
   const [, navigate] = useLocation();
   const client = useQueryClient();
   const { toast } = useToast();
-  const { data: vendor } = useQuery<{verificationStatus:string}>({queryKey:["/api/vendor/profile"]});
-  const listingQuery = useQuery<Experience>({queryKey:["/api/vendor/experiences",id],queryFn:()=>loadListing(listingId),enabled:editing && Number.isFinite(listingId)});
-  const slotsQuery = useQuery<AvailabilitySlot[]>({queryKey:["/api/vendor/experiences",listingId,"slots"],queryFn:()=>loadListingSlots(listingId),enabled:editing});
+  const { data: vendor } = useQuery<{verificationStatus:string}>({queryKey:adminMode?["/api/admin/vendors",adminVendorId]:["/api/vendor/profile"],queryFn:adminMode?async()=>{const response=await fetch(`/api/admin/vendors/${adminVendorId}`,{credentials:"include"});if(!response.ok)throw new Error("Could not load vendor");return response.json();}:undefined});
+  const listingKey=adminMode?["/api/admin/experiences",effectiveId]:["/api/vendor/experiences",effectiveId];
+  const listingQuery = useQuery<Experience>({queryKey:listingKey,queryFn:()=>loadListing(listingId,adminMode),enabled:editing && Number.isFinite(listingId)});
+  const slotsQuery = useQuery<AvailabilitySlot[]>({queryKey:adminMode?["/api/admin/experiences",listingId,"slots"]:["/api/vendor/experiences",listingId,"slots"],queryFn:()=>loadListingSlots(listingId,adminMode),enabled:editing});
   const [form,setForm]=useState<FormState>(blank);
   const [initialized,setInitialized]=useState(!editing);
   const [saved,setSaved]=useState("");
   const [expanded,setExpanded]=useState<Record<string,boolean>>({basics:true,group:true,details:true,photo:true,preview:true});
   const [leaveHref,setLeaveHref]=useState<string|null>(null);
+  const [confirmDraft,setConfirmDraft]=useState(false);
   const [dirty,setDirty]=useState(false);
   const [submitted,setSubmitted]=useState(false);
   const [touched,setTouched]=useState<Record<string,boolean>>({});
@@ -101,29 +111,30 @@ export default function ListingEditor() {
       const data=listingFormData(form,status || listingQuery.data?.status || "draft");
       if(editing) {
         if(status===undefined || status===listingQuery.data?.status) delete (data as Partial<ListingInput>).status;
-        return updateListing(listingId,data);
+        return updateListing(listingId,data,adminMode);
       }
-      return createListing(data);
+      return createListing(data,adminVendorId);
     },
     onSuccess:async result=>{
-      await client.invalidateQueries({queryKey:["/api/vendor/experiences"]});
+      await client.invalidateQueries({queryKey:adminMode?["/api/admin/vendors",adminVendorId,"experiences"]:["/api/vendor/experiences"]});
+      if(adminMode) await client.invalidateQueries({queryKey:["/api/admin/experiences"]});
       setDirty(false);dirtyRef.current=false;
       toast({title:editing ? "Listing saved" : "Draft saved",description:editing ? "Your changes are up to date." : "Add real availability before publishing."});
       setSaved("Saved");
       setActionError(null);
-      if(!editing) navigate(`/vendor/listings/${result.id}`);
-      else {client.setQueryData(["/api/vendor/experiences",id],result);setForm(toForm(result));}
+      if(!editing) navigate(adminMode?`${backHref || `/admin/vendors/${adminVendorId}?tab=listings`}&listing=${result.id}`:`/vendor/listings/${result.id}`);
+      else {client.setQueryData(listingKey,result);setForm(toForm(result));}
     },
     onError:()=>{setActionError("save");toast({title:"Couldn’t save listing",description:"Your changes are still here. Retry when ready.",variant:"destructive"});},
   });
   const publishMutation=useMutation({
-    mutationFn:()=>updateListing(listingId,{status:"published"}),
-    onSuccess:async result=>{await client.invalidateQueries({queryKey:["/api/vendor/experiences"]});client.setQueryData(["/api/vendor/experiences",id],result);setActionError(null);toast({title:"Listing published"});},
+    mutationFn:()=>updateListing(listingId,{status:"published"},adminMode),
+    onSuccess:async result=>{await client.invalidateQueries({queryKey:adminMode?["/api/admin/vendors",adminVendorId,"experiences"]:["/api/vendor/experiences"]});if(adminMode)await client.invalidateQueries({queryKey:["/api/admin/experiences"]});client.setQueryData(listingKey,result);setActionError(null);toast({title:"Listing published"});},
     onError:()=>{setActionError("publish");toast({title:"Couldn’t publish listing",description:"Check the photo, business approval and upcoming session, then retry.",variant:"destructive"});},
   });
   const draftMutation=useMutation({
-    mutationFn:()=>updateListing(listingId,{status:"draft"}),
-    onSuccess:async result=>{await client.invalidateQueries({queryKey:["/api/vendor/experiences"]});client.setQueryData(["/api/vendor/experiences",id],result);setActionError(null);toast({title:"Listing moved to draft"});},
+    mutationFn:()=>updateListing(listingId,{status:"draft"},adminMode),
+     onSuccess:async result=>{await client.invalidateQueries({queryKey:adminMode?["/api/admin/vendors",adminVendorId,"experiences"]:["/api/vendor/experiences"]});if(adminMode)await client.invalidateQueries({queryKey:["/api/admin/experiences"]});client.setQueryData(listingKey,result);setActionError(null);setConfirmDraft(false);toast({title:"Listing moved to draft"});},
     onError:()=>{setActionError("draft");toast({title:"Couldn’t change listing status",description:"Your listing is unchanged. Please retry.",variant:"destructive"});},
   });
   const save=(status?:"draft"|"published")=>{
@@ -138,8 +149,8 @@ export default function ListingEditor() {
   const change=(key:keyof FormState,value:string|string[])=>{setForm(prev=>({...prev,[key]:value}));setDirty(true);setSaved("");setActionError(null);};
   const status=listingQuery.data?.status || "draft";
   const upcoming=slotsQuery.data?.some(slot=>slot.status==="open" && Date.parse(`${slot.date}T${slot.startTime}:00+05:30`)>=Date.now());
-  const publishReady=editing && !!form.imageUrl && !!upcoming && vendor?.verificationStatus==="approved" && status!=="unpublished";
-  const canChangeStatus=status!=="unpublished";
+  const publishReady=editing && !!form.imageUrl && !!upcoming && (adminMode || vendor?.verificationStatus==="approved") && (adminMode || status!=="unpublished");
+  const canChangeStatus=adminMode || status!=="unpublished";
   const previewExperience = {
     id: listingQuery.data?.id ?? 0,
     vendorId: listingQuery.data?.vendorId ?? 0,
@@ -177,7 +188,7 @@ export default function ListingEditor() {
   const content = <div className="v5-page">
     <div className="v5-heading">
       <div><p className="v5-eyebrow">{editing?"Listing editor":"New experience"}</p><h1>{editing?listingQuery.data?.title:"Tell the story of your experience"}</h1><p className="v5-sub">{editing?"Keep your details and availability in sync.":"Start with the essentials. You can save a draft before adding sessions."}</p></div>
-      <Link className="v5-btn v5-quiet" href="/vendor/listings"><ArrowLeft size={16}/> All listings</Link>
+      <Link className="v5-btn v5-quiet" href={backHref || "/vendor/listings"}><ArrowLeft size={16}/> {adminMode?"Back to vendor":"All listings"}</Link>
       {editing&&<span className={`v5-status ${status}`} role="status">{status==="published"?"Live":status==="unpublished"?"Unpublished by admin":"Draft"}</span>}
     </div>
     <div className="v5-editor-layout">
@@ -219,19 +230,19 @@ export default function ListingEditor() {
             {form.priceAmount===""&&<p className="v5-price-placeholder">Enter a price to preview its place on the guest card.</p>}
             <div className={`v5-card-inert${form.priceAmount===""?" no-price":""}`} aria-hidden="true" ref={previewCardRef}><ExperienceCard experience={previewExperience} saved/></div>
             <p className="v5-hint" aria-live="polite">{status==="published"?"Published · edits save directly to the live listing.":status==="unpublished"?"Unpublished by Free Spirit — contact us.":publishReady?"Ready to publish once your draft changes are saved.":"Publishing requires business approval, a photo and an upcoming open session."}</p>
-            {editing&&canChangeStatus&&status!=="published"&&<button className="v5-btn v5-primary" disabled={!publishReady||publishMutation.isPending||dirty} onClick={()=>publishMutation.mutate()} title={dirty?"Save your details before publishing":!publishReady?"Approval, a photo and an upcoming open session are required":undefined}>Publish listing</button>}
+            {editing&&canChangeStatus&&status!=="published"&&<button className="v5-btn v5-primary" disabled={!publishReady||publishMutation.isPending||dirty} onClick={()=>publishMutation.mutate()} title={dirty?"Save your details before publishing":!publishReady?(adminMode?"A photo and an upcoming open session are required":"Approval, a photo and an upcoming open session are required"):undefined}>Publish listing</button>}
           </>}
         </section>
         {actionError&&<div className="v5-alert" role="alert"><strong>{actionError==="publish"?"Couldn’t publish this listing":actionError==="draft"?"Couldn’t update listing status":"Couldn’t save this listing"}</strong><p>{actionError==="publish"?"Confirm your business is approved, the listing has a photo, and an upcoming open session exists. Your edits remain on this page.":"Your edits remain on this page. Please retry."}</p><button className="v5-btn v5-quiet" onClick={()=>{if(actionError==="publish")publishMutation.mutate();else if(actionError==="draft")draftMutation.mutate();else save(lastSaveStatus.current);}}>Retry</button></div>}
-        {editing&&<section className="v5-panel"><h2 style={{marginTop:0}}>Availability</h2><p className="v5-hint">{slotsQuery.isLoading?"Checking your real sessions…":upcoming?"An upcoming open session is ready.":"Add an open session before publishing this listing."}</p><Link className="v5-btn v5-quiet" href={`/vendor/schedule?listing=${listingId}`}><CalendarDays size={16}/> Manage sessions</Link>{slotsQuery.isError&&<button className="v5-btn v5-quiet" onClick={()=>slotsQuery.refetch()}>Retry availability</button>}</section>}
-        {editing&&status==="unpublished"&&<div className="v5-notice" role="status">Unpublished by Free Spirit — contact us. Your listing status cannot be changed here.</div>}
+         {editing&&<section className="v5-panel"><h2 style={{marginTop:0}}>Availability</h2><p className="v5-hint">{slotsQuery.isLoading?"Checking real sessions…":upcoming?"An upcoming open session is ready.":"Add an open session before publishing this listing."}</p><Link className="v5-btn v5-quiet" href={adminMode?`/admin/vendors/${adminVendorId}?tab=schedule&listing=${listingId}`:`/vendor/schedule?listing=${listingId}`}><CalendarDays size={16}/> Manage sessions</Link>{slotsQuery.isError&&<button className="v5-btn v5-quiet" onClick={()=>slotsQuery.refetch()}>Retry availability</button>}</section>}
+         {editing&&status==="unpublished"&&<div className="v5-notice" role="status">{adminMode?"This listing is unpublished. Admin review can republish it once it has a photo and an upcoming session.":"Unpublished by Free Spirit — contact us. Your listing status cannot be changed here."}</div>}
         {editing&&vendor&&vendor.verificationStatus!=="approved"&&<div className="v5-notice" role="status">Your business must be approved before a listing can go live.</div>}
       </main>
       <aside className="v5-panel v5-anchor"><p className="v5-eyebrow">In this listing</p><nav aria-label="Editor sections"><a href="#section-basics">Basics</a><a href="#section-group">Group and price</a><a href="#section-details">Details</a><a href="#section-photo">Photo</a><a href="#section-preview">Preview and publish</a></nav><div className="v5-sticky-save">
-        {status!=="published"&&status!=="unpublished"&&<button className="v5-btn v5-quiet" disabled={saveMutation.isPending||!minimalValid} onClick={()=>save("draft")}><Save size={16}/> Save draft</button>}
+         {status==="draft"&&<button className="v5-btn v5-quiet" disabled={saveMutation.isPending||!minimalValid} onClick={()=>save("draft")}><Save size={16}/> Save draft</button>}
         {status==="unpublished"&&<button className="v5-btn v5-quiet" disabled={saveMutation.isPending||!minimalValid||!dirty} onClick={()=>save()}><Save size={16}/> Save details</button>}
         {status==="published"&&<button className="v5-btn v5-primary" disabled={saveMutation.isPending||!minimalValid} onClick={()=>save("published")}><Save size={16}/> Save changes</button>}
-        {status==="published"&&<button className="v5-btn v5-quiet" disabled={draftMutation.isPending||dirty} onClick={()=>draftMutation.mutate()}>Move to draft</button>}
+         {status==="published"&&<button className="v5-btn v5-quiet" disabled={draftMutation.isPending||dirty} onClick={()=>setConfirmDraft(true)}>Move to draft</button>}
         {canChangeStatus&&status!=="published"&&editing&&<button className="v5-btn v5-primary" disabled={!publishReady||publishMutation.isPending||dirty} onClick={()=>publishMutation.mutate()} title={!upcoming?"Add an upcoming open session first":!form.imageUrl?"Choose a photo first":vendor?.verificationStatus!=="approved"?"Business approval is required":dirty?"Save your changes before publishing":undefined}>Publish</button>}
         {!editing&&<button className="v5-btn v5-primary" disabled={saveMutation.isPending||!minimalValid} onClick={()=>save("draft")}>{saveMutation.isPending?"Saving…":"Save draft"}</button>}
         {editing&&<div className="v5-hint" aria-live="polite">{dirty?"Unsaved changes":saved||"All changes saved"}</div>}
@@ -239,11 +250,12 @@ export default function ListingEditor() {
     </div>
     <div className="v5-mobile-save">
       {editing&&status==="published"?<button className="v5-btn v5-primary" disabled={saveMutation.isPending||!minimalValid||!dirty} onClick={()=>save("published")}><Save size={16}/> Save changes</button>:status==="unpublished"?<button className="v5-btn v5-quiet" disabled={saveMutation.isPending||!minimalValid||!dirty} onClick={()=>save()}><Save size={16}/> Save details</button>:<button className="v5-btn v5-quiet" disabled={saveMutation.isPending||!minimalValid} onClick={()=>save("draft")}><Save size={16}/> Save draft</button>}
-      {editing&&status==="published"&&<button className="v5-btn v5-quiet" disabled={draftMutation.isPending||dirty} onClick={()=>draftMutation.mutate()}>Move to draft</button>}
+        {editing&&status==="published"&&<button className="v5-btn v5-quiet" disabled={draftMutation.isPending||dirty} onClick={()=>setConfirmDraft(true)}>Move to draft</button>}
       {editing&&canChangeStatus&&status!=="published"&&<button className="v5-btn v5-primary" disabled={!publishReady||publishMutation.isPending||dirty} onClick={()=>publishMutation.mutate()}>Publish</button>}
       {!editing&&<Link className="v5-btn v5-quiet" href="/vendor/listings">Cancel</Link>}
     </div>
-    {leaveHref&&<div className="v5-modal-backdrop" role="presentation"><div className="v5-modal" role="dialog" aria-modal="true" aria-labelledby="leave-title" tabIndex={-1} ref={leaveDialog}><h2 id="leave-title">Leave without saving?</h2><p>Your changes haven’t been saved. You can stay and keep editing, or leave this page.</p><div className="v5-modal-actions"><button className="v5-btn v5-quiet" onClick={()=>setLeaveHref(null)}>Keep editing</button><button className="v5-btn v5-danger" onClick={()=>{setDirty(false);dirtyRef.current=false;const href=leaveHref;setLeaveHref(null);if(href===window.location.href)window.history.back();else navigate(new URL(href).pathname+new URL(href).search);}}>Leave page</button></div></div></div>}
+     {confirmDraft&&<div className="v5-modal-backdrop" role="presentation"><div className="v5-modal" role="alertdialog" aria-modal="true" aria-labelledby="draft-confirm-title"><h2 id="draft-confirm-title">Move this listing to draft?</h2><p>This removes it from public discovery. Existing bookings and sessions are not changed.</p><div className="v5-modal-actions"><button className="v5-btn v5-quiet" disabled={draftMutation.isPending} onClick={()=>setConfirmDraft(false)}>Keep published</button><button className="v5-btn v5-danger" disabled={draftMutation.isPending} onClick={()=>draftMutation.mutate()}>{draftMutation.isPending?"Moving…":"Move to draft"}</button></div></div></div>}
+     {leaveHref&&<div className="v5-modal-backdrop" role="presentation"><div className="v5-modal" role="dialog" aria-modal="true" aria-labelledby="leave-title" tabIndex={-1} ref={leaveDialog}><h2 id="leave-title">Leave without saving?</h2><p>Your changes haven’t been saved. You can stay and keep editing, or leave this page.</p><div className="v5-modal-actions"><button className="v5-btn v5-quiet" onClick={()=>setLeaveHref(null)}>Keep editing</button><button className="v5-btn v5-danger" onClick={()=>{setDirty(false);dirtyRef.current=false;const href=leaveHref;setLeaveHref(null);if(href===window.location.href)window.history.back();else navigate(new URL(href).pathname+new URL(href).search);}}>Leave page</button></div></div></div>}
   </div>;
   return content;
 }

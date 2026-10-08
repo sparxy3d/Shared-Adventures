@@ -22,23 +22,24 @@ export function listingPayload(input: ListingInput): ListingInput {
     idealForTags: [...(input.idealForTags || [])], status: input.status, imageUrl: input.imageUrl || null,
   };
 }
-export async function createListing(input: ListingInput): Promise<Experience> {
-  const response = await apiRequest("POST", "/api/vendor/experiences", listingPayload({ ...input, status: "draft" }));
+export async function createListing(input: ListingInput, adminVendorId?: number): Promise<Experience> {
+  const payload = listingPayload({ ...input, status: "draft" });
+  const response = await apiRequest("POST", adminVendorId == null ? "/api/vendor/experiences" : "/api/admin/experiences", adminVendorId == null ? payload : { ...payload, vendorId: adminVendorId });
   return response.json();
 }
-export async function updateListing(id: number, input: Partial<ListingInput>): Promise<Experience> {
+export async function updateListing(id: number, input: Partial<ListingInput>, admin = false): Promise<Experience> {
   const allowed: Partial<ListingInput> = {};
   const keys: (keyof ListingInput)[] = ["title","category","description","locationText","region","city","durationMinutes","priceAmount","capacity","ageMin","safetyNotes","idealForTags","status","imageUrl"];
   keys.forEach((key) => { if (key in input) (allowed as Record<string, unknown>)[key] = input[key]; });
-  const response = await apiRequest("PATCH", `/api/vendor/experiences/${id}`, allowed);
+  const response = await apiRequest("PATCH", `${admin ? "/api/admin" : "/api/vendor"}/experiences/${id}`, allowed);
   return response.json();
 }
-export async function loadListing(id: number): Promise<Experience> {
-  const response = await apiRequest("GET", `/api/vendor/experiences/${id}`);
+export async function loadListing(id: number, admin = false): Promise<Experience> {
+  const response = await apiRequest("GET", `${admin ? "/api/admin" : "/api/vendor"}/experiences/${id}`);
   return response.json();
 }
-export async function loadListingSlots(id: number): Promise<AvailabilitySlot[]> {
-  const response = await apiRequest("GET", `/api/vendor/experiences/${id}/slots`);
+export async function loadListingSlots(id: number, admin = false): Promise<AvailabilitySlot[]> {
+  const response = await apiRequest("GET", `${admin ? "/api/admin" : "/api/vendor"}/experiences/${id}/slots`);
   return response.json();
 }
 export async function duplicateListing(exp: Experience): Promise<Experience> {

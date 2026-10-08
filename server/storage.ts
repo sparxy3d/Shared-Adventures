@@ -10,6 +10,7 @@ import {
 } from "@shared/schema";
 import { GROUP_MIN_SPOTS } from "@shared/catalog";
 import { colomboToday, colomboNowHHMM, colomboDayOfWeek, addDays, addMinutesHHMM, normaliseHHMM } from "./time";
+import { adminInsights, approvalDate, withApprovalDate } from "./admin-insights";
 
 export type SafeUser = Omit<User, "password">;
 
@@ -86,7 +87,7 @@ export class DatabaseStorage {
     return user;
   }
 
-  async getAllUsers(): Promise<Array<SafeUser & { vendorId: number | null; businessName: string | null; bookingCount: number }>> {
+  async getAllUsers(): Promise<Array<SafeUser & { hasLogin: boolean; vendorId: number | null; businessName: string | null; bookingCount: number }>> {
     const rows = await db
       .select({
         user: users,
@@ -99,6 +100,7 @@ export class DatabaseStorage {
       .orderBy(desc(users.createdAt));
     return rows.map((r) => ({
       ...stripPassword(r.user),
+      hasLogin: !r.user.password.startsWith("!"),
       vendorId: r.vendorId,
       businessName: r.businessName,
       bookingCount: Number(r.bookingCount),
@@ -140,6 +142,7 @@ export class DatabaseStorage {
         ownerRole: users.role,
         listingCount: sql<number>`(select count(*) from experiences e where e.vendor_id = ${vendors.id})`,
         publishedCount: sql<number>`(select count(*) from experiences e where e.vendor_id = ${vendors.id} and e.status = 'published')`,
+        bookingsThisMonth: sql<number>`(select count(*) from bookings b join experiences e on e.id = b.experience_id where e.vendor_id = ${vendors.id} and to_char(b.created_at + interval '5 hours 30 minutes', 'YYYY-MM') = ${colomboToday().slice(0, 7)})`,
       })
       .from(vendors)
       .leftJoin(users, eq(users.id, vendors.ownerProfileId))
@@ -151,6 +154,9 @@ export class DatabaseStorage {
       ownerRole: r.ownerRole,
       listingCount: Number(r.listingCount),
       publishedCount: Number(r.publishedCount),
+      bookingsThisMonth: Number(r.bookingsThisMonth),
+      live: r.vendor.verificationStatus === "approved" && Number(r.publishedCount) > 0,
+      approvedAt: approvalDate(r.vendor.description),
     }));
   }
 
@@ -490,6 +496,9 @@ export class DatabaseStorage {
     return db.transaction(async tx => {
       const [vendor] = await tx.select().from(vendors).where(eq(vendors.id, vendorId)).for("update");
       if (!vendor) return undefined;
+      if (!["pending", "contacted"].includes(vendor.verificationStatus)) {
+        return { error: "Only new or contacted applications can be approved" };
+      }
       const [owner] = await tx.select().from(users).where(eq(users.id, vendor.ownerProfileId)).for("update");
       if (!owner || !["customer", "vendor"].includes(owner.role)) {
         return { error: "This account cannot be approved as a vendor" };
@@ -498,7 +507,7 @@ export class DatabaseStorage {
       await tx.update(users).set({
         role: "vendor", ...(placeholder ? { password: credentials.hash } : {}),
       }).where(eq(users.id, owner.id));
-      const [approved] = await tx.update(vendors).set({ verificationStatus: "approved" })
+      const [approved] = await tx.update(vendors).set({ verificationStatus: "approved", description: withApprovalDate(vendor.description) })
         .where(eq(vendors.id, vendorId)).returning();
       return {
         ...approved,
@@ -581,28 +590,20 @@ export class DatabaseStorage {
   // ---------- admin overview ----------
   async getAdminOverview() {
     const today = colomboToday();
-    const weekEnd = addDays(today, 6);
-    const [r] = (await db.execute(sql`
-      SELECT
-        (SELECT count(*) FROM vendors v WHERE v.verification_status = 'approved'
-           AND EXISTS (SELECT 1 FROM experiences e WHERE e.vendor_id = v.id AND e.status = 'published'))::int AS live_vendors,
-        (SELECT count(*) FROM vendors WHERE verification_status = 'pending')::int AS pending_applications,
-        (SELECT count(*) FROM experiences WHERE status = 'published')::int AS published_listings,
-        (SELECT count(*) FROM experiences)::int AS total_listings,
-        (SELECT count(*) FROM users WHERE role = 'customer')::int AS members,
-        (SELECT count(*) FROM bookings WHERE booking_date >= ${today} AND booking_date <= ${weekEnd}
-           AND status IN ('requested','confirmed'))::int AS bookings_this_week,
-        (SELECT count(*) FROM bookings WHERE status = 'requested')::int AS unanswered_requests
-    `)).rows as Array<Record<string, number>>;
-    return {
-      liveVendors: r.live_vendors,
-      pendingApplications: r.pending_applications,
-      publishedListings: r.published_listings,
-      totalListings: r.total_listings,
-      members: r.members,
-      bookingsThisWeek: r.bookings_this_week,
-      unansweredRequests: r.unanswered_requests,
-    };
+    const [allVendors, listings, allBookings, members, scheduled] = await Promise.all([
+      this.getAllVendors(), this.getAllExperiences(), this.getAllBookings(), this.getAllUsers(),
+      db.select({ experienceId: availabilitySlots.experienceId }).from(availabilitySlots)
+        .where(and(gte(availabilitySlots.date, today), lte(availabilitySlots.date, addDays(today, 13)),
+          inArray(availabilitySlots.status, ["open", "full"]),
+          sql`(${availabilitySlots.date} > ${today} or ${availabilitySlots.startTime} > ${colomboNowHHMM()})`)),
+    ]);
+    return adminInsights({ vendors: allVendors, listings, bookings: allBookings, members, scheduled });
+  }
+
+  async markVendorContacted(vendorId: number) {
+    const [vendor] = await db.update(vendors).set({ verificationStatus: "contacted" })
+      .where(and(eq(vendors.id, vendorId), eq(vendors.verificationStatus, "pending"))).returning();
+    return vendor;
   }
 
   async countAdmins(excludingUserId?: number): Promise<number> {

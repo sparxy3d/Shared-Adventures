@@ -14,6 +14,7 @@ import {
 } from "@shared/catalog";
 import { colomboToday, colomboNowHHMM, normaliseHHMM, addMinutesHHMM } from "./time";
 import { sessionPlan } from "./vendor-session-plan";
+import { withApprovalDate } from "./admin-insights";
 
 const scryptAsync = promisify(scrypt);
 
@@ -225,8 +226,13 @@ const vendorBookingUpdateSchema = z.object({
 
 const adminBookingUpdateSchema = z.object({
   status: z.enum(["confirmed", "declined", "cancelled", "completed"]),
+  declineReason: z.enum(DECLINE_REASONS).optional(),
   vendorNote: optionalText(1000),
+}).refine(data => data.status !== "declined" || !!data.declineReason, {
+  message: "Choose a decline reason", path: ["declineReason"],
 });
+
+const adminActionSchema = z.object({}).strict();
 
 function parse<S extends z.ZodTypeAny>(schema: S, body: unknown, res: Response): z.infer<S> | undefined {
   const result = schema.safeParse(body);
@@ -290,7 +296,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   // Router-level guards: anything under these prefixes fails closed, including
   // endpoints added later and forgotten.
-  app.use("/api/admin", requireAdmin);
+  app.use("/api/admin", requireAdmin, (req, res, next) => {
+    const resourceId = req.path.match(/^\/(?:vendors|experiences|bookings|members|slots)\/([^/]+)/)?.[1];
+    if (resourceId && !z.coerce.number().int().positive().safeParse(resourceId).success) {
+      return res.status(400).json({ message: "Choose a valid record" });
+    }
+    next();
+  });
   app.use("/api/vendor", requireVendor);
 
   // ---------------- auth ----------------
@@ -745,6 +757,33 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json(await storage.getAllVendors());
   }));
 
+  app.get("/api/admin/vendors/:id", h(async (req, res) => {
+    const vendor = (await storage.getAllVendors()).find(v => v.id === id(req.params.id));
+    if (!vendor) return res.status(404).json({ message: "Vendor not found" });
+    res.json(vendor);
+  }));
+
+  app.get("/api/admin/vendors/:id/experiences", h(async (req, res) => {
+    const vendor = await storage.getVendor(id(req.params.id));
+    if (!vendor) return res.status(404).json({ message: "Vendor not found" });
+    res.json(await storage.getExperiencesByVendor(vendor.id));
+  }));
+
+  app.get("/api/admin/vendors/:id/bookings", h(async (req, res) => {
+    const vendor = await storage.getVendor(id(req.params.id));
+    if (!vendor) return res.status(404).json({ message: "Vendor not found" });
+    res.json((await storage.getAllBookings()).filter(b => b.vendor.id === vendor.id));
+  }));
+
+  app.post("/api/admin/vendors/:id/contacted", h(async (req, res) => {
+    if (!parse(adminActionSchema, req.body ?? {}, res)) return;
+    const vendor = await storage.getVendor(id(req.params.id));
+    if (!vendor) return res.status(404).json({ message: "Vendor not found" });
+    const contacted = await storage.markVendorContacted(vendor.id);
+    if (!contacted) return res.status(409).json({ message: "Only new applications can be marked contacted" });
+    res.json(contacted);
+  }));
+
   app.get("/api/admin/vendors/:id/stats", h(async (req, res) => {
     const vendor = await storage.getVendor(id(req.params.id));
     if (!vendor) return res.status(404).json({ message: "Vendor not found" });
@@ -790,7 +829,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const vendor = await storage.createVendor({
       ownerProfileId: user.id,
       businessName: data.businessName,
-      description: data.description ?? null,
+      description: withApprovalDate(data.description ?? null),
       city: data.city ?? null,
       countryId: lk?.id ?? null,
       contactEmail: data.contactEmail,
@@ -801,6 +840,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   }));
 
   app.post("/api/admin/vendors/:id/approve", h(async (req, res) => {
+    if (!parse(adminActionSchema, req.body ?? {}, res)) return;
     const temporaryPassword = `fs-${randomBytes(16).toString("hex")}`;
     const result = await storage.approveVendorApplication(id(req.params.id), {
       hash: await hashPassword(temporaryPassword), temporaryPassword,
@@ -815,21 +855,28 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!reason.success) return res.status(400).json({ message: "Give a reason for declining" });
     const vendor = await storage.getVendor(id(req.params.id));
     if (!vendor) return res.status(404).json({ message: "Vendor not found" });
+    if (!["pending", "contacted"].includes(vendor.verificationStatus)) {
+      return res.status(409).json({ message: "Only new or contacted applications can be declined" });
+    }
     // Prototype shortcut: the reason is recorded in the description (no notes column yet).
     const description = `${vendor.description ?? ""}\n\n— Declined ${colomboToday()} —\n${reason.data}`.trim();
     res.json(await storage.updateVendor(vendor.id, { verificationStatus: "rejected", description }));
   }));
 
   app.post("/api/admin/vendors/:id/pause", h(async (req, res) => {
-    const vendor = await storage.updateVendor(id(req.params.id), { verificationStatus: "paused" });
+    if (!parse(adminActionSchema, req.body ?? {}, res)) return;
+    const vendor = await storage.getVendor(id(req.params.id));
     if (!vendor) return res.status(404).json({ message: "Vendor not found" });
-    res.json(vendor);
+    if (vendor.verificationStatus !== "approved") return res.status(409).json({ message: "Only approved vendors can be paused" });
+    res.json(await storage.updateVendor(vendor.id, { verificationStatus: "paused" }));
   }));
 
   app.post("/api/admin/vendors/:id/resume", h(async (req, res) => {
-    const vendor = await storage.updateVendor(id(req.params.id), { verificationStatus: "approved" });
+    if (!parse(adminActionSchema, req.body ?? {}, res)) return;
+    const vendor = await storage.getVendor(id(req.params.id));
     if (!vendor) return res.status(404).json({ message: "Vendor not found" });
-    res.json(vendor);
+    if (vendor.verificationStatus !== "paused") return res.status(409).json({ message: "Only paused vendors can be resumed" });
+    res.json(await storage.updateVendor(vendor.id, { verificationStatus: "approved" }));
   }));
 
   app.get("/api/admin/experiences", h(async (_req, res) => {
@@ -843,7 +890,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   }));
 
   app.post("/api/admin/experiences", h(async (req, res) => {
-    const vendorId = Number(req.body?.vendorId);
+    const parsedId = z.coerce.number().int().positive().safeParse(req.body?.vendorId);
+    if (!parsedId.success) return res.status(400).json({ message: "Pick a vendor" });
+    const vendorId = parsedId.data;
     const vendor = await storage.getVendor(vendorId);
     if (!vendor) return res.status(400).json({ message: "Pick a vendor" });
     const data = parse(experienceSchema, req.body, res);
@@ -861,7 +910,51 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   }));
 
   app.get("/api/admin/experiences/:id/slots", h(async (req, res) => {
+    if (!await storage.getExperience(id(req.params.id))) return res.status(404).json({ message: "Listing not found" });
     res.json(await storage.getSlotsByExperience(id(req.params.id)));
+  }));
+
+  app.post("/api/admin/experiences/:id/generate-sessions", h(async (req, res) => {
+    const exp = await storage.getExperience(id(req.params.id));
+    if (!exp) return res.status(404).json({ message: "Listing not found" });
+    const data = parse(generateSessionsSchema, req.body, res);
+    if (!data) return;
+    if (!exp.durationMinutes || exp.durationMinutes < 1) {
+      return res.status(400).json({ message: "Set a duration on this listing before generating sessions" });
+    }
+    res.json({ created: await storage.generateVendorSessions(exp.id,
+      sessionPlan(colomboToday(), data.days, data.pattern, exp.durationMinutes)) });
+  }));
+
+  app.post("/api/admin/experiences/:id/close-day", h(async (req, res) => {
+    const exp = await storage.getExperience(id(req.params.id));
+    if (!exp) return res.status(404).json({ message: "Listing not found" });
+    const data = parse(closeDaySchema, req.body, res);
+    if (!data) return;
+    if (data.date < colomboToday()) return res.status(400).json({ message: "Changes apply to future sessions only" });
+    res.json({ ...await storage.closeVendorDay(exp.id, data.date), reason: data.reason });
+  }));
+
+  app.post("/api/admin/experiences/:id/slots", h(async (req, res) => {
+    const exp = await storage.getExperience(id(req.params.id));
+    if (!exp) return res.status(404).json({ message: "Listing not found" });
+    const data = parse(slotSchema, req.body, res);
+    if (!data) return;
+    if (data.date < colomboToday() || data.date === colomboToday() && data.startTime <= colomboNowHHMM()) {
+      return res.status(400).json({ message: "Choose a future session" });
+    }
+    res.json(await storage.createSlot({ ...data, experienceId: exp.id, status: "open",
+      endTime: data.endTime ?? addMinutesHHMM(data.startTime, exp.durationMinutes ?? 60) }));
+  }));
+
+  app.delete("/api/admin/slots/:id", h(async (req, res) => {
+    const slot = await storage.getSlot(id(req.params.id));
+    if (!slot) return res.status(404).json({ message: "Session not found" });
+    const result = await storage.deleteVendorSession(slot.experienceId, slot.id);
+    if (result === "booked") return res.status(409).json({ message: "This session has bookings, so it can't be deleted" });
+    if (result === "past") return res.status(409).json({ message: "Changes apply to future sessions only" });
+    if (result === "missing") return res.status(404).json({ message: "Session not found" });
+    res.json({ ok: true });
   }));
 
   app.get("/api/admin/bookings", h(async (_req, res) => {
@@ -871,7 +964,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.patch("/api/admin/bookings/:id", h(async (req, res) => {
     const data = parse(adminBookingUpdateSchema, req.body, res);
     if (!data) return;
-    const result = await changeBookingStatus(id(req.params.id), data.status, data.vendorNote);
+    const booking = await storage.getBooking(id(req.params.id));
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    const allowed = booking.status === "requested" && ["confirmed", "declined"].includes(data.status) ||
+      booking.status === "confirmed" && ["cancelled", "completed"].includes(data.status);
+    if (!allowed) return res.status(409).json({ message: "This booking has already been answered" });
+    const note = data.status === "declined"
+      ? `${data.declineReason}${data.vendorNote?.trim() ? ` — ${data.vendorNote.trim()}` : ""}`
+      : data.vendorNote?.trim() || (data.status === "confirmed" ? "Booking confirmed" :
+        data.status === "cancelled" ? "Booking cancelled" : "Booking completed");
+    const result = await changeBookingStatus(booking.id, data.status, `By Free Spirit: ${note}`);
     if ("error" in result) return res.status(404).json({ message: "Booking not found" });
     res.json(result.booking);
   }));
@@ -885,8 +987,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!role.success) return res.status(400).json({ message: "Role must be customer, vendor or admin" });
     const target = await storage.getUser(id(req.params.id));
     if (!target) return res.status(404).json({ message: "Member not found" });
-    if (target.id === res.locals.user!.id && role.data !== "admin") {
-      return res.status(400).json({ message: "You can't remove your own admin role" });
+    if (target.id === res.locals.user!.id) {
+      return res.status(400).json({ message: "You can't change your own role" });
+    }
+    if (role.data === "vendor" && !await storage.getVendorByOwner(target.id)) {
+      return res.status(400).json({ message: "Approve their application or create the vendor from Vendors" });
     }
     const keepDisabled = isDisabledRole(target.role) ? DISABLED_PREFIX : "";
     const updated = await storage.updateUser(target.id, { role: keepDisabled + role.data });
@@ -894,6 +999,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   }));
 
   app.post("/api/admin/members/:id/disable", h(async (req, res) => {
+    if (!parse(adminActionSchema, req.body ?? {}, res)) return;
     const target = await storage.getUser(id(req.params.id));
     if (!target) return res.status(404).json({ message: "Member not found" });
     if (target.id === res.locals.user!.id) return res.status(400).json({ message: "You can't disable yourself" });
@@ -903,6 +1009,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   }));
 
   app.post("/api/admin/members/:id/enable", h(async (req, res) => {
+    if (!parse(adminActionSchema, req.body ?? {}, res)) return;
     const target = await storage.getUser(id(req.params.id));
     if (!target) return res.status(404).json({ message: "Member not found" });
     const updated = await storage.updateUser(target.id, { role: target.role.replace(DISABLED_PREFIX, "") });
@@ -912,8 +1019,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // Manual password reset until email reset exists. The temporary password is shown
   // to the admin once and never stored or logged in plain text.
   app.post("/api/admin/members/:id/reset-password", h(async (req, res) => {
+    if (!parse(adminActionSchema, req.body ?? {}, res)) return;
     const target = await storage.getUser(id(req.params.id));
     if (!target) return res.status(404).json({ message: "Member not found" });
+    if (target.password.startsWith("!")) {
+      return res.status(409).json({ message: "Approve their application before creating a login" });
+    }
     const temporaryPassword = `fs-${randomBytes(4).toString("hex")}`;
     await storage.updateUser(target.id, { password: await hashPassword(temporaryPassword) });
     res.json({ temporaryPassword });

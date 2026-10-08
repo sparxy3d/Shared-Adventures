@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { BarChart3, CalendarDays } from "lucide-react";
 import type { Experience } from "@shared/schema";
+import { AdminTable, type AdminColumn } from "@/components/admin/table";
 import { formatPrice } from "@/lib/currency";
 import type { VendorBooking } from "@/lib/vendor-bookings";
 import {
@@ -42,10 +43,12 @@ function monthStats(bookings: VendorBooking[], month: string, hasUnknownTimestam
   };
 }
 
-export default function VendorStats() {
+export default function VendorStats({ adminVendorId }: { adminVendorId?: number } = {}) {
+  const adminMode = adminVendorId !== undefined;
   const [selectedMonth, setSelectedMonth] = useState(() => recentMonthKeys()[5]);
-  const bookingsQuery = useQuery<VendorBooking[]>({ queryKey: ["/api/vendor/bookings"], staleTime: 30_000 });
-  const experiencesQuery = useQuery<Experience[]>({ queryKey: ["/api/vendor/experiences"], staleTime: 30_000 });
+  const [listingStatusFilter, setListingStatusFilter] = useState("all");
+  const bookingsQuery = useQuery<VendorBooking[]>({ queryKey: adminMode ? ["/api/admin/vendors", adminVendorId, "bookings"] : ["/api/vendor/bookings"], staleTime: 30_000 });
+  const experiencesQuery = useQuery<Experience[]>({ queryKey: adminMode ? ["/api/admin/vendors", adminVendorId, "experiences"] : ["/api/vendor/experiences"], staleTime: 30_000 });
   const bookings = bookingsQuery.data ?? [];
   const experiences = experiencesQuery.data ?? [];
   const months = useMemo(() => recentMonthKeys(), []);
@@ -77,7 +80,43 @@ export default function VendorStats() {
       valueUnavailable: hasUnknownTimestamp || missingDate || unknownAmount,
     };
   });
+  type ListingStat = (typeof listingStats)[number];
+  const listingColumns: AdminColumn<ListingStat>[] = [
+    { key: "listing", label: "Listing", sortValue: (row) => row.experience.title, render: (row) => <strong>{row.experience.title}</strong> },
+    { key: "status", label: "Status", sortValue: (row) => row.experience.status, render: (row) => <span className="v5-table-status">{row.experience.status}</span> },
+    { key: "requests", label: "Requests", sortValue: (row) => row.requests ?? -1, render: (row) => row.requests ?? "Unavailable" },
+    { key: "confirmed", label: "Confirmed / completed", sortValue: (row) => row.confirmed ?? -1, render: (row) => row.confirmed ?? "Unavailable" },
+    { key: "value", label: "Value", sortValue: (row) => row.value ?? -1, render: (row) => money(row.value, row.valueUnavailable) },
+  ];
+  const adminListingRows = adminMode && listingStatusFilter !== "all"
+    ? listingStats.filter((row) => row.experience.status === listingStatusFilter)
+    : listingStats;
   const loading = bookingsQuery.isLoading || experiencesQuery.isLoading;
+  const exportCsv = () => {
+    const cell = (value: unknown) => {
+      let text = String(value ?? "");
+      if (/^[\s]*[=+\-@]/.test(text)) text = `'${text}`;
+      return `"${text.replace(/"/g, '""')}"`;
+    };
+    const rows = [
+      ["Received at", "Listing", "Member", "Status", "Quantity", "Total LKR"],
+      ...bookings.map((booking) => [
+        booking.createdAt ?? "",
+        booking.experience?.title ?? "",
+        booking.customer?.fullName ?? "",
+        booking.status,
+        booking.qty,
+        booking.totalAmount == null ? "" : booking.totalAmount,
+      ]),
+    ];
+    const blob = new Blob([rows.map((row) => row.map(cell).join(",")).join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `vendor-${adminVendorId}-booking-stats-${selectedMonth}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (loading) return <main className="v5-page"><div className="v5-skeleton" /><div className="v5-stats-top"><div className="v5-skeleton" /><div className="v5-skeleton" /><div className="v5-skeleton" /></div><div className="v5-skeleton" /></main>;
   if (bookingsQuery.isError || experiencesQuery.isError) return <main className="v5-page">
@@ -89,7 +128,7 @@ export default function VendorStats() {
   return <main className="v5-page">
     <header className="v5-heading">
       <div><p className="v5-eyebrow">Booking activity</p><h1>Stats</h1><p>Requests are grouped by when they arrived, in Sri Lanka time.</p></div>
-      <div className="v5-toolbar"><label className="sr-only" htmlFor="v5-stats-month">Choose a month</label>
+      <div className="v5-toolbar">{adminMode&&<button className="v5-button v5-button-secondary" type="button" onClick={exportCsv}>Export CSV</button>}<label className="sr-only" htmlFor="v5-stats-month">Choose a month</label>
         <select className="v5-select v5-month-picker" id="v5-stats-month" value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value)}>
           {months.map((month) => <option key={month} value={month}>{monthTitle(month)}</option>)}
         </select>
@@ -132,7 +171,12 @@ export default function VendorStats() {
 
     <section className="v5-panel" aria-labelledby="v5-listing-stats-title">
       <div className="v5-panel-head"><div><p className="v5-eyebrow">Listing breakdown</p><h2 id="v5-listing-stats-title">Activity by listing</h2><p className="v5-subtle">{monthTitle(selectedMonth)} · includes listings with no bookings.</p></div></div>
-      {listingStats.length ? <div className="v5-table-wrap"><table className="v5-table">
+      {adminMode ? listingStats.length ? <AdminTable
+        rows={adminListingRows}
+        columns={listingColumns}
+        searchText={(row) => `${row.experience.title} ${row.experience.status} ${row.experience.category} ${row.experience.city ?? ""}`}
+        filterControls={<div className="ad-filter-chips" aria-label="Filter listing stats by status">{[["all","All"],["draft","Draft"],["published","Published"],["unpublished","Unpublished"]].map(([value,label]) => <button key={value} type="button" className={`ad-chip${listingStatusFilter === value ? " selected" : ""}`} aria-pressed={listingStatusFilter === value} onClick={() => setListingStatusFilter(value)}>{label}</button>)}</div>}
+      /> : <div className="v5-empty"><p>No listings to compare yet.</p></div> : listingStats.length ? <div className="v5-table-wrap"><table className="v5-table">
         <thead><tr><th>Listing</th><th>Status</th><th>Requests</th><th>Confirmed / completed</th><th>Value</th></tr></thead>
         <tbody>{listingStats.map(({ experience, requests, confirmed, value, valueUnavailable }) => <tr key={experience.id}>
           <td><strong>{experience.title}</strong></td><td><span className="v5-table-status">{experience.status}</span></td><td>{requests ?? "Unavailable"}</td><td>{confirmed ?? "Unavailable"}</td><td>{money(value, valueUnavailable)}</td>

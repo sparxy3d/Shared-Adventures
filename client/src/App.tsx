@@ -78,7 +78,8 @@ function Router() {
       <Route path="/vendor/stats">{() => <VendorRoute><VendorStats /></VendorRoute>}</Route>
       <Route path="/for-vendors" component={ForVendors} />
       <Route path="/for-vendors/apply" component={VendorApply} />
-      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin">{() => <RequireRole role="admin"><AdminDashboard /></RequireRole>}</Route>
+      <Route path="/admin/*">{() => <RequireRole role="admin"><AdminDashboard /></RequireRole>}</Route>
       <Route component={NotFound} />
     </Switch>
   );

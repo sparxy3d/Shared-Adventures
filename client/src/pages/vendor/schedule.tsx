@@ -45,9 +45,10 @@ function upcomingPattern(slots: VendorScheduleSlot[], today: string, bookings: V
   return Array.from(entries.values()).sort((a, b) => a.weekday - b.weekday || a.startTime.localeCompare(b.startTime));
 }
 
-export default function VendorSchedule() {
+export default function VendorSchedule({ adminVendorId }: { adminVendorId?: number } = {}) {
   const { user } = useAuth();
-  const vendorId = user?.id ?? "vendor";
+  const adminMode = adminVendorId !== undefined;
+  const vendorId = adminVendorId ?? user?.id ?? "vendor";
   const [selectedId, setSelectedId] = useState(() => new URLSearchParams(window.location.search).get("listing") ?? "");
   const [pattern, setPattern] = useState<WeeklyPatternEntry[]>([]);
   const [patternReady, setPatternReady] = useState(false);
@@ -63,15 +64,15 @@ export default function VendorSchedule() {
   const initializedKey = useRef("");
   const dialogLayer = useRef<HTMLDivElement>(null);
 
-  const experiencesQuery = useQuery<Experience[]>({ queryKey: ["/api/vendor/experiences"] });
+  const experiencesQuery = useQuery<Experience[]>({ queryKey: adminMode ? ["/api/admin/vendors", adminVendorId, "experiences"] : ["/api/vendor/experiences"] });
   const experiences = experiencesQuery.data ?? [];
   const slotQueries = useQueries({
     queries: experiences.map((experience) => ({
-      queryKey: ["/api/vendor/experiences", String(experience.id), "slots"],
+      queryKey: adminMode ? ["/api/admin/experiences", String(experience.id), "slots"] : ["/api/vendor/experiences", String(experience.id), "slots"],
       staleTime: 30_000,
     })) as UseQueryOptions<AvailabilitySlot[]>[],
   });
-  const bookingsQuery = useQuery<VendorBooking[]>({ queryKey: ["/api/vendor/bookings"], staleTime: 30_000 });
+  const bookingsQuery = useQuery<VendorBooking[]>({ queryKey: adminMode ? ["/api/admin/vendors", adminVendorId, "bookings"] : ["/api/vendor/bookings"], staleTime: 30_000 });
   const allSlots = useMemo(() => slotQueries.flatMap((query, index) =>
     (query.data ?? []).map((slot) => ({ ...slot, experienceId: experiences[index]?.id } as VendorScheduleSlot))
   ), [experiences, slotQueries]);
@@ -87,28 +88,29 @@ export default function VendorSchedule() {
   const dates = useMemo(() => Array.from({ length: 60 }, (_, index) => shiftDate(tomorrow, index)), [tomorrow]);
 
   const refresh = async () => {
-    await queryClient.invalidateQueries({ queryKey: ["/api/vendor/experiences"] });
-    await queryClient.invalidateQueries({ queryKey: ["/api/vendor/bookings"] });
+    await queryClient.invalidateQueries({ queryKey: adminMode ? ["/api/admin/vendors", adminVendorId, "experiences"] : ["/api/vendor/experiences"] });
+    if (adminMode) await queryClient.invalidateQueries({ queryKey: ["/api/admin/experiences"] });
+    await queryClient.invalidateQueries({ queryKey: adminMode ? ["/api/admin/vendors", adminVendorId, "bookings"] : ["/api/vendor/bookings"] });
   };
   const addSlot = useMutation({
     mutationFn: (value: { listingId: number; date: string; startTime: string; capacity: number }) =>
-      apiRequest("POST", `/api/vendor/experiences/${value.listingId}/slots`, {
+      apiRequest("POST", `${adminMode ? "/api/admin" : "/api/vendor"}/experiences/${value.listingId}/slots`, {
         date: value.date, startTime: value.startTime, capacity: value.capacity,
       }),
     onSuccess: refresh,
   });
   const deleteSlot = useMutation({
-    mutationFn: (slotId: number) => apiRequest("DELETE", `/api/vendor/slots/${slotId}`),
+    mutationFn: (slotId: number) => apiRequest("DELETE", `${adminMode ? "/api/admin" : "/api/vendor"}/slots/${slotId}`),
     onSuccess: refresh,
   });
   const generate = useMutation({
     mutationFn: (value: { listingId: number; pattern: WeeklyPatternEntry[] }) =>
-      apiRequest("POST", `/api/vendor/experiences/${value.listingId}/generate-sessions`, { pattern: value.pattern, days: 60 }),
+      apiRequest("POST", `${adminMode ? "/api/admin" : "/api/vendor"}/experiences/${value.listingId}/generate-sessions`, { pattern: value.pattern, days: 60 }),
     onSuccess: refresh,
   });
   const closeDay = useMutation({
     mutationFn: (value: { listingId: number; date: string; reason: string }) =>
-      apiRequest("POST", `/api/vendor/experiences/${value.listingId}/close-day`, { date: value.date, reason: value.reason }),
+      apiRequest("POST", `${adminMode ? "/api/admin" : "/api/vendor"}/experiences/${value.listingId}/close-day`, { date: value.date, reason: value.reason }),
     onSuccess: refresh,
   });
 
