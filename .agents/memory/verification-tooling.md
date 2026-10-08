@@ -54,3 +54,24 @@ Repeating the whole mutation scenario would create unnecessary test accounts.
 
 **How to apply:** Separate mutation and read-only verification modes, label test
 records, and restore reserved booking inventory even when a later assertion fails.
+
+## Document navigation and hash changes
+
+Wait for the intended new document and route, not only a selector that may already
+exist in the preceding page. Resume mutation tests using the fixture's current
+state; do not expect a newly empty draft after it already has saved sessions.
+
+**Why:** Multi-page/viewport checks could inspect the preceding document, while
+resumed tests wrongly expected missing-session guidance after successful generation.
+
+**How to apply:** Separate creation from read-only layout passes and verify navigation
+completion before querying the new page.
+
+Fragment navigation can emit popstate. An unsaved-change guard must distinguish
+same-page path/query matches from leaving the page.
+
+**Why:** In-page editor anchors triggered a leave confirmation even though the
+user was still editing the same listing.
+
+**How to apply:** Include same-page anchors and browser history in unsaved-change
+tests, not just links to another screen.

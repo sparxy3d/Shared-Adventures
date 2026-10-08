@@ -10,9 +10,10 @@ import { pool } from "./db";
 import type { User, Vendor } from "@shared/schema";
 import {
   CATEGORY_VALUES, EXPERIENCE_IMAGES, IDEAL_FOR_TAGS, ROLES, DISABLED_PREFIX, isDisabledRole,
-  SUPPORTED_CITIES, DECLINE_REASONS, VENDOR_TERMS_VERSION,
+  SUPPORTED_CITIES, DECLINE_REASONS, VENDOR_TERMS_VERSION, LISTING_STATUSES,
 } from "@shared/catalog";
 import { colomboToday, colomboNowHHMM, normaliseHHMM, addMinutesHHMM } from "./time";
+import { sessionPlan } from "./vendor-session-plan";
 
 const scryptAsync = promisify(scrypt);
 
@@ -182,8 +183,23 @@ const experienceSchema = z.object({
   closeTime: hhmm.optional().nullable(),
   nextSessionText: optionalText(120),
   imageUrl: z.enum(EXPERIENCE_IMAGES).optional().nullable(),
+  status: z.enum(LISTING_STATUSES).optional(),
+});
+
+const vendorExperienceSchema = experienceSchema.extend({
+  title: z.string().trim().min(1).max(60),
   status: z.enum(["draft", "published"]).optional(),
 });
+
+const generateSessionsSchema = z.object({
+  pattern: z.array(z.object({
+    weekday: z.number().int().min(0).max(6),
+    startTime: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/, "Use a time from 00:00 to 23:59"),
+    capacity: z.number().int().min(1).max(10000),
+  })).min(1).max(168),
+  days: z.number().int().min(1).max(60).default(60),
+});
+const closeDaySchema = z.object({ date: isoDate, reason: z.string().trim().min(1).max(300) });
 
 const slotSchema = z.object({
   date: isoDate,
@@ -603,8 +619,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   }));
 
   app.post("/api/vendor/experiences", h(async (req, res) => {
-    const data = parse(experienceSchema, req.body, res);
+    const data = parse(vendorExperienceSchema, req.body, res);
     if (!data || !canPublish(res, data.status)) return;
+    if (data.status === "published") {
+      return res.status(400).json({ message: "Save a draft, add a photo and an upcoming session in Schedule before publishing" });
+    }
     const lk = await storage.getCountryByCode("LK");
     res.json(await storage.createExperience({
       ...data,
@@ -617,9 +636,43 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.patch("/api/vendor/experiences/:id", h(async (req, res) => {
     const exp = await ownExperience(req, res);
     if (!exp) return;
-    const data = parse(experienceSchema.partial(), req.body, res);
+    if (exp.status === "unpublished" && req.body?.status !== undefined && req.body.status !== "unpublished") {
+      return res.status(403).json({ message: "Unpublished by Free Spirit — contact us" });
+    }
+    const data = parse(vendorExperienceSchema.partial(), req.body, res);
     if (!data || !canPublish(res, data.status)) return;
+    if (data.status === "published") {
+      const photo = data.imageUrl === undefined ? exp.imageUrl : data.imageUrl;
+      const slots = await storage.getSlotsByExperience(exp.id);
+      const upcoming = slots.some(s => s.status === "open" &&
+        (s.date > colomboToday() || s.date === colomboToday() && normaliseHHMM(s.startTime) > colomboNowHHMM()));
+      if (!photo || !EXPERIENCE_IMAGES.includes(photo as typeof EXPERIENCE_IMAGES[number]) || !upcoming) {
+        return res.status(400).json({ message: "Add a cover photo and an upcoming session in Schedule before publishing" });
+      }
+    }
     res.json(await storage.updateExperience(exp.id, data));
+  }));
+
+  app.post("/api/vendor/experiences/:id/generate-sessions", h(async (req, res) => {
+    const exp = await ownExperience(req, res);
+    if (!exp) return;
+    const data = parse(generateSessionsSchema, req.body, res);
+    if (!data) return;
+    if (!exp.durationMinutes || exp.durationMinutes < 1) {
+      return res.status(400).json({ message: "Set a duration on this listing before generating sessions" });
+    }
+    const plan = sessionPlan(colomboToday(), data.days, data.pattern, exp.durationMinutes);
+    res.json({ created: await storage.generateVendorSessions(exp.id, plan) });
+  }));
+
+  app.post("/api/vendor/experiences/:id/close-day", h(async (req, res) => {
+    const exp = await ownExperience(req, res);
+    if (!exp) return;
+    const data = parse(closeDaySchema, req.body, res);
+    if (!data) return;
+    if (data.date < colomboToday()) return res.status(400).json({ message: "Changes apply to future sessions only" });
+    const counts = await storage.closeVendorDay(exp.id, data.date);
+    res.json({ ...counts, reason: data.reason });
   }));
 
   app.get("/api/vendor/experiences/:id/slots", h(async (req, res) => {
@@ -649,10 +702,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!slot || !exp || exp.vendorId !== res.locals.vendor!.id) {
       return res.status(404).json({ message: "Session not found" });
     }
-    if (await storage.slotHasBookings(slot.id)) {
+    const result = await storage.deleteVendorSession(exp.id, slot.id);
+    if (result === "booked") {
       return res.status(409).json({ message: "This session has bookings, so it can't be deleted" });
     }
-    await storage.deleteSlot(slot.id);
+    if (result === "past") return res.status(409).json({ message: "Changes apply to future sessions only" });
+    if (result === "missing") return res.status(404).json({ message: "Session not found" });
     res.json({ ok: true });
   }));
 

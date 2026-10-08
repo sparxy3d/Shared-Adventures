@@ -9,7 +9,7 @@ import "./vendor-stage-four.css";
 const links = [
   { label: "Dashboard", href: "/vendor", icon: LayoutDashboard },
   { label: "Bookings", href: "/vendor/bookings", icon: ClipboardList },
-  { label: "Listings", href: "/vendor/experiences", icon: Store },
+  { label: "Listings", href: "/vendor/listings", icon: Store },
   { label: "Schedule", href: "/vendor/schedule", icon: CalendarDays },
   { label: "Stats", href: "/vendor/stats", icon: BarChart3 },
   { label: "Business profile", href: "/vendor/profile", icon: Store },

@@ -300,6 +300,63 @@ export class DatabaseStorage {
     return Number(row.n) > 0;
   }
 
+  /** Listing lock serializes generators without requiring a new unique index. */
+  async generateVendorSessions(experienceId: number, plan: Array<Pick<AvailabilitySlot, "date" | "startTime" | "endTime" | "capacity">>) {
+    return db.transaction(async tx => {
+      await tx.select({ id: experiences.id }).from(experiences).where(eq(experiences.id, experienceId)).for("update");
+      const existing = await tx.select().from(availabilitySlots).where(eq(availabilitySlots.experienceId, experienceId));
+      const keys = new Set(existing.map(s => `${s.date}/${normaliseHHMM(s.startTime)}`));
+      const missing = plan.filter(s => {
+        const key = `${s.date}/${s.startTime}`;
+        if (keys.has(key)) return false;
+        keys.add(key); return true;
+      });
+      if (!missing.length) return 0;
+      const inserted = await tx.insert(availabilitySlots).values(missing.map(s => ({
+        ...s, experienceId, status: "open",
+      }))).returning({ id: availabilitySlots.id });
+      return inserted.length;
+    });
+  }
+
+  /** Only inactive historical links are detached; date/start snapshots survive. */
+  async deleteVendorSession(experienceId: number, slotId: number): Promise<"deleted" | "booked" | "past" | "missing"> {
+    return db.transaction(async tx => {
+      await tx.select({ id: experiences.id }).from(experiences).where(eq(experiences.id, experienceId)).for("update");
+      const [slot] = await tx.select().from(availabilitySlots)
+        .where(and(eq(availabilitySlots.id, slotId), eq(availabilitySlots.experienceId, experienceId))).for("update");
+      if (!slot) return "missing";
+      if (slot.date < colomboToday() || slot.date === colomboToday() && normaliseHHMM(slot.startTime) <= colomboNowHHMM()) return "past";
+      const active = await tx.select({ id: bookings.id }).from(bookings)
+        .where(and(eq(bookings.slotId, slotId), inArray(bookings.status, ["requested", "confirmed"])));
+      if (active.length) return "booked";
+      await tx.update(bookings).set({ slotId: null, startTime: sql`coalesce(${bookings.startTime}, ${slot.startTime})` })
+        .where(and(eq(bookings.slotId, slotId), sql`${bookings.status} not in ('requested', 'confirmed')`));
+      await tx.delete(availabilitySlots).where(eq(availabilitySlots.id, slotId));
+      return "deleted";
+    });
+  }
+
+  async closeVendorDay(experienceId: number, date: string) {
+    return db.transaction(async tx => {
+      await tx.select({ id: experiences.id }).from(experiences).where(eq(experiences.id, experienceId)).for("update");
+      const slots = await tx.select().from(availabilitySlots)
+        .where(and(eq(availabilitySlots.experienceId, experienceId), eq(availabilitySlots.date, date))).for("update");
+      let removed = 0;
+      for (const slot of slots) {
+        if (slot.status !== "open" || slot.date === colomboToday() && normaliseHHMM(slot.startTime) <= colomboNowHHMM()) continue;
+        const active = await tx.select({ id: bookings.id }).from(bookings)
+          .where(and(eq(bookings.slotId, slot.id), inArray(bookings.status, ["requested", "confirmed"])));
+        if (active.length) continue;
+        await tx.update(bookings).set({ slotId: null, startTime: sql`coalesce(${bookings.startTime}, ${slot.startTime})` })
+          .where(and(eq(bookings.slotId, slot.id), sql`${bookings.status} not in ('requested', 'confirmed')`));
+        await tx.delete(availabilitySlots).where(eq(availabilitySlots.id, slot.id));
+        removed++;
+      }
+      return { removed, kept: slots.length - removed };
+    });
+  }
+
   /** Take `qty` spots atomically. Returns false when the session no longer has room. */
   async takeSpots(slotId: number, qty: number): Promise<boolean> {
     const rows = await db.execute(sql`
