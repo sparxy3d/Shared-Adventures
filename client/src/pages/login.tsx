@@ -36,7 +36,8 @@ export default function Login() {
       queryClient.clear();
       queryClient.setQueryData(["/api/auth/me"], user);
       toast({ title: "Welcome back", description: "You’re signed in and ready to make a plan." });
-      navigate(user.role === "customer" && next ? next : homeForRole(user.role));
+      const vendorReturn = user.role === "vendor" && next && /^\/vendor(?:\/|\?|$)/.test(next);
+      navigate(next && (user.role === "customer" || vendorReturn) ? next : homeForRole(user.role));
     },
   });
   return (
@@ -61,7 +62,7 @@ export default function Login() {
         <div className="stage-social-wrap"><Button type="button" variant="outline" disabled className="stage-social" aria-disabled="true">Continue with Google</Button><span>Coming soon</span></div>
         <div className="stage-social-wrap"><Button type="button" variant="outline" disabled className="stage-social" aria-disabled="true">Continue with Facebook</Button><span>Coming soon</span></div>
       </div>
-      <p className="stage-auth-bottom">New here? <Link href="/signup" data-testid="link-signup">Sign up</Link></p>
+      <p className="stage-auth-bottom">New here? <Link href={safeNextUrl(new URLSearchParams(window.location.search).get("next")) ? `/signup?next=${encodeURIComponent(safeNextUrl(new URLSearchParams(window.location.search).get("next"))!)}` : "/signup"} data-testid="link-signup">Sign up</Link></p>
       <p className="stage-auth-footnote">Have a business? <Link href="/for-vendors">List your experience</Link></p>
     </AuthLayout>
   );

@@ -12,8 +12,8 @@ import { bookingInstant, memberBookingDate } from "@/lib/member-dates";
 interface MemberBooking {
   id: number; experienceId: number; bookingDate: string; startTime: string | null;
   qty: number; totalAmount: number | null; status: string; vendorNote: string | null;
-  experience: { title: string; imageUrl: string | null };
-  vendor: { businessName: string | null };
+  experience: { title: string; imageUrl: string | null; locationText: string | null; city: string | null };
+  vendor: { businessName: string | null; contactPhone: string | null; contactEmail: string | null };
 }
 const statuses: Record<string, string> = {
   requested: "bg-amber-100 text-amber-900",
@@ -37,7 +37,7 @@ export default function MyBookings() {
   ).sort((a, b) => (bookingInstant(a.bookingDate, a.startTime) - bookingInstant(b.bookingDate, b.startTime)) * (tab === "upcoming" ? 1 : -1));
   async function share(booking: MemberBooking) {
     setShareError("");
-    const url = `${window.location.origin}/experience/${booking.experienceId}`;
+    const url = `${window.location.origin}/activity/${booking.experienceId}`;
     try {
       if (navigator.share) await navigator.share({ title: booking.experience.title, url });
       else { await navigator.clipboard.writeText(url); toast({ title: "Activity link copied" }); }
@@ -78,8 +78,16 @@ export default function MyBookings() {
           {selected.vendorNote && <div className="rounded-xl bg-[#FFF8F1] p-4"><h3 className="font-semibold">Vendor’s note</h3><p className="whitespace-pre-wrap">{selected.vendorNote}</p></div>}
           {shareError && <p role="alert" className="text-red-800">{shareError}</p>}
           <Button onClick={() => share(selected)}>Share with your group</Button>
-          <p>Need to change this? Contact the vendor.</p>
-          <Link className="inline-flex min-h-11 items-center underline" href={`/experience/${selected.experienceId}`}>View activity and vendor details</Link>
+          {selected.status === "confirmed" && <section className="rounded-xl bg-[#FFF8F1] p-4" aria-labelledby="vendor-contact-heading">
+            <h3 id="vendor-contact-heading" className="font-semibold">Address and vendor contact</h3>
+            {(selected.experience.locationText || selected.experience.city) && <p className="break-words">{[selected.experience.locationText, selected.experience.city].filter(Boolean).join(" · ")}</p>}
+            {selected.vendor.contactPhone && <a className="flex min-h-11 items-center underline" href={`tel:${selected.vendor.contactPhone.replace(/[^\d+]/g, "")}`}>{selected.vendor.contactPhone}</a>}
+            {selected.vendor.contactEmail && <a className="flex min-h-11 items-center break-all underline" href={`mailto:${encodeURIComponent(selected.vendor.contactEmail)}`}>{selected.vendor.contactEmail}</a>}
+            {!selected.vendor.contactPhone && !selected.vendor.contactEmail && <p>Vendor contact hasn’t been provided yet.</p>}
+          </section>}
+          <p>Need to change this? {selected.status === "confirmed" && (selected.vendor.contactPhone || selected.vendor.contactEmail) ? <a className="inline-flex min-h-11 items-center underline" href={selected.vendor.contactPhone ? `tel:${selected.vendor.contactPhone.replace(/[^\d+]/g, "")}` : `mailto:${encodeURIComponent(selected.vendor.contactEmail!)}`}>Contact the vendor</a> : "Contact the vendor."}</p>
+          {selected.status !== "confirmed" && <p className="text-slate-600">Address and contact details are shared once your booking is confirmed.</p>}
+          <Link className="inline-flex min-h-11 items-center underline" href={`/activity/${selected.experienceId}`}>View activity</Link>
         </>}
       </DialogContent>
     </Dialog>

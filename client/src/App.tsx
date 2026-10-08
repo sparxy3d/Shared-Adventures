@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -25,12 +26,19 @@ import Legal from "@/pages/legal";
 import Support from "@/pages/support";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
+import { RequireRole } from "@/components/require-role";
+import VendorShell from "@/components/vendor-shell";
+import VendorNextUpdate from "@/pages/vendor/next-update";
 
 function LegalPage() {
   return <><Navbar /><Legal /><Footer /></>;
 }
 function SupportPage() {
   return <><Navbar /><Support /><Footer /></>;
+}
+
+function VendorRoute({ children }: { children: ReactNode }) {
+  return <RequireRole role="vendor"><VendorShell>{children}</VendorShell></RequireRole>;
 }
 
 function Router() {
@@ -56,13 +64,15 @@ function Router() {
       <Route path="/contact" component={SupportPage} />
       <Route path="/help" component={SupportPage} />
       <Route path="/forgot-password" component={SupportPage} />
-      <Route path="/vendor" component={VendorDashboard} />
-      <Route path="/vendor/profile" component={VendorProfile} />
-      <Route path="/vendor/experiences" component={VendorExperiences} />
-      <Route path="/vendor/experiences/new" component={ExperienceForm} />
-      <Route path="/vendor/experiences/:id/edit" component={ExperienceForm} />
-      <Route path="/vendor/experiences/:id/availability" component={Availability} />
-      <Route path="/vendor/bookings" component={VendorBookings} />
+      <Route path="/vendor">{() => <VendorRoute><VendorDashboard /></VendorRoute>}</Route>
+      <Route path="/vendor/profile">{() => <VendorRoute><VendorProfile /></VendorRoute>}</Route>
+      <Route path="/vendor/experiences">{() => <VendorRoute><VendorExperiences /></VendorRoute>}</Route>
+      <Route path="/vendor/experiences/new">{() => <VendorRoute><ExperienceForm /></VendorRoute>}</Route>
+      <Route path="/vendor/experiences/:id/edit">{() => <VendorRoute><ExperienceForm /></VendorRoute>}</Route>
+      <Route path="/vendor/experiences/:id/availability">{() => <VendorRoute><Availability /></VendorRoute>}</Route>
+      <Route path="/vendor/bookings">{() => <VendorRoute><VendorBookings /></VendorRoute>}</Route>
+      <Route path="/vendor/schedule">{() => <VendorRoute><VendorNextUpdate kind="schedule" /></VendorRoute>}</Route>
+      <Route path="/vendor/stats">{() => <VendorRoute><VendorNextUpdate kind="stats" /></VendorRoute>}</Route>
       <Route path="/for-vendors" component={ForVendors} />
       <Route path="/for-vendors/apply" component={VendorApply} />
       <Route path="/admin" component={AdminDashboard} />

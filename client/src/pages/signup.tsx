@@ -4,6 +4,7 @@ import { Link, useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import type { AuthUser } from "@/hooks/use-auth";
 import { homeForRole } from "@/hooks/use-auth";
+import { safeNextUrl } from "@/lib/auth-navigation";
 import AuthLayout from "@/components/auth-layout";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -31,7 +32,8 @@ export default function Signup() {
       queryClient.clear();
       queryClient.setQueryData(["/api/auth/me"], user);
       toast({ title: "You’re in.", description: "Your Free Spirit account is ready." });
-      navigate(homeForRole(user.role));
+      const next = safeNextUrl(new URLSearchParams(window.location.search).get("next"));
+      navigate(user.role === "customer" ? next || "/" : homeForRole(user.role));
     },
   });
   return (
@@ -67,7 +69,7 @@ export default function Signup() {
         <div className="stage-social-wrap"><Button type="button" variant="outline" disabled className="stage-social" aria-disabled="true">Continue with Google</Button><span>Coming soon</span></div>
         <div className="stage-social-wrap"><Button type="button" variant="outline" disabled className="stage-social" aria-disabled="true">Continue with Facebook</Button><span>Coming soon</span></div>
       </div>
-      <p className="stage-auth-bottom">Already have an account? <Link href="/login" data-testid="link-login">Log in</Link></p>
+      <p className="stage-auth-bottom">Already have an account? <Link href={safeNextUrl(new URLSearchParams(window.location.search).get("next")) ? `/login?next=${encodeURIComponent(safeNextUrl(new URLSearchParams(window.location.search).get("next"))!)}` : "/login"} data-testid="link-login">Log in</Link></p>
       <p className="stage-auth-footnote">Have a business? <Link href="/for-vendors">List your experience</Link></p>
     </AuthLayout>
   );

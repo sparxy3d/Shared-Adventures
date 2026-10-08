@@ -1,0 +1,4 @@
+- [x] Public pitch and reusable anonymous application.
+- [x] Vendor role-gated shell, dashboard and booking management.
+- [x] Application/approval and privacy/status API additions.
+- [x] Type/build, browser/API/ownership/privacy verification and file report.

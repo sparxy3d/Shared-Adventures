@@ -80,8 +80,13 @@ export const SUPPORTED_CITIES = [
   { name: "Kitulgala", lat: 6.9894, lng: 80.4176 },
 ] as const;
 
-// Support contact shown on the forgot-password screen and footer (placeholder until confirmed).
-export const SUPPORT_EMAIL = "hello@navira-co.com";
+// Mailbox is not live yet; used by the footer and prototype support flows.
+export const SUPPORT_EMAIL = "hello@freespirit.club";
+
+// Guest UI is a pending product decision. Enabling it does not enable server booking.
+export const GUEST_BOOKING_ENABLED = false;
+
+export const VENDOR_APPLICATION_THANK_YOU = "Thanks — we'll call you to talk it through.";
 
 // Placeholder copy. Labelled as drafts wherever it appears.
 export const VENDOR_TERMS_VERSION = "draft v0 (8 Oct 2026)";

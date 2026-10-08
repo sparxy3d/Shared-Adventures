@@ -27,3 +27,30 @@ against the preceding results even though ordinary first-tap interaction worked.
 **How to apply:** Wait for the specific resulting UI state. For action-logic
 checks, DOM clicks avoid scroll-coordinate races; retain native pointer checks
 where actual physical interaction or user-gesture behavior is the requirement.
+
+## Browser permissions and native dialogs
+
+Native OS flows and a browser fallback are separate verification targets.
+Synthetic DOM clicks do not establish real user activation; do not treat a
+headless native-share attempt as proof that clipboard sharing was exercised.
+
+**Why:** A headless share attempt did not reach the clipboard branch, although
+the fallback subsequently passed an actual clipboard write/read check.
+
+**How to apply:** Use trusted input for permission-bearing native flows. When
+selecting a fallback in the test browser, label that explicitly and report native
+OS/device checks separately. Keep authenticated scenarios in a single browser
+session rather than depending on profile restoration.
+
+## Form selectors and mutation replays
+
+Scope field selectors to the form or UI region, and verify the element type before
+using a native input-value setter. After a test has made writes, continue with a
+read-only check or a targeted scenario rather than blindly rerunning creation.
+
+**Why:** A description field selector also matched a document metadata element,
+and a later browser timeout occurred after its application had already succeeded.
+Repeating the whole mutation scenario would create unnecessary test accounts.
+
+**How to apply:** Separate mutation and read-only verification modes, label test
+records, and restore reserved booking inventory even when a later assertion fails.

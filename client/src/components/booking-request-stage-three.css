@@ -1,0 +1,22 @@
+.booking-request-stage-three { width: min(520px, calc(100vw - 32px)); max-height: 90dvh; overflow-y: auto; background: white; color: #171717; font-family: "Plus Jakarta Sans", sans-serif; font-size: 16px; border-radius: 16px; padding: 24px; }
+.booking-request-stage-three h2, .booking-request-stage-three h3 { color: #171717; font-weight: 700; }
+.booking-request-stage-three h3 { font-size: 20px; }
+.booking-request-stage-three > button:last-child { min-width: 44px; min-height: 44px; }
+.br-stack { display: flex; flex-direction: column; gap: 16px; }
+.br-stack label { display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-weight: 600; }
+.br-stack input, .br-stack textarea { width: 100%; min-height: 44px; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 12px; font: inherit; font-weight: 400; background: white; }
+.br-stack textarea { min-height: 100px; resize: vertical; }
+.br-stack input:read-only { background: #FFF8F1; }
+.br-primary, .br-secondary { display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 16px; border-radius: 10px; font: inherit; font-weight: 600; text-align: center; text-decoration: none; cursor: pointer; }
+.br-primary { border: 1px solid #FF6B24; color: #171717; background: #FF6B24; }
+.br-secondary { border: 1px solid #FF6B24; color: #171717; background: white; }
+.booking-request-stage-three :focus-visible { outline: 3px solid #171717; outline-offset: 3px; }
+.booking-request-stage-three button:disabled { opacity: .6; cursor: not-allowed; }
+.br-error { border: 1px solid #fecaca; border-radius: 12px; background: #fef2f2; color: #991b1b; padding: 12px; }
+.br-error a { display: flex; align-items: center; min-height: 44px; text-decoration: underline; }
+.br-total { font-size: 22px; font-weight: 700; }
+.br-sent { text-align: center; align-items: center; }
+.br-sent a { width: 100%; }
+.br-success { color: #166534; }
+.br-requested { color: #78350f; background: #fef3c7; padding: 6px 12px; border-radius: 999px; font-size: 14px; font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .booking-request-stage-three, .booking-request-stage-three * { animation: none !important; transition: none !important; } }

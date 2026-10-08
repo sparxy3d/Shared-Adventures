@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq, and, ilike, desc, sql, inArray, gte, lte, ne } from "drizzle-orm";
+import { eq, and, ilike, desc, sql, inArray, gte, lte, ne, getTableColumns } from "drizzle-orm";
 import {
   users, countries, vendors, experiences,
   availabilitySlots, bookings, favorites,
@@ -331,9 +331,12 @@ export class DatabaseStorage {
         experienceCategory: experiences.category,
         experienceImageUrl: experiences.imageUrl,
         experienceCity: experiences.city,
+        experienceLocationText: experiences.locationText,
         experienceDuration: experiences.durationMinutes,
         vendorId: vendors.id,
         vendorName: vendors.businessName,
+        vendorContactPhone: vendors.contactPhone,
+        vendorContactEmail: vendors.contactEmail,
         customerName: users.fullName,
         customerEmail: users.email,
         customerPhone: users.phone,
@@ -372,7 +375,21 @@ export class DatabaseStorage {
     // Members see the vendor, not other customers' data; strip customer contact.
     return rows.map((r) => {
       const b = this.shapeBooking(r);
-      return { ...b, customer: undefined };
+      const confirmed = b.status === "confirmed";
+      return {
+        ...b,
+        customer: undefined,
+        experience: {
+          ...b.experience,
+          city: confirmed ? r.experienceCity : null,
+          locationText: confirmed ? r.experienceLocationText : null,
+        },
+        vendor: {
+          ...b.vendor,
+          contactPhone: confirmed ? r.vendorContactPhone : null,
+          contactEmail: confirmed ? r.vendorContactEmail : null,
+        },
+      };
     });
   }
 
@@ -380,7 +397,57 @@ export class DatabaseStorage {
     const rows = await this.bookingSelect()
       .where(eq(experiences.vendorId, vendorId))
       .orderBy(desc(bookings.createdAt));
-    return rows.map((r) => this.shapeBooking(r));
+    const slots = await this.getSlotsByVendor(vendorId);
+    const remaining = new Map(slots.map(s => [s.id, s.capacity]));
+    return rows.map((r) => {
+      const b = this.shapeBooking(r);
+      const confirmed = b.status === "confirmed";
+      return {
+        ...b,
+        spotsLeft: b.slotId == null ? null : remaining.get(b.slotId) ?? null,
+        customer: {
+          ...b.customer,
+          email: confirmed ? b.customer.email : null,
+          phone: confirmed ? b.customer.phone : null,
+        },
+      };
+    });
+  }
+
+  async getSlotsByVendor(vendorId: number) {
+    return db.select(getTableColumns(availabilitySlots))
+      .from(availabilitySlots)
+      .innerJoin(experiences, eq(experiences.id, availabilitySlots.experienceId))
+      .where(eq(experiences.vendorId, vendorId));
+  }
+
+  async createAnonymousVendorApplication(owner: InsertUser, application: Omit<InsertVendor, "ownerProfileId">) {
+    return db.transaction(async tx => {
+      const [user] = await tx.insert(users).values(owner).returning();
+      const [vendor] = await tx.insert(vendors).values({ ...application, ownerProfileId: user.id }).returning();
+      return vendor;
+    });
+  }
+
+  async approveVendorApplication(vendorId: number, credentials: { hash: string; temporaryPassword: string }) {
+    return db.transaction(async tx => {
+      const [vendor] = await tx.select().from(vendors).where(eq(vendors.id, vendorId)).for("update");
+      if (!vendor) return undefined;
+      const [owner] = await tx.select().from(users).where(eq(users.id, vendor.ownerProfileId)).for("update");
+      if (!owner || !["customer", "vendor"].includes(owner.role)) {
+        return { error: "This account cannot be approved as a vendor" };
+      }
+      const placeholder = owner.password.startsWith("!");
+      await tx.update(users).set({
+        role: "vendor", ...(placeholder ? { password: credentials.hash } : {}),
+      }).where(eq(users.id, owner.id));
+      const [approved] = await tx.update(vendors).set({ verificationStatus: "approved" })
+        .where(eq(vendors.id, vendorId)).returning();
+      return {
+        ...approved,
+        ...(placeholder ? { login: { email: owner.email, temporaryPassword: credentials.temporaryPassword } } : {}),
+      };
+    });
   }
 
   async getAllBookings() {

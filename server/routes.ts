@@ -10,6 +10,7 @@ import { pool } from "./db";
 import type { User, Vendor } from "@shared/schema";
 import {
   CATEGORY_VALUES, EXPERIENCE_IMAGES, IDEAL_FOR_TAGS, ROLES, DISABLED_PREFIX, isDisabledRole,
+  SUPPORTED_CITIES, DECLINE_REASONS, VENDOR_TERMS_VERSION,
 } from "@shared/catalog";
 import { colomboToday, colomboNowHHMM, normaliseHHMM, addMinutesHHMM } from "./time";
 
@@ -147,13 +148,20 @@ const vendorProfileSchema = z.object({
 const applicationSchema = z.object({
   businessName: z.string().trim().min(1).max(120),
   contactName: z.string().trim().min(1).max(120),
-  contactEmail: z.string().trim().email().max(200),
-  contactPhone: z.string().trim().min(5).max(40),
-  city: z.string().trim().min(1).max(120),
+  contactEmail: z.string().trim().toLowerCase().email().max(200),
+  contactPhone: z.string().trim().max(40).transform(v => v.replace(/[\s()-]/g, ""))
+    .pipe(z.string().regex(/^\+94[1-9]\d{8}$/, "Enter a +94 mobile number")),
+  city: z.enum(SUPPORTED_CITIES.map(c => c.name) as [string, ...string[]]),
+  address: z.string().trim().min(1).max(300),
   activityTypes: z.array(z.enum(CATEGORY_VALUES)).min(1),
-  capacity: z.coerce.number().int().min(1).max(10000).optional().nullable(),
-  typicalPrice: z.coerce.number().int().min(0).max(10_000_000).optional().nullable(),
-  description: optionalText(2000),
+  capacity: z.coerce.number().int().min(1).max(10000),
+  typicalPrice: z.coerce.number().int().min(0).max(10_000_000),
+  description: z.string().trim().min(1).max(2000),
+  website: z.string().trim().min(1).max(300).refine(v =>
+    /^@[a-zA-Z0-9_.]{1,30}$/.test(v) || /^https?:\/\//i.test(v) && z.string().url().safeParse(v).success,
+    "Enter a website URL or Instagram @handle"),
+  mapsLink: z.string().trim().max(500).optional().nullable().refine(v =>
+    !v || /^https?:\/\//i.test(v) && z.string().url().safeParse(v).success, "Enter a valid Maps URL"),
   acceptTerms: z.literal(true, { errorMap: () => ({ message: "Please accept the vendor terms" }) }),
 });
 
@@ -192,8 +200,11 @@ const bookingSchema = z.object({
 });
 
 const vendorBookingUpdateSchema = z.object({
-  status: z.enum(["confirmed", "declined"]),
+  status: z.enum(["confirmed", "declined", "cancelled"]),
+  declineReason: z.enum(DECLINE_REASONS).optional(),
   vendorNote: optionalText(1000),
+}).refine(data => data.status !== "declined" || !!data.declineReason, {
+  message: "Choose a decline reason", path: ["declineReason"],
 });
 
 const adminBookingUpdateSchema = z.object({
@@ -444,19 +455,26 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json({ ok: true });
   }));
 
-  // ---------------- vendor applications (any logged-in member) ----------------
+  // ---------------- vendor applications (public, linked to the session when present) ----------------
 
   app.get("/api/vendor-applications/mine", requireAuth, h(async (_req, res) => {
     const vendor = await storage.getVendorByOwner(res.locals.user!.id);
     res.json(vendor ?? null);
   }));
 
-  app.post("/api/vendor-applications", requireAuth, h(async (req, res) => {
+  app.post("/api/vendor-applications", (req, res, next) => {
+    if (req.session.userId) return requireAuth(req, res, next);
+    next();
+  }, h(async (req, res) => {
     const data = parse(applicationSchema, req.body, res);
     if (!data) return;
-    const user = res.locals.user!;
-    if (user.role === "admin") return res.status(400).json({ message: "Admins can't apply as vendors" });
-    const existing = await storage.getVendorByOwner(user.id);
+    const user = res.locals.user;
+    if (user?.role === "admin") return res.status(400).json({ message: "Admins can't apply as vendors" });
+    const duplicateMessage = "This email already has an account — log in first, then apply";
+    if (!user && await storage.getUserByEmail(data.contactEmail)) {
+      return res.status(400).json({ message: duplicateMessage });
+    }
+    const existing = user ? await storage.getVendorByOwner(user.id) : undefined;
     if (existing && existing.verificationStatus !== "rejected") {
       return res.status(400).json({ message: "You have already applied" });
     }
@@ -469,19 +487,37 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       "— Application —",
       `Contact: ${data.contactName}`,
       `Activity types: ${data.activityTypes.join(", ")}`,
-      data.capacity ? `Typical group capacity: ${data.capacity}` : "",
-      data.typicalPrice ? `Typical price: LKR ${data.typicalPrice}` : "",
-      `Vendor terms (draft v0) accepted: ${new Date().toISOString()}`,
+      `Typical group capacity: ${data.capacity}`,
+      `Typical price: LKR ${data.typicalPrice}`,
+      `Website or Instagram: ${data.website}`,
+      data.mapsLink ? `Google Maps: ${data.mapsLink}` : "",
+      `Vendor terms (${VENDOR_TERMS_VERSION}) accepted: ${new Date().toISOString()}`,
     ].filter((l, i) => i > 0 || l).join("\n").trim();
     const fields = {
       businessName: data.businessName,
       description: details,
       countryId: lk?.id ?? null,
       city: data.city,
+      address: data.address,
       contactEmail: data.contactEmail,
       contactPhone: data.contactPhone,
       verificationStatus: "pending",
     };
+    if (!user) {
+      try {
+        const vendor = await storage.createAnonymousVendorApplication({
+          email: data.contactEmail, fullName: data.contactName, phone: data.contactPhone,
+          role: "customer", password: `!${randomBytes(24).toString("hex")}`,
+        }, fields);
+        return res.json(vendor);
+      } catch (error) {
+        const databaseError = error as { code?: string; cause?: { code?: string } };
+        if ((databaseError.code ?? databaseError.cause?.code) === "23505") {
+          return res.status(400).json({ message: duplicateMessage });
+        }
+        throw error;
+      }
+    }
     const vendor = existing
       ? await storage.updateVendor(existing.id, fields)
       : await storage.createVendor({ ...fields, ownerProfileId: user.id });
@@ -511,13 +547,28 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const in7 = new Date(Date.UTC(+today.slice(0, 4), +today.slice(5, 7) - 1, +today.slice(8, 10) + 6))
       .toISOString().slice(0, 10);
     const published = listings.filter((l) => l.status === "published").length;
+    const slots = await storage.getSlotsByVendor(vendor.id);
+    const monthBookings = bookings.filter(b => b.bookingDate.startsWith(today.slice(0, 7)));
     const accountStatus =
       vendor.verificationStatus === "approved" ? (published > 0 ? "live" : "approved") : vendor.verificationStatus;
     res.json({
       vendor,
       accountStatus, // applied(pending) | approved | live | paused | rejected
       listings: { total: listings.length, published },
-      pendingRequests: bookings.filter((b) => b.status === "requested"),
+      checklist: {
+        listing: listings.length > 0,
+        schedule: slots.some(s => s.date >= today && s.status === "open"),
+        photos: listings.length > 0 && listings.every(l => !!l.imageUrl),
+        review: vendor.verificationStatus === "approved",
+      },
+      month: {
+        requests: monthBookings.length,
+        confirmed: monthBookings.filter(b => ["confirmed", "completed"].includes(b.status)).length,
+        value: monthBookings.filter(b => ["confirmed", "completed"].includes(b.status))
+          .reduce((sum, b) => sum + (b.totalAmount ?? 0), 0),
+      },
+      pendingRequests: bookings.filter((b) => b.status === "requested")
+        .sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime()),
       next7Days: bookings
         .filter((b) => ["requested", "confirmed"].includes(b.status) && b.bookingDate >= today && b.bookingDate <= in7)
         .sort((a, b) => (a.bookingDate + (a.startTime ?? "")).localeCompare(b.bookingDate + (b.startTime ?? ""))),
@@ -617,10 +668,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!booking || !exp || exp.vendorId !== res.locals.vendor!.id) {
       return res.status(404).json({ message: "Booking not found" });
     }
-    if (booking.status !== "requested") {
+    const validTransition = booking.status === "requested" && ["confirmed", "declined"].includes(data.status)
+      || booking.status === "confirmed" && data.status === "cancelled";
+    if (!validTransition) {
       return res.status(409).json({ message: `This booking is already ${booking.status}` });
     }
-    const result = await changeBookingStatus(booking.id, data.status, data.vendorNote);
+    const vendorNote = data.status === "declined"
+      ? `${data.declineReason}${data.vendorNote?.trim() ? ` — ${data.vendorNote.trim()}` : ""}`
+      : data.vendorNote;
+    const result = await changeBookingStatus(booking.id, data.status, vendorNote);
     res.json(result.booking);
   }));
 
@@ -690,11 +746,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   }));
 
   app.post("/api/admin/vendors/:id/approve", h(async (req, res) => {
-    const vendor = await storage.getVendor(id(req.params.id));
-    if (!vendor) return res.status(404).json({ message: "Vendor not found" });
-    const owner = await storage.getUser(vendor.ownerProfileId);
-    if (owner && owner.role === "customer") await storage.updateUser(owner.id, { role: "vendor" });
-    res.json(await storage.updateVendor(vendor.id, { verificationStatus: "approved" }));
+    const temporaryPassword = `fs-${randomBytes(16).toString("hex")}`;
+    const result = await storage.approveVendorApplication(id(req.params.id), {
+      hash: await hashPassword(temporaryPassword), temporaryPassword,
+    });
+    if (!result) return res.status(404).json({ message: "Vendor not found" });
+    if ("error" in result) return res.status(409).json({ message: result.error });
+    res.json(result);
   }));
 
   app.post("/api/admin/vendors/:id/decline", h(async (req, res) => {
