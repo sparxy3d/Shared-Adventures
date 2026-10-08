@@ -1,6 +1,6 @@
 ---
 name: Browser verification tooling
-description: How to handle a mismatch between bundled testing instructions and available services
+description: Available browser tooling and timing safeguards for React UI verification
 ---
 
 The bundled testing instructions may advertise a testing subagent kind that this
@@ -14,3 +14,16 @@ verification, while the workspace already had a working browser.
 **How to apply:** Check service availability once; if unsupported, choose a
 supported verification method and distinguish real requests from intercepted
 browser fixtures in the report.
+
+## React render and scroll timing
+
+Browser command completion is not proof that React has rendered the new state
+or that scrolling has stopped. Native mouse coordinates can become stale
+between press and release while a page starts its requested smooth scroll.
+
+**Why:** Fast automated filter changes produced missed clicks and assertions
+against the preceding results even though ordinary first-tap interaction worked.
+
+**How to apply:** Wait for the specific resulting UI state. For action-logic
+checks, DOM clicks avoid scroll-coordinate races; retain native pointer checks
+where actual physical interaction or user-gesture behavior is the requirement.

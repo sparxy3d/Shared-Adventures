@@ -1,3 +1,3 @@
 - [Seed idempotency](seed-idempotency.md) — deliberately enabled demo upgrades must be per-record idempotent; SQL parameters for integer columns must be integers.
 - [Manual vendor onboarding](vendor-onboarding.md) — vendors are onboarded manually; admins need to edit listings on vendors' behalf.
-- [Browser verification](verification-tooling.md) — bundled testing instructions may name an unsupported service; use available browser tooling without adding app dependencies.
+- [Browser verification](verification-tooling.md) — use available browser tools without new app dependencies; wait for React state and account for smooth-scroll timing.

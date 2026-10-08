@@ -39,7 +39,8 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/activities">{() => <Redirect to="/search" />}</Route>
       <Route path="/search" component={SearchPage} />
-      <Route path="/experience/:id" component={ExperienceDetail} />
+      <Route path="/activity/:id" component={ExperienceDetail} />
+      <Route path="/experience/:id">{params => <Redirect to={`/activity/${params.id}${window.location.search}${window.location.hash}`} />}</Route>
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/account/bookings" component={MyBookings} />

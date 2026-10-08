@@ -1,1235 +1,266 @@
-import { Link, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useQuery } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { Link } from "wouter";
+import { useReducedMotion } from "framer-motion";
 import {
-  ArrowRight,
-  Dumbbell,
-  Mountain,
-  Palette,
-  Sparkles,
-  Search,
-  CalendarCheck,
-  Users,
-  ChevronRight,
-  ChevronDown,
-  MapPin,
-  Clock,
-  Dice5,
-  Loader2,
-  X,
-  Zap,
-  RefreshCw,
-  Gamepad2,
-  SlidersHorizontal,
-  Tag,
-  CalendarDays,
+  ArrowDown, ArrowRight, CalendarDays, Check, Clock3, Compass,
+  Dice5, LocateFixed, MapPin, Search, Users, X,
 } from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { toLocalDateStr } from "@/lib/dates";
+import { CATEGORIES, SUPPORTED_CITIES } from "@shared/catalog";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
-import ExperienceCard, { getOpenStatus } from "@/components/experience-card";
-import type { Experience } from "@shared/schema";
+import ExperienceCard from "@/components/experience-card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useEffect, useRef, useCallback } from "react";
-import { formatPrice } from "@/lib/currency";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useHomepageDiscovery } from "@/hooks/use-homepage-discovery";
+import { ideasHeading, nearestCity, sriLankaToday, type Activity, type DiscoveryChoices } from "@/lib/discovery";
+import "@/components/homepage.css";
 
-const categories = [
-  {
-    name: "Sports",
-    slug: "sports",
-    description: "Futsal, tennis, volleyball, golf & more",
-    icon: Dumbbell,
-    image: "/images/volleyball.png",
-    gradient: "from-blue-600 to-cyan-500",
-  },
-  {
-    name: "Adventure",
-    slug: "adventure",
-    description: "Rafting, go-karting, surfing & more",
-    icon: Mountain,
-    image: "/images/rafting.png",
-    gradient: "from-amber-600 to-orange-500",
-  },
-  {
-    name: "Arts & Classes",
-    slug: "arts",
-    description: "Pottery, painting, cooking & more",
-    icon: Palette,
-    image: "/images/pottery.png",
-    gradient: "from-purple-600 to-pink-500",
-  },
-  {
-    name: "Wellness",
-    slug: "wellness",
-    description: "Yoga, spa, group wellness & more",
-    icon: Sparkles,
-    image: "/images/yoga.png",
-    gradient: "from-emerald-600 to-teal-500",
-  },
-  {
-    name: "Recreation",
-    slug: "recreation",
-    description: "Pool, billiards, bowling, arcade & more",
-    icon: Gamepad2,
-    image: "/images/recreation.png",
-    gradient: "from-rose-600 to-red-500",
-  },
-];
+const categoryTiles = {
+  sports: { line: "Play together", image: "/images/volleyball.png" },
+  adventure: { line: "Feel the thrill", image: "/images/rafting.png" },
+  arts: { line: "Create something", image: "/images/pottery.png" },
+  wellness: { line: "Unwind together", image: "/images/yoga.png" },
+  recreation: { line: "Game night, sorted", image: "/images/recreation.png" },
+};
+const categories = CATEGORIES.map(category => ({ title: category.label, category: category.value, ...categoryTiles[category.value] }));
 
 const steps = [
-  {
-    number: "01",
-    icon: Search,
-    title: "Discover Activities",
-    description:
-      "Browse sports, adventures, arts, and wellness experiences in your area.",
-  },
-  {
-    number: "02",
-    icon: Users,
-    title: "Invite Your People",
-    description:
-      "Share the activity with friends, family, or your team. The more, the merrier.",
-  },
-  {
-    number: "03",
-    icon: CalendarCheck,
-    title: "Book Together",
-    description:
-      "Request to book for your group. The vendor confirms, and you're all set.",
-  },
+  { number: "01", icon: Compass, title: "Discover", copy: "Find activities by place, group size and time." },
+  { number: "02", icon: Users, title: "Decide together", copy: "Pick one everyone enjoys, or let us surprise you." },
+  { number: "03", icon: Check, title: "Make it happen", copy: "Request your booking; the vendor confirms." },
 ];
 
-const groupSizes = [
-  { value: "1", label: "1" },
-  { value: "2", label: "2" },
-  { value: "3-5", label: "3–5" },
-  { value: "6+", label: "6+" },
+const groupOptions: { value: DiscoveryChoices["group"]; label: string }[] = [
+  { value: "1", label: "1" }, { value: "2", label: "2" }, { value: "3-5", label: "3–5" }, { value: "6+", label: "6+" },
+];
+const timeOptions: { value: DiscoveryChoices["time"]; label: string }[] = [
+  { value: "now", label: "Now" }, { value: "tonight", label: "Tonight" }, { value: "weekend", label: "Weekend" },
 ];
 
-const timeModes = [
-  { value: "now", label: "Now", icon: Zap },
-  { value: "tonight", label: "Tonight", icon: Clock },
-  { value: "weekend", label: "Weekend", icon: CalendarCheck },
-];
+function ActivityGrid({ items, columns = "two" }: { items: Activity[]; columns?: "two" | "four" }) {
+  return <div className={`home-activity-grid home-activity-grid--${columns}`}>{items.map((activity) => <ExperienceCard key={activity.id} experience={activity} />)}</div>;
+}
 
-const next30Days = () => {
-  const days: { value: string; label: string }[] = [];
-  const fmt = new Intl.DateTimeFormat("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  });
-  for (let i = 0; i < 30; i++) {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    days.push({ value: toLocalDateStr(d), label: fmt.format(d) });
-  }
-  return days;
-};
-
-const formatPickedDate = (iso: string) => {
-  const d = new Date(`${iso}T12:00:00`);
-  return new Intl.DateTimeFormat("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  }).format(d);
-};
-
-const fadeUp = { hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0 } };
-const stagger = { visible: { transition: { staggerChildren: 0.08 } } };
+function LoadingCards({ count = 2 }: { count?: number }) {
+  return <div className="home-activity-grid home-activity-grid--two" aria-label="Loading activities">{Array.from({ length: count }, (_, i) => <Skeleton key={i} className="home-card-skeleton" />)}</div>;
+}
 
 export default function Home() {
-  const [, navigate] = useLocation();
-  const [heroSearch, setHeroSearch] = useState("");
-  const [decisionLocation, setDecisionLocation] = useState("");
-  const [decisionGroup, setDecisionGroup] = useState("");
-  const [decisionTime, setDecisionTime] = useState("");
-  const [decisionDate, setDecisionDate] = useState("");
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
-  const [showIdeas, setShowIdeas] = useState(false);
+  const discovery = useHomepageDiscovery();
+  const { choices, setChoices, submitted, showIdeas, clearFilters, live, results, fallback, fallbackCards, openNow, nowCards, featured, moreCards, surprise, cityStorageError } = discovery;
+  const reduceMotion = useReducedMotion();
+  const discoveryRef = useRef<HTMLElement>(null);
   const ideasRef = useRef<HTMLDivElement>(null);
-  const [showSurprise, setShowSurprise] = useState(false);
-  const [surpriseLoading, setSurpriseLoading] = useState(false);
-  const [surpriseResult, setSurpriseResult] = useState<Experience | null>(null);
-  const decisionRef = useRef<HTMLDivElement>(null);
+  const cityInputRef = useRef<HTMLInputElement>(null);
+  const dateRef = useRef<HTMLInputElement>(null);
+  const surpriseRun = useRef(0);
+  const [cityFocused, setCityFocused] = useState(false);
+  const [cityError, setCityError] = useState("");
+  const [surpriseOpen, setSurpriseOpen] = useState(false);
+  const [surpriseResult, setSurpriseResult] = useState<Activity | null>(null);
+  const [surpriseMessage, setSurpriseMessage] = useState("");
+  const [surpriseBusy, setSurpriseBusy] = useState(false);
+  const [surpriseExclude, setSurpriseExclude] = useState<number | undefined>();
 
-  useEffect(() => {
-    document.title = "Free Spirit — Find something fun to do right now";
-  }, []);
+  useEffect(() => { document.title = "Free Spirit — More moments together"; }, []);
 
-  const { data: featured, isLoading } = useQuery<Experience[]>({
-    queryKey: ["/api/experiences/featured"],
-  });
-  const { data: offers } = useQuery<Experience[]>({
-    queryKey: ["/api/offers"],
-  });
-
-  const openExperiences = featured?.filter((exp) => {
-    const s = getOpenStatus(exp);
-    return s.isOpen;
-  });
-
-  const handleHeroSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (heroSearch.trim())
-      navigate(`/search?q=${encodeURIComponent(heroSearch.trim())}`);
-    else navigate("/search");
+  const scrollToDiscovery = () => discoveryRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+  const submitIdeas = () => {
+    showIdeas({ ...choices });
+    window.setTimeout(() => ideasRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" }), 60);
   };
-
-  // Live filtered ideas for the Decision Engine (server applies all filters AND-ed).
-  const ideasParams = new URLSearchParams();
-  if (decisionLocation.trim()) ideasParams.set("city", decisionLocation.trim());
-  if (decisionDate) ideasParams.set("date", decisionDate);
-  else if (decisionTime) ideasParams.set("time", decisionTime);
-  if (decisionGroup) ideasParams.set("group", decisionGroup);
-  const ideasQueryString = ideasParams.toString();
-
-  const { data: ideas, isLoading: ideasLoading } = useQuery<Experience[]>({
-    queryKey: ["/api/experiences", ideasQueryString],
-    queryFn: async () => {
-      const res = await fetch(
-        `/api/experiences${ideasQueryString ? `?${ideasQueryString}` : ""}`,
-      );
-      if (!res.ok) throw new Error("Failed to fetch experiences");
-      return res.json();
-    },
-  });
-  const ideasCount = ideas?.length;
-  const hasDecisionFilters = Boolean(
-    decisionLocation.trim() || decisionTime || decisionDate || decisionGroup,
-  );
-
-  const clearDecisionFilters = () => {
-    setDecisionLocation("");
-    setDecisionGroup("");
-    setDecisionTime("");
-    setDecisionDate("");
+  const chooseCity = (city: string) => {
+    setChoices((current) => ({ ...current, city }));
+    setCityError("");
+    setCityFocused(false);
   };
-
-  const handleShowIdeas = () => {
-    setShowIdeas(true);
-    setTimeout(
-      () =>
-        ideasRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        }),
-      80,
+  const locateMe = () => {
+    setCityError("");
+    if (!navigator.geolocation) {
+      setCityError("Couldn't get your location — pick a city");
+      cityInputRef.current?.focus();
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => chooseCity(nearestCity(coords.latitude, coords.longitude)),
+      () => {
+        setCityError("Couldn't get your location — pick a city");
+        cityInputRef.current?.focus();
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
     );
   };
-
-  const handleSurprise = useCallback(async () => {
-    setSurpriseLoading(true);
-    setSurpriseResult(null);
-    setShowSurprise(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    try {
-      const params = new URLSearchParams();
-      if (decisionLocation) params.set("city", decisionLocation);
-      const res = await fetch(`/api/experiences/surprise?${params.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
-        setSurpriseResult(data);
-      }
-    } catch {}
-    setSurpriseLoading(false);
-  }, [decisionLocation]);
-
-  const scrollToDecision = () => {
-    decisionRef.current?.scrollIntoView({ behavior: "smooth" });
+  const openDatePicker = () => {
+    setChoices((current) => ({ ...current, time: "date", date: current.date || sriLankaToday() }));
+    const picker = dateRef.current;
+    if (!picker) return;
+    window.requestAnimationFrame(() => {
+      try { if (typeof picker.showPicker === "function") picker.showPicker(); else picker.focus(); }
+      catch { picker.focus(); }
+    });
   };
+  const runSurprise = async (exclude?: number, filters = choices) => {
+    const run = ++surpriseRun.current;
+    setSurpriseOpen(true);
+    setSurpriseBusy(true);
+    setSurpriseResult(null);
+    setSurpriseMessage("");
+    setSurpriseExclude(exclude);
+    const revealDelay = reduceMotion ? Promise.resolve() : new Promise<void>((resolve) => window.setTimeout(resolve, 600));
+    try {
+      const [picked] = await Promise.all([surprise.mutateAsync({ filters: { ...filters }, exclude }), revealDelay]);
+      if (run !== surpriseRun.current) return;
+      setSurpriseResult(picked);
+      if (!picked) setSurpriseMessage("Nothing matches those choices yet.");
+    } catch {
+      if (run === surpriseRun.current) setSurpriseMessage("Couldn’t pick an activity. Please try again.");
+    } finally {
+      if (run === surpriseRun.current) setSurpriseBusy(false);
+    }
+  };
+  const closeSurprise = (open: boolean) => {
+    setSurpriseOpen(open);
+    if (!open) {
+      surpriseRun.current += 1;
+      setSurpriseBusy(false);
+    }
+  };
+  const weekendSurprise = () => {
+    const next = { ...choices, time: "weekend" as const, date: "" };
+    setChoices(next);
+    void runSurprise(undefined, next);
+  };
+  const cityMatches = SUPPORTED_CITIES.filter(({ name }) => name.toLowerCase().includes(choices.city.toLowerCase()));
+  const liveCount = live.data?.length;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="home-stage">
       <Navbar variant="transparent" />
-
-      <section
-        className="relative min-h-[88vh] sm:min-h-[92vh] flex items-center overflow-hidden"
-        data-testid="hero-section"
-      >
-        <div className="absolute inset-0">
-          <img
-            src="/images/hero-bg.png"
-            alt="Adventure background"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/25" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-transparent" />
-        </div>
-
-        <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-24">
-          <motion.div
-            className="max-w-3xl"
-            initial="hidden"
-            animate="visible"
-            variants={stagger}
-          >
-            <motion.div variants={fadeUp} transition={{ duration: 0.7 }}>
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-white text-sm font-medium mb-6 border border-white/20">
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                Activities that bring people closer
-              </span>
-            </motion.div>
-
-            <motion.h1
-              variants={fadeUp}
-              transition={{ duration: 0.7, delay: 0.1 }}
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white leading-[1.05] tracking-tight mb-6"
-            >
-              Adventure{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-primary">
-                Starts Here
-              </span>
-            </motion.h1>
-
-            <motion.p
-              variants={fadeUp}
-              transition={{ duration: 0.7, delay: 0.2 }}
-              className="text-lg sm:text-xl text-white/80 leading-relaxed mb-8 max-w-xl"
-            >
-              Discover unforgettable adventures, classes, sports and wellness
-              experiences to enjoy with the people who matter most.
-            </motion.p>
-
-            <motion.form
-              variants={fadeUp}
-              transition={{ duration: 0.7, delay: 0.3 }}
-              className="mb-8"
-              onSubmit={handleHeroSearch}
-            >
-              <div className="flex flex-col sm:flex-row gap-3 max-w-xl">
-                <div className="relative flex-1">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    data-testid="input-hero-search"
-                    value={heroSearch}
-                    onChange={(e) => setHeroSearch(e.target.value)}
-                    placeholder="Search by activity, location or category..."
-                    className="pl-12 h-13 sm:h-14 rounded-xl sm:rounded-2xl bg-white text-foreground text-base border-0 shadow-2xl placeholder:text-muted-foreground/70"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  data-testid="button-hero-search"
-                  className="h-13 sm:h-14 px-8 rounded-xl sm:rounded-2xl text-base font-semibold shadow-2xl shadow-primary/30"
-                >
-                  Search
-                </Button>
-              </div>
-            </motion.form>
-
-            <motion.div
-              variants={fadeUp}
-              transition={{ duration: 0.7, delay: 0.4 }}
-              className="flex flex-col sm:flex-row items-start sm:items-center gap-4"
-            >
-              <Link href="/search" data-testid="button-explore-activities">
-                <Button
-                  size="lg"
-                  className="text-base px-8 h-12 rounded-xl gap-2 shadow-lg shadow-primary/30 bg-gradient-to-r from-primary to-orange-500 hover:from-primary/90 hover:to-orange-500/90"
-                >
-                  Explore Adventures <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={handleSurprise}
-                data-testid="button-surprise-hero"
-                className="text-base px-8 h-12 rounded-xl gap-2 border-white/30 text-white hover:bg-white/10 hover:text-white bg-white/5 backdrop-blur-sm"
-              >
-                <Dice5 className="w-4 h-4" /> Surprise Us
-              </Button>
-            </motion.div>
-
-            <motion.div
-              variants={fadeUp}
-              transition={{ duration: 0.7, delay: 0.5 }}
-              className="mt-10 flex items-center gap-6 text-sm text-white/70"
-            >
-              <div className="flex items-center gap-2">
-                <div className="flex -space-x-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className="w-8 h-8 rounded-full border-2 border-white/30 bg-gradient-to-br from-primary/80 to-orange-400/80"
-                    />
-                  ))}
-                </div>
-                <span>1,000+ happy groups</span>
-              </div>
-              <div className="hidden sm:flex items-center gap-1.5">
-                <div className="flex gap-0.5">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <svg
-                      key={i}
-                      className="w-4 h-4 text-amber-400 fill-amber-400"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-                <span>4.9 average rating</span>
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-
-        <motion.button
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.5 }}
-          onClick={scrollToDecision}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/60 hover:text-white/90 transition-colors"
-          data-testid="button-scroll-down"
-        >
-          <span className="text-sm font-medium">
-            What should we do right now?
-          </span>
-          <motion.div
-            animate={{ y: [0, 6, 0] }}
-            transition={{ repeat: Infinity, duration: 1.5 }}
-          >
-            <ChevronDown className="w-5 h-5" />
-          </motion.div>
-        </motion.button>
-      </section>
-
-      <section
-        ref={decisionRef}
-        className="py-16 lg:py-20 bg-background"
-        data-testid="decision-engine"
-      >
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            variants={stagger}
-            className="text-center mb-10"
-          >
-            <motion.h2
-              variants={fadeUp}
-              className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-foreground mb-3 tracking-tight"
-            >
-              What should we do{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-500">
-                right now?
-              </span>
-            </motion.h2>
-            <motion.p
-              variants={fadeUp}
-              className="text-muted-foreground text-base sm:text-lg max-w-xl mx-auto"
-            >
-              Find something fun near you based on time, location and group
-              size.
-            </motion.p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="relative bg-white dark:bg-card rounded-3xl shadow-2xl shadow-black/5 border border-border/40 p-6 sm:p-8"
-          >
-            <button
-              onClick={() => navigate("/search?filters=open")}
-              data-testid="button-decision-filters"
-              title="Advanced filters"
-              className="absolute top-4 right-4 w-9 h-9 rounded-xl border border-border/50 bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted flex items-center justify-center transition-colors"
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-            </button>
-            <div className="space-y-6">
-              <div>
-                <label className="text-sm font-semibold text-foreground mb-2 block">
-                  Location
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    data-testid="input-decision-location"
-                    value={decisionLocation}
-                    onChange={(e) => setDecisionLocation(e.target.value)}
-                    placeholder="Enter city or use current location"
-                    className="pl-11 h-12 rounded-xl bg-muted/30 border-border/50 text-base"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-semibold text-foreground mb-3 block flex items-center gap-2">
-                  <Users className="w-4 h-4 text-muted-foreground" /> Group size
-                </label>
-                <div className="flex gap-2">
-                  {groupSizes.map((g) => (
-                    <button
-                      key={g.value}
-                      data-testid={`button-decision-group-${g.value}`}
-                      onClick={() =>
-                        setDecisionGroup(
-                          decisionGroup === g.value ? "" : g.value,
-                        )
-                      }
-                      className={`flex-1 h-12 rounded-xl text-sm font-semibold transition-all ${
-                        decisionGroup === g.value
-                          ? "bg-primary text-white shadow-md shadow-primary/25 scale-[1.02]"
-                          : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground border border-border/30"
-                      }`}
-                    >
-                      {g.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-semibold text-foreground mb-3 block flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-muted-foreground" /> When
-                </label>
-                <div className="flex gap-2">
-                  {timeModes.map((t) => (
-                    <button
-                      key={t.value}
-                      data-testid={`button-decision-time-${t.value}`}
-                      onClick={() => {
-                        setDecisionTime(
-                          decisionTime === t.value ? "" : t.value,
-                        );
-                        setDecisionDate("");
-                      }}
-                      className={`flex-1 h-12 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
-                        decisionTime === t.value && !decisionDate
-                          ? "bg-primary text-white shadow-md shadow-primary/25 scale-[1.02]"
-                          : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground border border-border/30"
-                      }`}
-                    >
-                      <t.icon className="w-4 h-4" />
-                      {t.label}
-                    </button>
-                  ))}
-                  <Popover
-                    open={datePickerOpen}
-                    onOpenChange={setDatePickerOpen}
-                  >
-                    <PopoverTrigger asChild>
-                      <button
-                        data-testid="button-decision-date"
-                        className={`flex-1 h-12 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
-                          decisionDate
-                            ? "bg-primary text-white shadow-md shadow-primary/25 scale-[1.02]"
-                            : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground border border-border/30"
-                        }`}
-                      >
-                        <CalendarDays className="w-4 h-4" />
-                        {decisionDate
-                          ? formatPickedDate(decisionDate)
-                          : "Pick a date"}
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      align="end"
-                      className="w-72 p-3 rounded-2xl"
-                    >
-                      <p className="text-xs font-semibold text-muted-foreground mb-2 px-1">
-                        Next 30 days
-                      </p>
-                      <div
-                        className="grid grid-cols-3 gap-1.5 max-h-64 overflow-y-auto"
-                        data-testid="date-picker-grid"
-                      >
-                        {next30Days().map((d) => (
-                          <button
-                            key={d.value}
-                            data-testid={`button-date-${d.value}`}
-                            onClick={() => {
-                              setDecisionDate(d.value);
-                              setDecisionTime("");
-                              setDatePickerOpen(false);
-                            }}
-                            className={`px-1 py-2 rounded-lg text-xs font-medium transition-colors ${
-                              decisionDate === d.value
-                                ? "bg-primary text-white"
-                                : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
-                            }`}
-                          >
-                            {d.label}
-                          </button>
-                        ))}
-                      </div>
-                      {decisionDate && (
-                        <button
-                          onClick={() => {
-                            setDecisionDate("");
-                            setDatePickerOpen(false);
-                          }}
-                          className="mt-2 w-full text-xs font-medium text-muted-foreground hover:text-foreground underline underline-offset-2"
-                        >
-                          Clear date
-                        </button>
-                      )}
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <Button
-                  onClick={
-                    hasDecisionFilters && ideasCount === 0
-                      ? handleSurprise
-                      : handleShowIdeas
-                  }
-                  data-testid="button-show-ideas"
-                  size="lg"
-                  className="flex-1 h-13 rounded-xl text-base font-semibold gap-2 shadow-lg shadow-primary/25 bg-gradient-to-r from-primary to-orange-500 hover:from-primary/90 hover:to-orange-500/90"
-                >
-                  {hasDecisionFilters && ideasCount === 0 ? (
-                    <>
-                      <Dice5 className="w-4 h-4" /> Surprise Us instead
-                    </>
-                  ) : (
-                    <>
-                      <Search className="w-4 h-4" />
-                      {hasDecisionFilters && ideasCount !== undefined
-                        ? `Show ${ideasCount} idea${ideasCount === 1 ? "" : "s"}`
-                        : "Show Ideas"}
-                    </>
-                  )}
-                </Button>
-                <Button
-                  onClick={handleSurprise}
-                  data-testid="button-surprise-decision"
-                  variant="outline"
-                  size="lg"
-                  className="flex-1 h-13 rounded-xl text-base font-semibold gap-2 border-2 border-primary/20 hover:bg-primary/5"
-                >
-                  <Dice5 className="w-4 h-4" /> Surprise Us
-                </Button>
-              </div>
-            </div>
-          </motion.div>
-
-          {showIdeas && (
-            <div
-              ref={ideasRef}
-              className="pt-12 scroll-mt-24"
-              data-testid="your-ideas-section"
-            >
-              <div className="flex items-end justify-between mb-6 gap-4">
-                <div>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-foreground">
-                    Your ideas
-                  </h3>
-                  <p
-                    className="text-muted-foreground text-sm mt-1"
-                    data-testid="text-ideas-count"
-                  >
-                    {ideasLoading
-                      ? "Finding ideas…"
-                      : `${ideasCount ?? 0} experience${ideasCount === 1 ? "" : "s"} found`}
-                  </p>
-                </div>
-                {hasDecisionFilters && (
-                  <button
-                    onClick={clearDecisionFilters}
-                    data-testid="button-clear-decision-filters"
-                    className="text-sm font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground whitespace-nowrap"
-                  >
-                    Clear filters
-                  </button>
-                )}
-              </div>
-
-              {ideasLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  {[1, 2].map((i) => (
-                    <Skeleton key={i} className="h-72 rounded-2xl" />
-                  ))}
-                </div>
-              ) : ideas && ideas.length > 0 ? (
-                <div
-                  className="grid grid-cols-1 sm:grid-cols-2 gap-5"
-                  data-testid="your-ideas-grid"
-                >
-                  {ideas.map((exp) => (
-                    <ExperienceCard key={exp.id} experience={exp} />
-                  ))}
-                </div>
-              ) : (
-                <div
-                  className="text-center py-14 rounded-2xl border border-dashed border-border/60 bg-muted/20"
-                  data-testid="ideas-empty-state"
-                >
-                  <h4 className="text-xl font-bold text-foreground mb-2">
-                    No exact match — try Surprise Us
-                  </h4>
-                  <p className="text-muted-foreground text-sm mb-6">
-                    Nothing fits that exact combination, but there's still
-                    plenty worth doing.
-                  </p>
-                  <div className="flex items-center justify-center gap-4">
-                    <Button
-                      onClick={handleSurprise}
-                      data-testid="button-surprise-empty-ideas"
-                      className="rounded-xl px-6 gap-2"
-                    >
-                      <Dice5 className="w-4 h-4" /> Surprise Us
-                    </Button>
-                    <button
-                      onClick={clearDecisionFilters}
-                      data-testid="link-clear-decision-filters"
-                      className="text-sm font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground"
-                    >
-                      Clear filters
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section
-        className="py-14 lg:py-16 bg-background relative"
-        data-testid="category-shortcuts"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            className="text-center mb-10"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            variants={stagger}
-          >
-            <motion.h2
-              variants={fadeUp}
-              className="text-2xl sm:text-3xl font-bold text-foreground mb-2"
-            >
-              Find your kind of fun
-            </motion.h2>
-            <motion.p
-              variants={fadeUp}
-              className="text-muted-foreground text-base"
-            >
-              Whether it's action-packed or creatively inspiring
-            </motion.p>
-          </motion.div>
-
-          <motion.div
-            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-5"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            variants={stagger}
-          >
-            {categories.map((cat) => (
-              <motion.div
-                key={cat.slug}
-                variants={fadeUp}
-                transition={{ duration: 0.5 }}
-              >
-                <Link
-                  href={`/search?category=${cat.slug}`}
-                  data-testid={`card-category-${cat.slug}`}
-                >
-                  <div className="group relative rounded-2xl overflow-hidden cursor-pointer shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 aspect-[4/3] sm:aspect-[3/2]">
-                    <img
-                      src={cat.image}
-                      alt={cat.name}
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                    <div
-                      className={`absolute inset-0 bg-gradient-to-t ${cat.gradient} opacity-60 group-hover:opacity-70 transition-opacity duration-300`}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                    <div className="relative h-full flex flex-col justify-end p-4 sm:p-5">
-                      <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
-                        <cat.icon className="w-5 h-5 text-white" />
-                      </div>
-                      <h3 className="text-lg sm:text-xl font-bold text-white mb-0.5">
-                        {cat.name}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-white/80 line-clamp-1">
-                        {cat.description}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {openExperiences && openExperiences.length > 0 && (
-        <section className="py-14 lg:py-16 bg-muted/20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div
-              className="flex items-end justify-between mb-8 gap-4"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={stagger}
-            >
-              <div>
-                <motion.div
-                  variants={fadeUp}
-                  className="flex items-center gap-2 mb-2"
-                >
-                  <Badge className="bg-green-100 text-green-700 border-0 text-xs font-semibold">
-                    <Zap className="w-3 h-3 mr-1" />
-                    Live
-                  </Badge>
-                </motion.div>
-                <motion.h2
-                  variants={fadeUp}
-                  className="text-2xl sm:text-3xl font-bold text-foreground"
-                >
-                  Open Near You
-                </motion.h2>
-              </div>
-              <motion.div variants={fadeUp}>
-                <Link href="/search" data-testid="link-open-near-all">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-xl gap-1 text-xs"
-                  >
-                    View all <ArrowRight className="w-3 h-3" />
-                  </Button>
-                </Link>
-              </motion.div>
-            </motion.div>
-            <div className="flex gap-5 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible">
-              {openExperiences.slice(0, 4).map((exp) => (
-                <div key={exp.id} className="min-w-[280px] sm:min-w-0">
-                  <ExperienceCard experience={exp} />
-                </div>
-              ))}
+      <main>
+        <section className="home-hero" aria-labelledby="home-title">
+          <img className="home-hero-photo" src="/images/hero-bg.png" alt="Friends enjoying an outdoor activity together" />
+          <div className="home-hero-shade" />
+          <div className="home-hero-content">
+            <p className="home-handwritten">More moments together</p>
+            <h1 id="home-title">Life is better<br /><span>together.</span></h1>
+            <p className="home-hero-subtitle">Discover experiences, classes and activities to enjoy with the people who matter.</p>
+            <div className="home-hero-actions">
+              <Link href="/search" className="home-button home-button--orange">Explore experiences <ArrowRight size={17} aria-hidden="true" /></Link>
+              <button type="button" className="home-button home-button--outline" onClick={() => void runSurprise()}> <Dice5 size={17} aria-hidden="true" /> Surprise Us</button>
             </div>
           </div>
+          <span className="home-hero-caption">A little plan can turn into a story.</span>
         </section>
-      )}
 
-      <section className="py-14 lg:py-20 bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-10 gap-4"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={stagger}
-          >
-            <div>
-              <motion.h2
-                variants={fadeUp}
-                className="text-2xl sm:text-3xl font-bold text-foreground mb-1"
-              >
-                Popular Right Now
-              </motion.h2>
-              <motion.p variants={fadeUp} className="text-muted-foreground">
-                Activities people love doing together
-              </motion.p>
-            </div>
-            <motion.div variants={fadeUp}>
-              <Link href="/search" data-testid="link-view-all">
-                <Button variant="outline" className="rounded-xl gap-2">
-                  View all <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-            </motion.div>
-          </motion.div>
-
-          {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="rounded-2xl overflow-hidden bg-white dark:bg-card border border-border/40"
-                >
-                  <Skeleton className="aspect-[4/3]" />
-                  <div className="p-4 space-y-3">
-                    <Skeleton className="h-5 w-3/4" />
-                    <Skeleton className="h-4 w-1/2" />
-                    <Skeleton className="h-4 w-1/3" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : featured && featured.length > 0 ? (
-            <motion.div
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
-              variants={stagger}
-            >
-              {featured.map((exp) => (
-                <motion.div
-                  key={exp.id}
-                  variants={fadeUp}
-                  transition={{ duration: 0.4 }}
-                >
-                  <ExperienceCard experience={exp} />
-                </motion.div>
-              ))}
-            </motion.div>
-          ) : (
-            <div className="text-center py-16">
-              <p className="text-muted-foreground text-lg">
-                No experiences available yet. Check back soon!
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {offers && offers.length > 0 && (
-        <section
-          className="py-14 lg:py-16 bg-background"
-          data-testid="offers-section"
-        >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div
-              className="flex items-end justify-between mb-8 gap-4"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={stagger}
-            >
+        <section ref={discoveryRef} className="home-discovery-wrap" aria-labelledby="discovery-heading">
+          <div className="home-discovery-card">
+            <div className="home-discovery-intro">
               <div>
-                <motion.div
-                  variants={fadeUp}
-                  className="flex items-center gap-2 mb-2"
-                >
-                  <Badge
-                    variant="outline"
-                    className="border-orange-500 text-orange-600 text-xs font-semibold"
-                  >
-                    <Tag className="w-3 h-3 mr-1" />
-                    Limited time
-                  </Badge>
-                </motion.div>
-                <motion.h2
-                  variants={fadeUp}
-                  className="text-2xl sm:text-3xl font-bold text-foreground"
-                >
-                  Offers
-                </motion.h2>
+                <p className="home-eyebrow">A good place to start</p>
+                <h2 id="discovery-heading">What should we do <span>right now?</span></h2>
               </div>
-            </motion.div>
-            <div className="flex gap-5 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:overflow-visible">
-              {offers.slice(0, 3).map((exp) => (
-                <Link
-                  key={exp.id}
-                  href={`/experience/${exp.id}`}
-                  data-testid={`card-offer-${exp.id}`}
-                  className="min-w-[280px] sm:min-w-0"
-                >
-                  <div className="group cursor-pointer rounded-2xl overflow-hidden bg-white dark:bg-card border border-orange-500/40 hover:border-orange-500 transition-all duration-300 hover:shadow-xl hover:shadow-orange-500/10 hover:-translate-y-1 flex flex-col h-full">
-                    <div className="relative aspect-[16/9] overflow-hidden">
-                      {exp.imageUrl ? (
-                        <img
-                          src={exp.imageUrl}
-                          alt={exp.title}
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-orange-400 to-amber-500" />
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                      <span className="absolute top-3 left-3 inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border border-orange-500 bg-white/95 dark:bg-black/70 text-orange-600 dark:text-orange-400 font-semibold shadow-sm">
-                        <Tag className="w-3 h-3" /> Offer
-                      </span>
-                    </div>
-                    <div className="p-4 flex flex-col flex-1">
-                      <p className="text-sm font-bold text-orange-600 dark:text-orange-400 mb-1">
-                        {exp.offerLabel}
-                      </p>
-                      <h3 className="font-bold text-[15px] text-foreground mb-2 line-clamp-1 group-hover:text-primary transition-colors">
-                        {exp.title}
-                      </h3>
-                      <div className="mt-auto flex items-center justify-between">
-                        <span className="text-sm font-semibold text-foreground">
-                          {formatPrice(exp.priceAmount, exp.currencyCode)}
-                          <span className="text-[11px] text-muted-foreground font-normal ml-1">
-                            / person
-                          </span>
-                        </span>
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
-                          View <ArrowRight className="w-3 h-3" />
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+              <span className="home-discovery-mark" aria-hidden="true"><Compass size={22} /></span>
             </div>
+
+            <div className="home-filters">
+              <div className="home-city-field">
+                <label htmlFor="home-city">Where are you?</label>
+                <div className="home-city-input-wrap">
+                  <MapPin size={18} aria-hidden="true" />
+                  <input
+                    ref={cityInputRef}
+                    id="home-city"
+                    role="combobox"
+                    aria-expanded={cityFocused && cityMatches.length > 0}
+                    aria-controls="home-city-suggestions"
+                    aria-autocomplete="list"
+                    value={choices.city}
+                    onChange={(event) => { setChoices((current) => ({ ...current, city: event.target.value })); setCityFocused(true); setCityError(""); }}
+                    onFocus={() => setCityFocused(true)}
+                    onBlur={() => window.setTimeout(() => setCityFocused(false), 140)}
+                    placeholder="Choose a city"
+                    autoComplete="off"
+                  />
+                  {choices.city && <button className="home-clear-city" type="button" aria-label="Clear city" onMouseDown={(event) => event.preventDefault()} onClick={() => chooseCity("")}><X size={17} /></button>}
+                </div>
+                <button className="home-locate" type="button" onClick={locateMe}><LocateFixed size={16} /> <span>Use my location</span></button>
+                {cityFocused && cityMatches.length > 0 && <div className="home-city-suggestions" id="home-city-suggestions" role="listbox" aria-label="Suggested cities">{cityMatches.map(({ name }) => <button type="button" role="option" aria-selected={choices.city === name} key={name} onMouseDown={(event) => event.preventDefault()} onClick={() => chooseCity(name)}><MapPin size={15} />{name}</button>)}</div>}
+                {(cityError || cityStorageError) && <p className="home-field-error" role="alert">{cityError || cityStorageError}</p>}
+              </div>
+
+              <fieldset className="home-choice-field">
+                <legend><Users size={16} /> How many people?</legend>
+                <div className="home-choice-row" role="group" aria-label="Group size">{groupOptions.map((option) => <button type="button" key={option.value} aria-pressed={choices.group === option.value} className={`home-pill ${choices.group === option.value ? "is-selected" : ""}`} onClick={() => setChoices((current) => ({ ...current, group: option.value }))}>{option.label}</button>)}</div>
+              </fieldset>
+
+              <fieldset className="home-choice-field">
+                <legend><Clock3 size={16} /> When?</legend>
+                <div className="home-choice-row home-time-row" role="group" aria-label="When">{timeOptions.map((option) => <button type="button" key={option.value} aria-pressed={choices.time === option.value} className={`home-pill ${choices.time === option.value ? "is-selected" : ""}`} onClick={() => setChoices((current) => ({ ...current, time: option.value, date: "" }))}>{option.label}</button>)}<button type="button" aria-pressed={choices.time === "date"} className={`home-pill home-date-trigger ${choices.time === "date" ? "is-selected" : ""}`} onClick={openDatePicker}><CalendarDays size={15} />{choices.date ? new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Colombo", day: "numeric", month: "short" }).format(new Date(`${choices.date}T12:00:00+05:30`)) : "Pick a date"}</button></div>
+                <input ref={dateRef} className="home-native-date" hidden={choices.time !== "date"} type="date" aria-label="Choose a date" min={sriLankaToday()} value={choices.date} onChange={(event) => { if (event.target.value >= sriLankaToday()) setChoices((current) => ({ ...current, time: "date", date: event.target.value })); }} />
+              </fieldset>
+            </div>
+
+            <div className="home-discovery-actions">
+              <button type="button" className="home-button home-button--orange home-button--wide" onClick={submitIdeas}>
+                 <Search size={18} />{live.isFetching ? "Show ideas" : liveCount === undefined ? "Show ideas" : `Show ${liveCount} ${liveCount === 1 ? "idea" : "ideas"}`}
+              </button>
+              <button type="button" className="home-button home-button--outline home-button--wide" onClick={() => void runSurprise()} disabled={surpriseBusy}><Dice5 size={18} /> Surprise Us</button>
+            </div>
+            {live.isError && <div className="home-live-error" role="alert">Couldn’t load the live count. <button type="button" onClick={() => void live.refetch()}>Retry</button></div>}
+            <p className="home-quiet-note">See what’s open now · Perfect for groups · Instant ideas, less planning</p>
+          </div>
+
+          {submitted && <div ref={ideasRef} className="home-ideas" aria-live="polite">
+            <div className="home-section-heading home-ideas-heading">
+              <div><p className="home-eyebrow">Your ideas</p><h2>{results.isLoading ? "Finding ideas…" : results.isError ? "Your ideas" : ideasHeading(results.data?.length ?? 0, submitted)}</h2></div>
+              <button type="button" className="home-text-button" onClick={() => { clearFilters(); window.setTimeout(() => ideasRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" }), 60); }}>Clear filters</button>
+            </div>
+            {results.isLoading ? <LoadingCards /> : results.isError ? <div className="home-inline-error" role="alert"><p>We couldn’t load these ideas.</p><button type="button" className="home-button home-button--outline" onClick={() => void results.refetch()}>Retry</button></div> : results.data?.length ? <ActivityGrid items={results.data} /> : <>
+              <div className="home-empty">
+                <span className="home-empty-icon"><Search size={22} /></span>
+                <h3>Nothing matches right now</h3>
+                <p>Try a little more room in your plan.</p>
+                <div className="home-empty-actions"><button type="button" className="home-button home-button--orange" onClick={() => showIdeas({ ...submitted, time: "weekend", date: "" })}>Try Weekend</button><button type="button" className="home-button home-button--outline" onClick={() => showIdeas({ ...submitted, city: "" })}>Any city</button></div>
+              </div>
+              {!fallback.isLoading && fallback.isError && <div className="home-inline-error" role="alert"><p>Couldn’t load next available sessions.</p><button type="button" className="home-button home-button--outline" onClick={() => void fallback.refetch()}>Retry</button></div>}
+              {fallback.isLoading ? <LoadingCards /> : fallbackCards.length > 0 && <div className="home-next-available"><p className="home-eyebrow">Next available · same group and city</p><ActivityGrid items={fallbackCards} /></div>}
+            </>}
+          </div>}
+        </section>
+
+        <section className="home-categories home-section-shell" aria-labelledby="categories-title">
+          <div className="home-section-heading"><div><h2 id="categories-title">Explore by category</h2></div><Link href="/search" className="home-text-link">Browse all <ArrowRight size={16} /></Link></div>
+          <div className="home-category-rail">{categories.map((category) => <Link key={category.category} href={`/search?category=${category.category}`} className="home-category-tile"><img src={category.image} alt={`${category.title} activities`} loading="lazy" /><span className="home-category-shade" /><span className="home-category-copy"><strong>{category.title}</strong><span>{category.line}</span></span><ArrowRight size={18} className="home-category-arrow" aria-hidden="true" /></Link>)}</div>
+        </section>
+
+        {(openNow.isLoading || openNow.isError || nowCards.length > 0) && <section className="home-now home-section-shell" aria-label={choices.city ? "Open near you" : "Open now"}>
+          {openNow.isError ? <div className="home-data-error" role="alert"><div><p className="home-eyebrow">Session availability</p><h2>Open sessions are taking a moment.</h2></div><button type="button" className="home-button home-button--outline" onClick={() => void openNow.refetch()}>Retry</button></div> : openNow.isLoading ? <><div className="home-section-heading"><div><p className="home-eyebrow">Available sessions</p><h2>Open {choices.city ? "near you" : "now"}</h2></div></div><LoadingCards count={2} /></> : nowCards.length > 0 && <><div className="home-section-heading"><div><p className="home-eyebrow">Available sessions</p><h2 id="open-now-title">Open {choices.city ? "near you" : "now"}</h2></div><span className="home-live-label"><i /> Live</span></div><ActivityGrid items={nowCards} columns="four" /></>}
+        </section>}
+
+        <section className="home-featured home-section-shell" aria-labelledby="more-title">
+          <div className="home-section-heading"><div><p className="home-eyebrow">Good plans, coming up</p><h2 id="more-title">More to explore</h2></div><Link href="/search" className="home-text-link">See everything <ArrowRight size={16} /></Link></div>
+          {featured.isLoading ? <LoadingCards count={4} /> : featured.isError ? <div className="home-data-error" role="alert"><p>Couldn’t load experiences right now.</p><button type="button" className="home-button home-button--outline" onClick={() => void featured.refetch()}>Retry</button></div> : moreCards.length > 0 ? <ActivityGrid items={moreCards} columns="four" /> : <div className="home-light-empty">More sessions will appear here as they become available. <Link href="/search" className="home-text-link">Explore activities</Link></div>}
+        </section>
+
+        <section className="home-how" aria-labelledby="how-title">
+          <div className="home-section-shell">
+            <div className="home-how-intro"><h2 id="how-title">How Free Spirit works</h2></div>
+            <div className="home-steps">{steps.map(({ number, icon: Icon, title, copy }) => <article className="home-step" key={number}><span className="home-step-number">{number}</span><span className="home-step-icon"><Icon size={20} /></span><h3>{title}</h3><p>{copy}</p></article>)}</div>
           </div>
         </section>
-      )}
 
-      <section className="py-16 lg:py-24 bg-muted/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            className="text-center mb-14"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={stagger}
-          >
-            <motion.h2
-              variants={fadeUp}
-              className="text-2xl sm:text-3xl font-bold text-foreground mb-3"
-            >
-              How it works
-            </motion.h2>
-            <motion.p
-              variants={fadeUp}
-              className="text-muted-foreground text-base max-w-lg mx-auto"
-            >
-              From discovery to experience in three simple steps
-            </motion.p>
-          </motion.div>
-
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={stagger}
-          >
-            {steps.map((step, index) => (
-              <motion.div
-                key={step.number}
-                variants={fadeUp}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-                className="text-center relative"
-              >
-                {index < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-10 left-[60%] w-[80%] border-t-2 border-dashed border-border" />
-                )}
-                <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary/10 mb-6">
-                  <step.icon className="w-8 h-8 text-primary" />
-                  <span className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
-                    {step.number}
-                  </span>
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">
-                  {step.title}
-                </h3>
-                <p className="text-muted-foreground leading-relaxed max-w-xs mx-auto">
-                  {step.description}
-                </p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      <section className="py-16 lg:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-primary via-orange-500 to-amber-500 p-10 sm:p-16 text-center"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={stagger}
-          >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.15),transparent_70%)]" />
-            <div className="relative">
-              <motion.h2
-                variants={fadeUp}
-                className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight"
-              >
-                Ready to bring your people together?
-              </motion.h2>
-              <motion.p
-                variants={fadeUp}
-                className="text-white/80 text-lg sm:text-xl mb-8 max-w-2xl mx-auto"
-              >
-                Join thousands of groups discovering and booking activities
-                worth doing together.
-              </motion.p>
-              <motion.div
-                variants={fadeUp}
-                className="flex flex-col sm:flex-row items-center justify-center gap-4"
-              >
-                <Link href="/search" data-testid="button-explore-cta">
-                  <Button
-                    size="lg"
-                    className="bg-white text-foreground hover:bg-white/90 text-base px-8 h-12 rounded-xl shadow-lg"
-                  >
-                    Explore Activities
-                  </Button>
-                </Link>
-                <Link href="/signup" data-testid="button-list-cta">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="border-white/30 text-white hover:bg-white/10 text-base px-8 h-12 rounded-xl"
-                  >
-                    List Your Experience
-                  </Button>
-                </Link>
-              </motion.div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
+        <section className="home-final-cta" aria-labelledby="final-cta-title">
+          <img src="/images/rafting.png" alt="Rafting together on a river" loading="lazy" />
+          <div className="home-final-shade" />
+          <div className="home-final-content"><p className="home-eyebrow">Make room for a good story</p><h2 id="final-cta-title">Great memories<br />start with a plan.</h2><div className="home-final-actions"><button type="button" className="home-button home-button--orange" onClick={scrollToDiscovery}>Find something to do <ArrowRight size={17} /></button><Link href="/for-vendors" className="home-button home-button--outline">List your experience</Link></div></div>
+        </section>
+      </main>
       <Footer />
 
-      <Dialog open={showSurprise} onOpenChange={setShowSurprise}>
-        <DialogContent
-          className="sm:max-w-lg rounded-2xl p-0 overflow-hidden border-0"
-          data-testid="surprise-modal"
-        >
-          {surpriseLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 px-8">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-              >
-                <Dice5 className="w-12 h-12 text-primary mb-4" />
-              </motion.div>
-              <h3 className="text-xl font-bold text-foreground mb-2">
-                Finding something fun...
-              </h3>
-              <p className="text-muted-foreground text-sm text-center">
-                Picking the perfect activity for you
-              </p>
-            </div>
-          ) : surpriseResult ? (
-            <div>
-              <div className="relative aspect-[16/9] overflow-hidden">
-                {surpriseResult.imageUrl && (
-                  <img
-                    src={surpriseResult.imageUrl}
-                    alt={surpriseResult.title}
-                    className="w-full h-full object-cover"
-                  />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                <div className="absolute top-4 left-4 flex gap-2">
-                  {(() => {
-                    const s = getOpenStatus(surpriseResult);
-                    return s.label ? (
-                      <Badge
-                        className={`border-0 text-xs font-semibold shadow-sm ${s.isOpen ? "bg-green-100 text-green-700" : "bg-white/90 text-muted-foreground"}`}
-                      >
-                        {s.isOpen && <Zap className="w-3 h-3 mr-1" />}
-                        {s.label}
-                      </Badge>
-                    ) : null;
-                  })()}
-                </div>
-                <button
-                  onClick={() => setShowSurprise(false)}
-                  className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="p-6 space-y-4">
-                <div>
-                  <h3
-                    className="text-xl font-bold text-foreground mb-1"
-                    data-testid="text-surprise-title"
-                  >
-                    {surpriseResult.title}
-                  </h3>
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                    {surpriseResult.city && (
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5" />
-                        {surpriseResult.city}
-                      </span>
-                    )}
-                    {surpriseResult.durationMinutes && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5" />
-                        {surpriseResult.durationMinutes}min
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {surpriseResult.idealForTags &&
-                  surpriseResult.idealForTags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {surpriseResult.idealForTags.map((tag) => (
-                        <Badge
-                          key={tag}
-                          variant="secondary"
-                          className="text-xs rounded-full"
-                        >
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                <div className="text-2xl font-bold text-foreground">
-                  {formatPrice(
-                    surpriseResult.priceAmount,
-                    surpriseResult.currencyCode,
-                  )}
-                  <span className="text-sm font-normal text-muted-foreground ml-1">
-                    / person
-                  </span>
-                </div>
-                <div className="flex gap-3">
-                  <Link
-                    href={`/experience/${surpriseResult.id}`}
-                    className="flex-1"
-                  >
-                    <Button
-                      className="w-full h-12 rounded-xl text-base font-semibold"
-                      data-testid="button-surprise-view"
-                      onClick={() => setShowSurprise(false)}
-                    >
-                      View Details
-                    </Button>
-                  </Link>
-                  <Button
-                    variant="outline"
-                    onClick={handleSurprise}
-                    className="h-12 rounded-xl gap-2 px-6"
-                    data-testid="button-surprise-retry"
-                  >
-                    <RefreshCw className="w-4 h-4" /> Try Another
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-16 px-8">
-              <p className="text-muted-foreground">
-                No experiences found. Try again!
-              </p>
-              <Button
-                variant="outline"
-                onClick={handleSurprise}
-                className="mt-4 rounded-xl"
-              >
-                Try Again
-              </Button>
-            </div>
-          )}
+      <Dialog open={surpriseOpen} onOpenChange={closeSurprise}>
+        <DialogContent className="home-surprise-dialog">
+          <DialogHeader><p className="home-eyebrow">A little help deciding</p><DialogTitle>Surprise us</DialogTitle><DialogDescription>One real session picked for your group and plans.</DialogDescription></DialogHeader>
+          {surpriseBusy ? <div className="home-surprise-loading" aria-live="polite"><Skeleton className="home-shuffle-skeleton" /><span className="home-surprise-die"><Dice5 size={28} /></span><p>Finding a good one…</p></div> : surpriseResult ? <div className="home-surprise-result"><ExperienceCard experience={surpriseResult} /><Link className="home-button home-button--orange home-button--wide" href={`/activity/${surpriseResult.id}`}>View details</Link><button type="button" className="home-button home-button--outline home-button--wide" onClick={() => void runSurprise(surpriseResult.id)}>Try another <Dice5 size={17} /></button></div> : <div className="home-surprise-empty" role={surpriseMessage.startsWith("Couldn’t") ? "alert" : undefined}><p>{surpriseMessage || "Nothing matches those choices yet"}</p><div className="home-empty-actions"><button type="button" className="home-button home-button--orange" onClick={weekendSurprise}>Try Weekend</button><button type="button" className="home-button home-button--outline" onClick={() => void runSurprise(surpriseExclude)}>Retry</button></div></div>}
         </DialogContent>
       </Dialog>
     </div>
