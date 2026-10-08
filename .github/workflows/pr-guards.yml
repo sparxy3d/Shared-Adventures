@@ -1,0 +1,43 @@
+# Deterministic gate: install, typecheck, build. No secrets, no database, about a minute.
+# Runs on every PR and on every push to main (Replit Agent commits straight to main).
+name: PR guards
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: guards-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  guards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # package-lock.json has three entries resolved to Replit's internal registry
+      # (package-firewall.replit.local), which does not exist outside Replit.
+      # Point them at the public registry. Remove this step once the lockfile is fixed.
+      # See docs/context/tech.md, "Lockfile trap".
+      - name: Rewrite Replit-only lockfile URLs
+        run: sed -i 's#http://package-firewall.replit.local/npm/#https://registry.npmjs.org/#' package-lock.json
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        run: npm run check
+
+      - name: Build
+        run: npm run build
