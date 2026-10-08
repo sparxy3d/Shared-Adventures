@@ -44,7 +44,7 @@ import { Badge } from "@/components/ui/badge";
 
 const categories = [
   {
-    name: "Sportz",
+    name: "Sports",
     slug: "sports",
     description: "Futsal, tennis, volleyball, golf & more",
     icon: Dumbbell,
