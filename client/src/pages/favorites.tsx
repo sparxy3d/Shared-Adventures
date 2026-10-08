@@ -1,79 +1,29 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Link, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Heart, ArrowRight, Trash2 } from "lucide-react";
-import Navbar from "@/components/navbar";
-import Footer from "@/components/footer";
-import ExperienceCard from "@/components/experience-card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Link } from "wouter";
+import type { Experience } from "@shared/schema";
+import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import type { Experience, User } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Button } from "@/components/ui/button";
+import ExperienceCard from "@/components/experience-card";
+import MemberLayout, { MemberError, MemberLoading } from "@/components/member-layout";
 
-interface FavoriteWithExperience {
-  id: number;
-  experienceId: number;
-  experience: Experience;
-}
-
+interface SavedActivity { id: number; experienceId: number; experience: Experience }
 export default function Favorites() {
-  const [, navigate] = useLocation();
+  const { isMember } = useAuth();
   const { toast } = useToast();
-
-  const { data: user } = useQuery<User | null>({
-    queryKey: ["/api/auth/me"],
-    queryFn: async () => {
-      const res = await fetch("/api/auth/me", { credentials: "include" });
-      if (res.status === 401) return null;
-      return res.json();
-    },
+  const [error, setError] = useState("");
+  const query = useQuery<SavedActivity[]>({ queryKey: ["/api/favorites"], enabled: isMember });
+  const remove = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/favorites/${id}`),
+    onSuccess: () => { setError(""); queryClient.invalidateQueries({ queryKey: ["/api/favorites"] }); toast({ title: "Removed from your bucket list" }); },
+    onError: () => setError("We couldn’t remove that activity. Please try again."),
   });
-
-  const { data: favorites, isLoading } = useQuery<FavoriteWithExperience[]>({
-    queryKey: ["/api/favorites"],
-    enabled: !!user,
-  });
-
-  if (!user && !isLoading) {
-    navigate("/login");
-    return null;
-  }
-
-  return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <div className="pt-8 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-foreground mb-8" data-testid="text-favorites-title">Bucket List</h1>
-
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-72 rounded-2xl" />
-            ))}
-          </div>
-        ) : favorites && favorites.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {favorites.map((fav) => (
-              <ExperienceCard key={fav.id} experience={fav.experience} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-20">
-            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
-              <Heart className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-xl font-semibold text-foreground mb-2" data-testid="text-empty-bucket-list">
-              Your bucket list is empty — go find something worth doing.
-            </h3>
-            <Link href="/search">
-              <Button className="rounded-xl gap-2">
-                Explore Activities <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-          </div>
-        )}
-      </div>
-      <Footer />
-    </div>
-  );
+  return <MemberLayout title="Bucket list">
+    {error && <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-white p-4">{error}<Button variant="outline" className="ml-2" onClick={() => { if (remove.variables) remove.mutate(remove.variables); }}>Retry</Button></div>}
+    {query.isLoading ? <MemberLoading /> : query.isError ? <MemberError retry={() => query.refetch()} message="We couldn’t load your bucket list." /> : query.data?.length ? <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {query.data.map(saved => <ExperienceCard key={saved.id} experience={saved.experience} saved onRemove={() => remove.mutate(saved.experienceId)} removePending={remove.isPending} memberView />)}
+    </div> : <div className="rounded-2xl bg-white p-8 text-center shadow-sm"><p className="mb-4 text-xl font-semibold">Save activities you want to try</p><Link href="/search"><Button>Explore</Button></Link></div>}
+  </MemberLayout>;
 }

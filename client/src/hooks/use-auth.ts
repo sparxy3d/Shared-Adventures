@@ -28,6 +28,8 @@ export function useAuth() {
   return {
     user,
     isLoading: query.isLoading,
+    error: query.error,
+    retry: query.refetch,
     isAdmin: user?.role === "admin",
     isVendor: user?.role === "vendor",
     isMember: user?.role === "customer",

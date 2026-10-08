@@ -326,6 +326,20 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json(stripPassword(user));
   }));
 
+  app.post("/api/auth/change-password", requireAuth, h(async (req, res) => {
+    const data = parse(z.object({
+      currentPassword: z.string().min(1).max(200),
+      newPassword: z.string().min(8, "Use at least 8 characters").max(200),
+    }).strict(), req.body, res);
+    if (!data) return;
+    const user = res.locals.user!;
+    if (!(await comparePasswords(data.currentPassword, user.password))) {
+      return res.status(400).json({ message: "Current password is incorrect" });
+    }
+    await storage.updateUser(user.id, { password: await hashPassword(data.newPassword) });
+    res.json({ ok: true });
+  }));
+
   // ---------------- public discovery ----------------
 
   app.get("/api/countries", h(async (_req, res) => {

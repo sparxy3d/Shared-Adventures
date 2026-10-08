@@ -1,124 +1,74 @@
+import "@/components/stage-one.css";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
+import type { AuthUser } from "@/hooks/use-auth";
+import { homeForRole } from "@/hooks/use-auth";
+import AuthLayout from "@/components/auth-layout";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function Signup() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [fullName, setFullName] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-
+  const [accepted, setAccepted] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const signupMutation = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/auth/signup", { fullName, email, password }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      navigate("/");
-      toast({ title: "Welcome to Free Spirit!", description: "Your account has been created." });
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/auth/signup", { fullName: name.trim(), email: email.trim(), phone: `+94${phone.replace(/\D/g, "")}`, password });
+      return response.json() as Promise<AuthUser>;
     },
-    onError: (err: Error) => {
-      toast({ title: "Signup failed", description: err.message, variant: "destructive" });
+    onSuccess: (user) => {
+      queryClient.clear();
+      queryClient.setQueryData(["/api/auth/me"], user);
+      toast({ title: "You’re in.", description: "Your Free Spirit account is ready." });
+      navigate(homeForRole(user.role));
     },
   });
-
   return (
-    <div className="min-h-screen flex">
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-orange-500 to-amber-500 items-center justify-center p-12">
-        <div className="max-w-md text-center">
-          <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-8">
-            <span className="text-white text-2xl font-bold">FS</span>
+    <AuthLayout eyebrow="Sri Lanka, together" title="Make more of your time." titleTestId="text-signup-title" description="A few details, then it’s time to find something your whole group will love.">
+      <form onSubmit={(event) => { event.preventDefault(); if (accepted && phone.replace(/\D/g, "").length === 9) signupMutation.mutate(); }}>
+        <div className="stage-field"><Label htmlFor="signup-name">Full name</Label><Input id="signup-name" data-testid="input-fullname" autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} placeholder="How friends know you" required /></div>
+        <div className="stage-field"><Label htmlFor="signup-email">Email address</Label><Input id="signup-email" data-testid="input-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" required /></div>
+        <div className="stage-field">
+          <Label htmlFor="signup-phone">Mobile number</Label>
+          <div className="stage-phone-input">
+            <span aria-hidden="true">+94</span>
+            <Input id="signup-phone" data-testid="input-phone" type="tel" inputMode="numeric" autoComplete="tel-national" value={phone} onChange={(event) => setPhone(event.target.value.replace(/\D/g, "").slice(0, 9))} placeholder="77 123 4567" pattern="[0-9]{9}" title="Enter the 9 digits after +94" required />
           </div>
-          <h2 className="text-4xl font-bold text-white mb-4">Join Free Spirit</h2>
-          <p className="text-white/80 text-lg">
-            Discover activities that bring people closer together. Start exploring today.
-          </p>
         </div>
-      </div>
-
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
-        <div className="w-full max-w-sm">
-          <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-orange-400 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">FS</span>
-            </div>
-            <span className="text-xl font-bold">Free Spirit</span>
+        <div className="stage-field">
+          <Label htmlFor="signup-password">Password</Label>
+          <div className="stage-password-wrap">
+            <Input id="signup-password" data-testid="input-password" type={showPassword ? "text" : "password"} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 8 characters" minLength={8} required />
+            <button type="button" className="stage-password-toggle" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button>
           </div>
-
-          <h1 className="text-2xl font-bold text-foreground mb-1" data-testid="text-signup-title">Create an account</h1>
-          <p className="text-muted-foreground mb-8">
-            Already have an account?{" "}
-            <Link href="/login" className="text-primary font-medium hover:underline" data-testid="link-login">
-              Log in
-            </Link>
-          </p>
-
-          <form
-            onSubmit={(e) => { e.preventDefault(); signupMutation.mutate(); }}
-            className="space-y-4"
-          >
-            <div>
-              <Label htmlFor="fullName">Full name</Label>
-              <Input
-                id="fullName"
-                data-testid="input-fullname"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Your full name"
-                className="h-11 rounded-xl mt-1.5"
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                data-testid="input-email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="h-11 rounded-xl mt-1.5"
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                data-testid="input-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Create a password"
-                className="h-11 rounded-xl mt-1.5"
-                minLength={6}
-                required
-              />
-            </div>
-            <Button
-              type="submit"
-              className="w-full h-11 rounded-xl"
-              disabled={signupMutation.isPending}
-              data-testid="button-signup"
-            >
-              {signupMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                "Create account"
-              )}
-            </Button>
-            <p className="text-xs text-center text-muted-foreground">
-              By signing up, you agree to our Terms of Service and Privacy Policy.
-            </p>
-          </form>
         </div>
+        <div className="stage-terms-check">
+          <Checkbox id="terms-consent" checked={accepted} onCheckedChange={(value) => setAccepted(value === true)} aria-required="true" />
+          <label htmlFor="terms-consent">I agree to the <Link href="/terms">Terms of Service</Link> and have read the <Link href="/privacy">Privacy Policy</Link>.</label>
+        </div>
+        {signupMutation.isError && <p className="stage-auth-alert" role="alert">We couldn’t create your account just now. Check your details and try again.</p>}
+        <Button type="submit" className="stage-submit" disabled={signupMutation.isPending || !accepted || phone.replace(/\D/g, "").length !== 9} data-testid="button-signup">
+          {signupMutation.isPending ? "Creating your account…" : "Create member account"}
+        </Button>
+      </form>
+      <div className="stage-social-divider">Or continue with</div>
+      <div className="stage-social-actions">
+        <div className="stage-social-wrap"><Button type="button" variant="outline" disabled className="stage-social" aria-disabled="true">Continue with Google</Button><span>Coming soon</span></div>
+        <div className="stage-social-wrap"><Button type="button" variant="outline" disabled className="stage-social" aria-disabled="true">Continue with Facebook</Button><span>Coming soon</span></div>
       </div>
-    </div>
+      <p className="stage-auth-bottom">Already have an account? <Link href="/login" data-testid="link-login">Log in</Link></p>
+      <p className="stage-auth-footnote">Have a business? <Link href="/for-vendors">List your experience</Link></p>
+    </AuthLayout>
   );
 }

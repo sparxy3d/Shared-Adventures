@@ -1,332 +1,170 @@
+import "@/components/stage-one.css";
+import { useState, type FormEvent } from "react";
 import { Link, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Input } from "@/components/ui/input";
-import {
-  Menu, User, LogOut, LayoutDashboard, Heart, CalendarCheck,
-  Search, ShoppingBag, ChevronDown, CalendarDays,
-  Dumbbell, Mountain, Palette, Sparkles, TrendingUp, Gift, Star, MapPin
-} from "lucide-react";
-import { useState } from "react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useQuery } from "@tanstack/react-query";
-import type { User as UserType } from "@shared/schema";
+import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { CATEGORIES, SUPPORT_EMAIL } from "@shared/catalog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  ArrowRight, CalendarDays, ChevronDown, Compass, Heart, LifeBuoy, LogOut, Menu,
+  Search, Store, UserRound,
+} from "lucide-react";
 
-const navCategories = [
-  { name: "Activities", href: "/search", icon: Star },
-  { name: "Locations", href: "/search?view=locations", icon: MapPin },
-  { name: "Gift Ideas", href: "/search?ideal_for=couples,families", icon: Gift },
-  { name: "New", href: "/search?sort=new", icon: Sparkles },
-  { name: "Popular", href: "/search?sort=popular", icon: TrendingUp },
-];
+const categoryLinks = CATEGORIES.map((category) => ({
+  label: category.label,
+  href: `/search?category=${category.value}`,
+}));
 
-export default function Navbar({ variant = "default" }: { variant?: "default" | "transparent" }) {
-  const [open, setOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [location, navigate] = useLocation();
-
-  const { data: user } = useQuery<UserType | null>({
-    queryKey: ["/api/auth/me"],
-    queryFn: async () => {
-      try {
-        const res = await fetch("/api/auth/me", { credentials: "include" });
-        if (res.status === 401) return null;
-        if (!res.ok) return null;
-        return res.json();
-      } catch {
-        return null;
-      }
+export default function Navbar(_props: { variant?: "default" | "transparent" } = {}) {
+  const { toast } = useToast();
+  const { user, isLoading, error, retry } = useAuth();
+  const [, navigate] = useLocation();
+  const [search, setSearch] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const logout = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/auth/logout"),
+    onSuccess: () => {
+      queryClient.clear();
+      queryClient.setQueryData(["/api/auth/me"], null);
+      setDrawerOpen(false);
+      toast({ title: "Signed out", description: "You’re all set. See you next time." });
+      navigate("/");
     },
   });
-
-  const handleLogout = async () => {
-    await apiRequest("POST", "/api/auth/logout");
-    queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-    window.location.href = "/";
+  const doSearch = (event: FormEvent) => {
+    event.preventDefault();
+    const term = search.trim();
+    if (!term) return;
+    navigate(`/search?q=${encodeURIComponent(term)}`);
+    setShowSearch(false);
+    setDrawerOpen(false);
   };
+  const dashboard = user?.role === "vendor" ? "/vendor" : user?.role === "admin" ? "/admin" : "/";
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
-
-  const isHome = location === "/";
-  const isTransparent = variant === "transparent" && isHome;
+  const CatalogLinks = ({ close }: { close?: () => void }) => (
+    <>
+      {categoryLinks.map((item) => (
+        <DropdownMenuItem key={item.label} asChild>
+          <Link href={item.href} className="stage-menu-item" onClick={close}>{item.label}</Link>
+        </DropdownMenuItem>
+      ))}
+    </>
+  );
 
   return (
-    <>
-      <div
-        data-testid="promo-banner"
-        className="bg-gradient-to-r from-primary via-orange-500 to-amber-500 text-white text-center py-2 px-4 text-xs sm:text-sm font-medium tracking-wide"
-      >
-        <span className="opacity-90">Launch Offer</span>
-        <span className="mx-2">—</span>
-        <span>Free listings for early vendors.</span>
-        <Link href="/signup" className="ml-2 underline underline-offset-2 hover:opacity-80 transition-opacity font-semibold">
-          Get started
-        </Link>
-      </div>
-
-      <nav
-        data-testid="navbar"
-        className={`sticky top-0 z-50 transition-all duration-300 ${
-          isTransparent
-            ? "bg-black/40 backdrop-blur-md border-b border-white/10"
-            : "bg-white dark:bg-background border-b border-border shadow-sm"
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14 sm:h-16 gap-4">
-            <Link href="/" data-testid="link-home" className="flex-shrink-0">
-              <div className="flex items-center gap-2 cursor-pointer">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-orange-400 flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold text-sm">FS</span>
-                </div>
-                <span className={`text-lg sm:text-xl font-bold tracking-tight ${isTransparent ? "text-white" : "text-foreground"}`}>
-                  Free Spirit
-                </span>
-              </div>
-            </Link>
-
-            <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-6">
-              <div className="relative w-full">
-                <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isTransparent ? "text-white/60" : "text-muted-foreground"}`} />
-                <Input
-                  data-testid="input-nav-search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search activities, locations..."
-                  className={`pl-10 h-10 rounded-full border text-sm ${
-                    isTransparent
-                      ? "bg-white/15 border-white/20 text-white placeholder:text-white/50 focus:bg-white/25 focus:border-white/40"
-                      : "bg-muted/50 border-border/50 focus:bg-white"
-                  }`}
-                />
-              </div>
-            </form>
-
-            <div className="hidden md:flex items-center gap-1">
-              <Link href="/search?filters=open&focus=date" data-testid="link-nav-calendar" title="Find by date">
-                <Button variant="ghost" size="icon" className={`rounded-full ${isTransparent ? "text-white hover:bg-white/10" : ""}`}>
-                  <CalendarDays className="w-5 h-5" />
-                </Button>
-              </Link>
-              <Button variant="ghost" size="icon" data-testid="button-cart" className={`rounded-full ${isTransparent ? "text-white hover:bg-white/10" : ""}`}>
-                <ShoppingBag className="w-5 h-5" />
-              </Button>
-              {user ? (
-                <>
-                  <Link href="/favorites" data-testid="link-favorites-icon" title="Bucket List">
-                    <Button variant="ghost" size="icon" className={`rounded-full ${isTransparent ? "text-white hover:bg-white/10" : ""}`}>
-                      <Heart className="w-5 h-5" />
-                    </Button>
-                  </Link>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        data-testid="button-user-menu"
-                        className={`flex items-center gap-2 rounded-full ${isTransparent ? "text-white hover:bg-white/10" : ""}`}
-                      >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isTransparent ? "bg-white/20" : "bg-primary/10"}`}>
-                          <User className={`w-4 h-4 ${isTransparent ? "text-white" : "text-primary"}`} />
-                        </div>
-                        <span className="text-sm font-medium hidden lg:inline">{user.fullName.split(" ")[0]}</span>
-                        <ChevronDown className="w-3 h-3 opacity-60" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-52 rounded-xl p-1">
-                      <div className="px-3 py-2 border-b border-border mb-1">
-                        <p className="text-sm font-medium">{user.fullName}</p>
-                        <p className="text-xs text-muted-foreground">{user.email}</p>
-                      </div>
-                      <DropdownMenuItem asChild>
-                        <Link href="/account" data-testid="link-account" className="cursor-pointer rounded-lg">
-                          <User className="w-4 h-4 mr-2" />
-                          My Account
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/bookings" data-testid="link-bookings" className="cursor-pointer rounded-lg">
-                          <CalendarCheck className="w-4 h-4 mr-2" />
-                          My Bookings
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/favorites" data-testid="link-favorites" className="cursor-pointer rounded-lg">
-                          <Heart className="w-4 h-4 mr-2" />
-                          Bucket List
-                        </Link>
-                      </DropdownMenuItem>
-                      {user.role === "vendor" && (
-                        <DropdownMenuItem asChild>
-                          <Link href="/vendor" data-testid="link-vendor" className="cursor-pointer rounded-lg">
-                            <LayoutDashboard className="w-4 h-4 mr-2" />
-                            Vendor Portal
-                          </Link>
-                        </DropdownMenuItem>
-                      )}
-                      {user.role === "admin" && (
-                        <DropdownMenuItem asChild>
-                          <Link href="/admin" data-testid="link-admin" className="cursor-pointer rounded-lg">
-                            <LayoutDashboard className="w-4 h-4 mr-2" />
-                            Admin Panel
-                          </Link>
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={handleLogout}
-                        data-testid="button-logout"
-                        className="cursor-pointer text-destructive rounded-lg"
-                      >
-                        <LogOut className="w-4 h-4 mr-2" />
-                        Logout
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </>
-              ) : (
-                <>
-                  <Link href="/login" data-testid="link-login">
-                    <Button variant="ghost" className={`text-sm font-medium rounded-full ${isTransparent ? "text-white hover:bg-white/10" : ""}`}>
-                      Log in
-                    </Button>
-                  </Link>
-                  <Link href="/signup" data-testid="link-signup">
-                    <Button className="text-sm font-medium rounded-full px-5">
-                      Sign up
-                    </Button>
-                  </Link>
-                </>
-              )}
-            </div>
-
-            <Sheet open={open} onOpenChange={setOpen}>
-              <SheetTrigger asChild className="md:hidden">
-                <Button variant="ghost" size="icon" data-testid="button-mobile-menu" className={isTransparent ? "text-white" : ""}>
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-80 p-0">
-                <div className="flex flex-col h-full">
-                  <div className="p-4 border-b border-border">
-                    <form onSubmit={(e) => { handleSearch(e); setOpen(false); }}>
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          placeholder="Search activities..."
-                          className="pl-10 h-10 rounded-full"
-                        />
-                      </div>
-                    </form>
-                  </div>
-                  <div className="flex-1 overflow-y-auto p-4">
-                    <div className="space-y-1">
-                      {navCategories.map((cat) => (
-                        <Link key={cat.name} href={cat.href} onClick={() => setOpen(false)}>
-                          <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm hover:bg-muted transition-colors text-left">
-                            <cat.icon className="w-4 h-4 text-muted-foreground" />
-                            {cat.name}
-                          </button>
-                        </Link>
-                      ))}
-                    </div>
-                    <div className="border-t border-border my-4" />
-                    {user ? (
-                      <div className="space-y-1">
-                        <Link href="/account" onClick={() => setOpen(false)}>
-                          <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm hover:bg-muted transition-colors text-left">
-                            <User className="w-4 h-4 text-muted-foreground" />
-                            My Account
-                          </button>
-                        </Link>
-                        <Link href="/bookings" onClick={() => setOpen(false)}>
-                          <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm hover:bg-muted transition-colors text-left">
-                            <CalendarCheck className="w-4 h-4 text-muted-foreground" />
-                            My Bookings
-                          </button>
-                        </Link>
-                        <Link href="/favorites" onClick={() => setOpen(false)}>
-                          <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm hover:bg-muted transition-colors text-left">
-                            <Heart className="w-4 h-4 text-muted-foreground" />
-                            Bucket List
-                          </button>
-                        </Link>
-                        {user.role === "vendor" && (
-                          <Link href="/vendor" onClick={() => setOpen(false)}>
-                            <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm hover:bg-muted transition-colors text-left">
-                              <LayoutDashboard className="w-4 h-4 text-muted-foreground" />
-                              Vendor Portal
-                            </button>
-                          </Link>
-                        )}
-                        {user.role === "admin" && (
-                          <Link href="/admin" onClick={() => setOpen(false)}>
-                            <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm hover:bg-muted transition-colors text-left">
-                              <LayoutDashboard className="w-4 h-4 text-muted-foreground" />
-                              Admin Panel
-                            </button>
-                          </Link>
-                        )}
-                        <div className="border-t border-border my-2" />
-                        <button
-                          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm hover:bg-muted transition-colors text-left text-destructive"
-                          onClick={() => { handleLogout(); setOpen(false); }}
-                        >
-                          <LogOut className="w-4 h-4" />
-                          Logout
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <Link href="/login" onClick={() => setOpen(false)}>
-                          <Button variant="outline" className="w-full rounded-full">Log in</Button>
-                        </Link>
-                        <Link href="/signup" onClick={() => setOpen(false)}>
-                          <Button className="w-full rounded-full">Sign up</Button>
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
+    <header className="stage-shell stage-one">
+      <nav className="stage-nav" aria-label="Main navigation">
+        <div className="stage-nav-inner">
+          <Link href="/" className="stage-brand" aria-label="Free Spirit home">
+            <span className="stage-brand-mark">fs</span><span>Free Spirit</span>
+          </Link>
+          <div className="stage-desktop-links">
+            <Link href="/search" className="stage-nav-link">Explore</Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="stage-categories-trigger">Categories <ChevronDown size={15} /></Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="stage-menu-content stage-one">
+                <CatalogLinks />
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Link href="/for-vendors" className="stage-nav-link">For vendors</Link>
           </div>
+          <Button variant="ghost" size="icon" className="stage-search-trigger" aria-label="Open search" onClick={() => setShowSearch((value) => !value)}>
+            <Search size={20} />
+          </Button>
+          {isLoading ? <span className="stage-auth-skeleton" role="status" aria-label="Loading account" /> : error ? (
+            <div className="stage-auth-state-error"><span role="alert">Account unavailable</span><button type="button" onClick={() => { void retry(); }}>Retry</button></div>
+          ) : user ? (
+            <>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="stage-avatar-trigger" aria-label={`Account menu for ${user.fullName}`}>
+                  <span className="stage-avatar" aria-hidden="true">{user.fullName.split(/\s+/).map((part) => part[0]).slice(0, 2).join("").toUpperCase()}</span>
+                  <span className="stage-avatar-name">{user.fullName.split(" ")[0]}</span><ChevronDown size={15} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="stage-menu-content stage-one">
+                <div className="stage-menu-profile"><strong>{user.fullName}</strong><span>{user.email}</span></div>
+                <DropdownMenuSeparator />
+                {user.role !== "customer" && <DropdownMenuItem asChild><Link href={dashboard} className="stage-menu-item"><Compass size={16} />{user.role === "vendor" ? "Vendor dashboard" : "Admin console"}</Link></DropdownMenuItem>}
+                <DropdownMenuItem asChild><Link href="/account/bookings" className="stage-menu-item"><CalendarDays size={16} />My bookings</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link href="/account/saved" className="stage-menu-item"><Heart size={16} />Bucket list</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link href="/account/profile" className="stage-menu-item"><UserRound size={16} />Profile</Link></DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {logout.isError && <p className="stage-menu-error" role="alert">Couldn’t log out. Please try again.</p>}
+                <DropdownMenuItem onClick={() => logout.mutate()} disabled={logout.isPending} data-testid="button-logout" className="stage-menu-item stage-logout">
+                  <LogOut size={16} />{logout.isPending ? "Signing out…" : logout.isError ? "Retry log out" : "Log out"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {logout.isError && <span className="stage-inline-logout-error" role="alert">Couldn’t log out. Retry from the account menu.</span>}
+            </>
+          ) : (
+            <div className="stage-auth-actions">
+              <Link href="/login" className="stage-login-link">Log in</Link>
+              <Link href="/signup" className="stage-small-cta">Sign up</Link>
+            </div>
+          )}
+          <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" className="stage-mobile-trigger" aria-label="Open navigation menu"><Menu size={22} /></Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="stage-drawer stage-one">
+              <SheetTitle className="sr-only">Navigation menu</SheetTitle>
+              <SheetDescription className="sr-only">Explore activities and manage your account.</SheetDescription>
+              <div className="stage-drawer-head">
+                <Link href="/" className="stage-brand" onClick={() => setDrawerOpen(false)}><span className="stage-brand-mark">fs</span><span>Free Spirit</span></Link>
+              </div>
+              <form onSubmit={doSearch} className="stage-search stage-drawer-search" role="search">
+                <Search size={18} aria-hidden="true" /><Input aria-label="Search experiences" placeholder="Search activities" value={search} onChange={(event) => setSearch(event.target.value)} />
+                <button type="submit" aria-label="Submit search"><ArrowRight size={17} /></button>
+              </form>
+              <div className="stage-drawer-links">
+                <Link href="/search" className="stage-nav-link" onClick={() => setDrawerOpen(false)}><Compass size={17} />Explore</Link>
+                <p className="stage-drawer-label">Categories</p>
+                {categoryLinks.map((item) => <Link key={item.label} href={item.href} className="stage-nav-link" onClick={() => setDrawerOpen(false)}>{item.label}</Link>)}
+                <Link href="/for-vendors" className="stage-nav-link" onClick={() => setDrawerOpen(false)}><Store size={17} />For vendors</Link>
+              </div>
+              <div className="stage-drawer-links stage-drawer-utility">
+                <Link href="/about" className="stage-nav-link" onClick={() => setDrawerOpen(false)}>About</Link>
+                <Link href="/contact" className="stage-nav-link" onClick={() => setDrawerOpen(false)}>Contact</Link>
+                <Link href="/help" className="stage-nav-link" onClick={() => setDrawerOpen(false)}><LifeBuoy size={17} />Help &amp; support</Link>
+                <Link href="/privacy" className="stage-nav-link" onClick={() => setDrawerOpen(false)}>Privacy</Link>
+                <Link href="/terms" className="stage-nav-link" onClick={() => setDrawerOpen(false)}>Terms</Link>
+                <a className="stage-nav-link" href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
+              </div>
+              {isLoading ? <div className="stage-drawer-loading"><span className="stage-auth-skeleton" role="status" aria-label="Loading account" /></div> : error ? (
+                <div className="stage-drawer-loading"><p role="alert">We couldn’t load your account.</p><button className="stage-drawer-secondary" onClick={() => { void retry(); }}>Try again</button></div>
+              ) : user ? (
+                <div className="stage-drawer-actions">
+                  {user.role !== "customer" && <Link href={dashboard} className="stage-small-cta" onClick={() => setDrawerOpen(false)}>{user.role === "vendor" ? "Vendor dashboard" : "Admin console"}</Link>}
+                  <Link href="/account/bookings" className="stage-drawer-secondary" onClick={() => setDrawerOpen(false)}>My bookings</Link>
+                  <Link href="/account/saved" className="stage-drawer-secondary" onClick={() => setDrawerOpen(false)}>Bucket list</Link>
+                  <Link href="/account/profile" className="stage-drawer-secondary" onClick={() => setDrawerOpen(false)}>Profile</Link>
+                  {logout.isError && <p className="stage-menu-error" role="alert">Couldn’t log out. Please try again.</p>}
+                  <button className="stage-drawer-secondary" disabled={logout.isPending} onClick={() => logout.mutate()}>{logout.isPending ? "Logging out…" : logout.isError ? "Retry log out" : "Log out"}</button>
+                </div>
+              ) : <div className="stage-drawer-actions">
+                <Link href="/login" className="stage-drawer-secondary" onClick={() => setDrawerOpen(false)}>Log in</Link>
+                <Link href="/signup" className="stage-small-cta" onClick={() => setDrawerOpen(false)}>Sign up <ArrowRight size={15} /></Link>
+              </div>}
+            </SheetContent>
+          </Sheet>
         </div>
-
-        {isHome && (
-          <div className={`hidden md:block border-t ${isTransparent ? "border-white/10" : "border-border/50"}`}>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex items-center gap-1 h-10 overflow-x-auto scrollbar-hide">
-                {navCategories.map((cat) => (
-                  <Link key={cat.name} href={cat.href} data-testid={`nav-category-${cat.name.toLowerCase().replace(/\s+/g, "-")}`}>
-                    <button className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
-                      isTransparent
-                        ? "text-white/70 hover:text-white hover:bg-white/10"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                    }`}>
-                      <cat.icon className="w-3.5 h-3.5" />
-                      {cat.name}
-                    </button>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+        {showSearch && <form onSubmit={doSearch} className="stage-search-popover" role="search">
+          <Search size={18} aria-hidden="true" /><Input autoFocus aria-label="Search experiences" placeholder="Search activities and places" value={search} onChange={(event) => setSearch(event.target.value)} />
+          <button type="submit" aria-label="Submit search"><ArrowRight size={17} /></button>
+        </form>}
       </nav>
-    </>
+    </header>
   );
 }

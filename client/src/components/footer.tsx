@@ -1,96 +1,38 @@
+import "@/components/stage-one.css";
 import { Link } from "wouter";
-import { Heart } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
+import { CATEGORIES, SUPPORT_EMAIL } from "@shared/catalog";
 
 export default function Footer() {
   return (
-    <footer data-testid="footer" className="bg-foreground text-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-          <div className="md:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-orange-400 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">FS</span>
-              </div>
-              <span className="text-xl font-bold tracking-tight">Free Spirit</span>
-            </div>
-            <p className="text-sm opacity-70 leading-relaxed">
-              Bringing people closer through shared experiences. Discover activities worth doing together.
-            </p>
-          </div>
-
-          <div>
-            <h4 className="font-semibold text-sm mb-4 uppercase tracking-wider opacity-50">
-              Explore
-            </h4>
-            <ul className="space-y-3">
-              <li>
-                <Link href="/search?category=sports" className="text-sm opacity-70 hover:opacity-100 transition-opacity">
-                  Sports
-                </Link>
-              </li>
-              <li>
-                <Link href="/search?category=adventure" className="text-sm opacity-70 hover:opacity-100 transition-opacity">
-                  Adventure
-                </Link>
-              </li>
-              <li>
-                <Link href="/search?category=arts" className="text-sm opacity-70 hover:opacity-100 transition-opacity">
-                  Arts & Classes
-                </Link>
-              </li>
-              <li>
-                <Link href="/search?category=wellness" className="text-sm opacity-70 hover:opacity-100 transition-opacity">
-                  Wellness
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-semibold text-sm mb-4 uppercase tracking-wider opacity-50">
-              Company
-            </h4>
-            <ul className="space-y-3">
-              <li>
-                <span className="text-sm opacity-70">About Us</span>
-              </li>
-              <li>
-                <Link href="/signup" className="text-sm opacity-70 hover:opacity-100 transition-opacity">
-                  List Your Venue
-                </Link>
-              </li>
-              <li>
-                <span className="text-sm opacity-70">Contact</span>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-semibold text-sm mb-4 uppercase tracking-wider opacity-50">
-              Support
-            </h4>
-            <ul className="space-y-3">
-              <li>
-                <span className="text-sm opacity-70">Help Center</span>
-              </li>
-              <li>
-                <span className="text-sm opacity-70">Privacy Policy</span>
-              </li>
-              <li>
-                <span className="text-sm opacity-70">Terms of Service</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="border-t border-white/10 mt-12 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm opacity-50">
-            &copy; {new Date().getFullYear()} Free Spirit. All rights reserved.
-          </p>
-          <p className="text-sm opacity-50 flex items-center gap-1">
-            Made with <Heart className="w-3 h-3 fill-primary text-primary" /> for connection
-          </p>
-        </div>
+    <footer className="stage-footer stage-one" data-testid="footer">
+      <div className="stage-footer-main">
+        <section className="stage-footer-column">
+          <h2>Explore</h2>
+          <Link href="/search">All experiences</Link>
+          {CATEGORIES.map((category) => <Link key={category.value} href={`/search?category=${category.value}`}>{category.label}</Link>)}
+        </section>
+        <section className="stage-footer-column">
+          <h2>For vendors</h2>
+          <Link href="/for-vendors">List your experience</Link>
+          <Link href="/login">Vendor login</Link>
+        </section>
+        <section className="stage-footer-column">
+          <h2>Company</h2>
+          <Link href="/about">About Free Spirit</Link>
+          <Link href="/contact">Contact</Link>
+        </section>
+        <section className="stage-footer-column">
+          <h2>Support</h2>
+          <Link href="/help">Help center</Link>
+          <Link href="/privacy">Privacy policy</Link>
+          <Link href="/terms">Terms of service</Link>
+          <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
+        </section>
+      </div>
+      <div className="stage-footer-bottom">
+        <Link href="/" className="stage-footer-brand">Free Spirit</Link>
+        <span>© {new Date().getFullYear()} Free Spirit · Sri Lanka</span>
       </div>
     </footer>
   );

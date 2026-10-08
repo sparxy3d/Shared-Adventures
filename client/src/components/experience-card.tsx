@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Clock, MapPin, Users, Heart, Zap, ChevronRight } from "lucide-react";
 import type { Experience } from "@shared/schema";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { formatPrice } from "@/lib/currency";
 
 const categoryColors: Record<string, string> = {
@@ -48,15 +48,18 @@ function getOpenStatus(exp: Experience): { label: string; isOpen: boolean } {
   return { label: exp.nextSessionText || `Opens ${exp.openTime}`, isOpen: false };
 }
 
-export default function ExperienceCard({ experience }: { experience: Experience }) {
+export default function ExperienceCard({ experience, saved, onRemove, removePending, memberView }: {
+  experience: Experience; saved?: boolean; onRemove?: () => void; removePending?: boolean; memberView?: boolean;
+}) {
   const status = getOpenStatus(experience);
+  const reduceMotion = useReducedMotion();
 
   return (
     <Link href={`/experience/${experience.id}`}>
       <motion.div
         data-testid={`card-experience-${experience.id}`}
         className="group cursor-pointer rounded-2xl overflow-hidden bg-white dark:bg-card border border-border/40 hover:border-primary/30 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 flex flex-col h-full"
-        whileHover={{ y: -6 }}
+        whileHover={reduceMotion ? undefined : { y: -6 }}
         transition={{ duration: 0.25, ease: "easeOut" }}
       >
         <div className="relative aspect-[4/3] overflow-hidden">
@@ -71,7 +74,7 @@ export default function ExperienceCard({ experience }: { experience: Experience 
             <Badge className={`${categoryColors[experience.category] || "bg-gray-100 text-gray-700"} border-0 text-xs font-semibold px-2.5 py-1 shadow-sm`}>
               {experience.category === "arts" ? "Arts & Classes" : experience.category.charAt(0).toUpperCase() + experience.category.slice(1)}
             </Badge>
-            {status.label && (
+            {!memberView && status.label && (
               <Badge className={`border-0 text-xs font-semibold px-2.5 py-1 shadow-sm ${
                 status.isOpen
                   ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300"
@@ -86,11 +89,14 @@ export default function ExperienceCard({ experience }: { experience: Experience 
           <div className="absolute top-3 right-3">
             <button
               data-testid={`button-favorite-${experience.id}`}
-              title="Add to Bucket List"
-              className="w-9 h-9 rounded-full bg-white/90 dark:bg-black/50 flex items-center justify-center backdrop-blur-sm hover:bg-white hover:scale-110 transition-all shadow-sm"
-              onClick={(e) => e.preventDefault()}
+              title={saved ? "Remove from bucket list" : "Add to bucket list"}
+              aria-label={saved ? `Remove ${experience.title} from bucket list` : `Save ${experience.title}`}
+              aria-pressed={!!saved}
+              disabled={removePending}
+              className={`${memberView ? "w-11 h-11" : "w-9 h-9"} rounded-full bg-white/90 dark:bg-black/50 flex items-center justify-center backdrop-blur-sm hover:bg-white hover:scale-110 transition-all shadow-sm`}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRemove?.(); }}
             >
-              <Heart className="w-4 h-4 text-muted-foreground" />
+              <Heart className={`w-4 h-4 ${saved ? "fill-[#FF6B24] text-[#171717]" : "text-muted-foreground"}`} />
             </button>
           </div>
 
@@ -131,7 +137,7 @@ export default function ExperienceCard({ experience }: { experience: Experience 
 
           {(experience.offerLabel || (experience.idealForTags && experience.idealForTags.length > 0)) && (
             <div className="flex flex-wrap gap-1.5 mb-3">
-              {experience.offerLabel && (
+              {!memberView && experience.offerLabel && (
                 <span
                   data-testid={`chip-offer-${experience.id}`}
                   className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border border-orange-500 text-orange-600 dark:text-orange-400 font-semibold bg-transparent"
@@ -144,7 +150,7 @@ export default function ExperienceCard({ experience }: { experience: Experience 
                   key={tag}
                   className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-muted/80 text-muted-foreground font-medium"
                 >
-                  <span className="text-[10px]">{idealForIcons[tag] || "👥"}</span>
+                  {!memberView && <span className="text-[10px]">{idealForIcons[tag] || "👥"}</span>}
                   {tag.charAt(0).toUpperCase() + tag.slice(1)}
                 </span>
               ))}
@@ -157,7 +163,7 @@ export default function ExperienceCard({ experience }: { experience: Experience 
                 {formatPrice(experience.priceAmount, experience.currencyCode)}
               </span>
               <span className="text-[11px] text-muted-foreground">/ person</span>
-              {experience.rating != null && (
+              {!memberView && experience.rating != null && (
                 <span className="text-xs font-semibold text-foreground" data-testid={`text-rating-${experience.id}`}>
                   <span className="text-amber-500">★</span> {(experience.rating / 10).toFixed(1)}
                   {experience.reviewCount != null && (

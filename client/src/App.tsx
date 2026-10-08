@@ -21,6 +21,17 @@ import VendorBookings from "@/pages/vendor/vendor-bookings";
 import AdminDashboard from "@/pages/admin/admin-dashboard";
 import ForVendors from "@/pages/for-vendors";
 import VendorApply from "@/pages/vendor-apply";
+import Legal from "@/pages/legal";
+import Support from "@/pages/support";
+import Navbar from "@/components/navbar";
+import Footer from "@/components/footer";
+
+function LegalPage() {
+  return <><Navbar /><Legal /><Footer /></>;
+}
+function SupportPage() {
+  return <><Navbar /><Support /><Footer /></>;
+}
 
 function Router() {
   return (
@@ -31,9 +42,19 @@ function Router() {
       <Route path="/experience/:id" component={ExperienceDetail} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
-      <Route path="/account" component={Account} />
-      <Route path="/bookings" component={MyBookings} />
-      <Route path="/favorites" component={Favorites} />
+      <Route path="/account/bookings" component={MyBookings} />
+      <Route path="/account/saved" component={Favorites} />
+      <Route path="/account/profile" component={Account} />
+      <Route path="/account">{() => <Redirect to="/account/profile" />}</Route>
+      <Route path="/bookings">{() => <Redirect to="/account/bookings" />}</Route>
+      <Route path="/favorites">{() => <Redirect to="/account/saved" />}</Route>
+      <Route path="/terms" component={LegalPage} />
+      <Route path="/privacy" component={LegalPage} />
+      <Route path="/vendor-terms" component={LegalPage} />
+      <Route path="/about" component={LegalPage} />
+      <Route path="/contact" component={SupportPage} />
+      <Route path="/help" component={SupportPage} />
+      <Route path="/forgot-password" component={SupportPage} />
       <Route path="/vendor" component={VendorDashboard} />
       <Route path="/vendor/profile" component={VendorProfile} />
       <Route path="/vendor/experiences" component={VendorExperiences} />
