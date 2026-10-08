@@ -19,6 +19,8 @@ import ExperienceForm from "@/pages/vendor/experience-form";
 import Availability from "@/pages/vendor/availability";
 import VendorBookings from "@/pages/vendor/vendor-bookings";
 import AdminDashboard from "@/pages/admin/admin-dashboard";
+import ForVendors from "@/pages/for-vendors";
+import VendorApply from "@/pages/vendor-apply";
 
 function Router() {
   return (
@@ -39,6 +41,8 @@ function Router() {
       <Route path="/vendor/experiences/:id/edit" component={ExperienceForm} />
       <Route path="/vendor/experiences/:id/availability" component={Availability} />
       <Route path="/vendor/bookings" component={VendorBookings} />
+      <Route path="/for-vendors" component={ForVendors} />
+      <Route path="/for-vendors/apply" component={VendorApply} />
       <Route path="/admin" component={AdminDashboard} />
       <Route component={NotFound} />
     </Switch>
