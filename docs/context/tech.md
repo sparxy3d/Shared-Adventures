@@ -51,6 +51,7 @@ Path aliases: `@/*` is `client/src/*`, and `@shared/*` is `shared/*` (`tsconfig.
 | Build | `npm run build` | Verified 2026-10-08. Client chunk is about 600 kB (Vite size warning) |
 | Dev server | `npm run dev` | UNVERIFIED here (needs a database). It is the Replit run command |
 | Prod server | `npm start` | UNVERIFIED here. Replit deployment runs `node ./dist/index.cjs` |
+| Demo slot top-up | `npm run slots:topup -- --target=dev` (dry run), add `--apply` to write | Verified 2026-10-08 on a local copy. Manual only, demo vendors only, insert-only, no `DATABASE_URL` fallback. Production runs are Madushan's |
 | Schema push | `npm run db:push` | UNVERIFIED. Writes to a live database |
 | Tests | none | No test runner or test files exist |
 | Lint and format | none | No ESLint or Prettier config |
