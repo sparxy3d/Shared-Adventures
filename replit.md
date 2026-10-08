@@ -1,5 +1,11 @@
 # Free Spirit - Activity Booking Platform
 
+> **Agents: read `AGENTS.md` first.** It holds the rules (identity from the session, vendor
+> ownership checks, no `req.body` spreading, whole-LKR prices, idempotent seed, Colombo time)
+> and points to `docs/context/` for architecture, tech, and conventions. For a feature, work
+> from its spec in `docs/specs/<NNN>-<name>/`, one task per prompt. This file describes UI
+> and design. Where it disagrees with the code or `docs/context/`, the code wins.
+
 ## Overview
 A multi-vendor activity and experience booking marketplace that helps people connect through shared activities. Users can discover and book sports, adventures, arts & classes, and wellness experiences to enjoy with friends, family, teams, or someone special.
 
