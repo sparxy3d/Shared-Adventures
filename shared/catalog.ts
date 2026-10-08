@@ -49,15 +49,19 @@ export function isDisabledRole(role: string): boolean {
   return role.startsWith(DISABLED_PREFIX);
 }
 
-// vendors.verification_status values. "pending" is an application waiting for review.
-export const VENDOR_STATUSES = ["pending", "approved", "rejected", "paused"] as const;
+// vendors.verification_status values. "pending" is a new application, "contacted" an
+// application someone has followed up on.
+export const VENDOR_STATUSES = ["pending", "contacted", "approved", "rejected", "paused"] as const;
 export type VendorStatus = (typeof VENDOR_STATUSES)[number];
 
 export function vendorStatusLabel(status: string): string {
   return (
-    { pending: "Applied", approved: "Approved", rejected: "Declined", paused: "Paused" } as Record<string, string>
+    { pending: "New", contacted: "Contacted", approved: "Approved", rejected: "Declined", paused: "Paused" } as Record<string, string>
   )[status] ?? status;
 }
+
+// experiences.status values. "unpublished" means an admin took it down.
+export const LISTING_STATUSES = ["draft", "published", "unpublished"] as const;
 
 // bookings.status values.
 export const BOOKING_STATUSES = ["requested", "confirmed", "declined", "cancelled", "completed"] as const;
@@ -65,3 +69,28 @@ export type BookingStatus = (typeof BOOKING_STATUSES)[number];
 
 // Home page group-size chips -> minimum free spots needed in a session.
 export const GROUP_MIN_SPOTS: Record<string, number> = { "1": 1, "2": 2, "3-5": 3, "6+": 6 };
+
+// Cities the city picker and "Use my location" support, Colombo first.
+// Coordinates are only used in the browser to find the nearest city; never stored.
+export const SUPPORTED_CITIES = [
+  { name: "Colombo", lat: 6.9271, lng: 79.8612 },
+  { name: "Kandy", lat: 7.2906, lng: 80.6337 },
+  { name: "Galle", lat: 6.0535, lng: 80.221 },
+  { name: "Weligama", lat: 5.9749, lng: 80.4294 },
+  { name: "Kitulgala", lat: 6.9894, lng: 80.4176 },
+] as const;
+
+// Support contact shown on the forgot-password screen and footer (placeholder until confirmed).
+export const SUPPORT_EMAIL = "hello@navira-co.com";
+
+// Placeholder copy. Labelled as drafts wherever it appears.
+export const VENDOR_TERMS_VERSION = "draft v0 (8 Oct 2026)";
+
+// Reasons a vendor can pick when declining a request.
+export const DECLINE_REASONS = [
+  "Session is full",
+  "Weather or safety",
+  "Group size doesn't fit",
+  "Not available at that time",
+  "Other",
+] as const;
