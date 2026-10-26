@@ -61,7 +61,7 @@ function PanelContent({ flow, title, priceAmount }: ActivitySessionPanelProps) {
         <button type="button" onClick={() => { void slots.refetch(); }}>Retry</button>
       </div> : <>
         {!flow.hasOpenSessions && <div className="activity-detail-empty">
-          <p>No sessions open right now — save it to your bucket list</p>
+          <p>No sessions open right now. Save it to your bucket list.</p>
           <button type="button" className="activity-detail-inline-button" onClick={flow.toggleSaved}
             disabled={flow.saving} aria-label={flow.isSaved ? "Remove from bucket list" : "Save to bucket list"}
             aria-pressed={flow.isSaved}>
@@ -69,7 +69,7 @@ function PanelContent({ flow, title, priceAmount }: ActivitySessionPanelProps) {
             {flow.isSaved ? "Saved to your bucket list" : "Save to your bucket list"}
           </button>
         </div>}
-        {flow.hasOpenSessions && fitCount === 0 && <p className="activity-detail-notice">No sessions fit this group size — try fewer people.</p>}
+        {flow.hasOpenSessions && fitCount === 0 && <p className="activity-detail-notice">No sessions fit this group size. Try fewer people.</p>}
         {days.length > 0 &&
           <div>
             {visibleDays.map(([day, daySlots]) => <section className="activity-detail-day" key={day} data-testid={`slot-day-${day}`}>
@@ -111,6 +111,12 @@ export default function ActivitySessionPanel(props: ActivitySessionPanelProps) {
   const isMobile = useIsMobile();
   const { flow, priceAmount } = props;
   const price = priceText(priceAmount);
+  if (!flow.takingBookings) {
+    return <div className="activity-detail-offline" role="status">
+      <span className="activity-detail-offline-mark" aria-hidden="true" />
+      <div><strong>Not taking bookings right now</strong><p>This experience is still here to explore. Check back another time.</p></div>
+    </div>;
+  }
   if (!isMobile) {
     return <aside className="activity-detail-panel sticky-panel" aria-label="Request a session">
       <PanelContent {...props} />

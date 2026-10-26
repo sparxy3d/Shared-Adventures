@@ -66,6 +66,19 @@
 .v-status i { width: 8px; height: 8px; border-radius: 50%; background: #efa937; }
 .v-status-live i { background: #31936b; }.v-status-paused i, .v-status-rejected i { background: #d65d4c; }.v-status-approved i { background: #e78b2b; }
 .v-panel { background: #fff; border: 1px solid #f0e7df; border-radius: 16px; box-shadow: 0 5px 18px #633b1b08; padding: 23px; }
+.v-taking-bookings { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 4px 18px; margin: -8px 0 22px; background: #fffdfb; }
+.v-taking-bookings h2 { margin: 0; color: #202722; font-size: 18px; font-weight: 800; letter-spacing: -.03em; }
+.v-taking-bookings .v-eyebrow { margin-bottom: 4px; }
+.v-taking-bookings .v-muted { margin: 6px 0 0; line-height: 1.5; }
+.v-booking-switch { display: flex; align-items: center; width: 54px; height: 32px; padding: 3px; border: 1px solid #c9d1cb; border-radius: 999px; background: #e7ebe8; cursor: pointer; transition: background .18s ease, border-color .18s ease; }
+.v-booking-switch[aria-checked="true"] { justify-content: flex-end; border-color: #4e8465; background: #4e8465; }
+.v-booking-switch:focus-visible { outline: 3px solid #edb48d; outline-offset: 3px; }
+.v-booking-switch:disabled { opacity: .72; cursor: wait; }
+.v-booking-switch-thumb { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #fff; color: #64756b; box-shadow: 0 1px 3px #18251b25; }
+.v-switch-pending { animation: v-switch-pulse .8s ease-in-out infinite alternate; }
+@keyframes v-switch-pulse { to { opacity: .35; } }
+.v-booking-switch-error { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 12px; color: #a43b31; font-size: 12px; }
+.v-booking-switch-error button { min-height: 36px; padding: 0 10px; border: 1px solid #e8b8ad; border-radius: 8px; color: #943b31; background: #fff; font-weight: 800; cursor: pointer; }
 .v-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 19px; }
 .v-panel-heading h2 { margin: 0; font-size: 19px; letter-spacing: -.035em; line-height: 1.25; font-weight: 800; }
 .v-panel-heading .v-eyebrow { margin-bottom: 5px; }
@@ -114,6 +127,7 @@
   .v-panel { padding: 19px; }.v-requests { padding: 19px 0 0; }.v-requests > .v-panel-heading { padding: 0 19px; }.v-request { padding: 16px 19px; }
 }
 @media(max-width: 767px) {
+  .v-taking-bookings { margin: -2px 0 19px; padding: 16px; }
   .v-dashboard-head { display: grid; gap: 15px; margin: 4px 0 22px; }.v-status { justify-self: start; }
   .v-panel { padding: 17px; border-radius: 14px; }.v-requests { padding: 17px 0 0; }.v-requests > .v-panel-heading { padding: 0 17px; }.v-request { padding: 16px 17px; }
   .v-panel-heading h2 { font-size: 17px; }.v-dashboard-columns { grid-template-columns: 1fr; gap: 15px; }.v-checklist-grid { grid-template-columns: 1fr 1fr; gap: 8px; }.v-check-step { min-height: 66px; padding: 9px; gap: 7px; font-size: 11px; }.v-check-icon { flex-basis: 30px; height: 30px; }.v-step-arrow { width: 14px; }

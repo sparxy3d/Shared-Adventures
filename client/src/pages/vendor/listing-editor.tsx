@@ -177,6 +177,7 @@ export default function ListingEditor({ adminVendorId, adminListingId, backHref 
     reviewCount: listingQuery.data?.reviewCount ?? null,
     offerLabel: listingQuery.data?.offerLabel ?? null,
     createdAt: listingQuery.data?.createdAt ?? null,
+    takingBookings: true,
   } as Activity;
   useEffect(()=>{
     previewCardRef.current?.querySelectorAll<HTMLElement>("a,button").forEach(element=>element.tabIndex=-1);

@@ -5,8 +5,10 @@ and `server/seed.ts`.
 
 ## Where the schema lives
 
-`shared/schema.ts` is the only definition. There are no migration files. `npm run db:push`
-(drizzle-kit push) diffs the schema against a live database and applies the difference.
+`shared/schema.ts` is the only definition. The vendor verification stage has a reviewed
+manual SQL migration for external Neon: apply it to development first and have Madushan
+apply it to production before compatible code ships. `npm run db:push` remains available
+for other changes but must never be run against production for this stage.
 
 ## Naming
 

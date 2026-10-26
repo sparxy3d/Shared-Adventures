@@ -48,13 +48,21 @@ export function useActivityBooking(id: string) {
   const nextSessionId = days.flatMap(([, day]) => day).find(slot => sessionBookable(slot, qty, now))?.id ?? null;
   const hasOpenSessions = days.some(([, day]) => day.some(slot => slot.status === "open" && slot.capacity > 0));
   const requestOpen = params.get("booking") === "1";
+  const takingBookings = activity.data?.takingBookings !== false;
+  useEffect(() => {
+    if (activity.data?.takingBookings !== false || params.get("booking") !== "1") return;
+    const next = new URLSearchParams(search);
+    next.delete("booking");
+    navigate(`/activity/${id}${next.toString() ? `?${next.toString()}` : ""}`, { replace: true });
+    setSessionSheetOpen(false);
+  }, [activity.data?.takingBookings, id, navigate, params, search]);
   function updateChoice(patch: Record<string, string | null>) {
     const next = new URLSearchParams(search);
     for (const [key, value] of Object.entries(patch)) value === null ? next.delete(key) : next.set(key, value);
     const query = next.toString();
     navigate(`/activity/${id}${query ? `?${query}` : ""}`, { replace: true });
   }
-  function openRequest() { setPanelError(""); setSessionSheetOpen(false); updateChoice({ booking: "1", group: String(qty) }); }
+  function openRequest() { if (!takingBookings) return; setPanelError(""); setSessionSheetOpen(false); updateChoice({ booking: "1", group: String(qty) }); }
   function closeRequest() { updateChoice({ booking: null }); }
   function conflict() {
     setPanelError("That session just filled up");
@@ -76,7 +84,7 @@ export function useActivityBooking(id: string) {
   }
   return {
     activity, slots, related, auth, qty, capacity, days, selectedSlotId, selectedSlot, nextSessionId, hasOpenSessions,
-    requestOpen, openRequest, closeRequest, conflict, sessionSheetOpen, setSessionSheetOpen, panelError,
+    takingBookings, requestOpen: requestOpen && takingBookings, openRequest, closeRequest, conflict, sessionSheetOpen, setSessionSheetOpen, panelError,
     setQty: (value: number) => {
       if (capacity && value >= 1 && value <= capacity) {
         const chosen = slots.data?.find(slot => slot.id === selectedSlotId);

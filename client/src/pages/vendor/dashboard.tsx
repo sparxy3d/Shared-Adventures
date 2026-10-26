@@ -1,13 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { ArrowRight, CalendarDays, CheckCircle2, Clock3, Image, ListChecks, Plus, Store, Users } from "lucide-react";
+import { ArrowRight, CalendarDays, CheckCircle2, Clock3, Image, ListChecks, Plus, Store, Users, LoaderCircle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { formatPrice } from "@/lib/currency";
 import { formatVendorDate, formatVendorTime, receivedTime, type VendorBooking } from "@/lib/vendor-bookings";
 import VendorBookingActions from "@/components/vendor-booking-actions";
+import { apiRequest } from "@/lib/queryClient";
 
 interface DashboardData {
-  vendor: { businessName: string; verificationStatus: string };
+  vendor: { businessName: string; verificationStatus: string; takingBookings: boolean };
   accountStatus: string;
   listings: { total: number; published: number };
   pendingRequests: VendorBooking[];
@@ -25,8 +26,18 @@ function shortName(name: string) { return name.trim().split(/\s+/)[0] || "Member
 
 export default function VendorDashboard() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const query = useQuery<DashboardData>({
     queryKey: ["/api/vendor/dashboard"], staleTime: 0, refetchInterval: 30_000, refetchOnWindowFocus: true,
+  });
+  const availabilityMutation = useMutation({
+    mutationFn: (takingBookings: boolean) => apiRequest("PATCH", "/api/vendor/taking-bookings", { takingBookings }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["/api/vendor/profile"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/vendor/dashboard"] }),
+      ]);
+    },
   });
   const data = query.data;
   const pending = [...(data?.pendingRequests ?? [])].sort((a, b) => (a.createdAt ?? "9999").localeCompare(b.createdAt ?? "9999"));
@@ -54,12 +65,27 @@ export default function VendorDashboard() {
   ];
   const hour = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Colombo", hour: "2-digit", hourCycle: "h23" }).format(new Date()));
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const takingBookings = data?.vendor.takingBookings !== false;
 
   if (query.isLoading) return <div className="v-page"><div className="v-skeleton v-skel-hero" /><div className="v-skeleton v-skel-panel" /><div className="v-skeleton v-skel-panel" /></div>;
   if (query.isError || !data) return <div className="v-page"><div className="v-error" role="alert"><h1>We couldn’t load your dashboard</h1><p>{query.error instanceof Error ? query.error.message : "Please try again."}</p><button className="v-button v-button-primary" onClick={() => query.refetch()}>Retry</button></div></div>;
 
   return <div className="v-page">
     <header className="v-dashboard-head"><div><p className="v-eyebrow">{greeting}{user?.fullName ? `, ${shortName(user.fullName)}` : ""}</p><h1>{data.vendor.businessName}</h1><p className="v-head-sub">A clear view of what’s happening with your sessions.</p></div><span className={`v-status v-status-${data.accountStatus}`}><i />{statusText[data.accountStatus] ?? data.accountStatus}</span></header>
+    <section className={`v-panel v-taking-bookings ${takingBookings ? "is-taking-bookings" : "is-not-taking-bookings"}`} aria-labelledby="taking-bookings-title">
+      <div><p className="v-eyebrow">Availability</p><h2 id="taking-bookings-title">{takingBookings ? "Taking bookings" : "Not taking bookings"}</h2>
+        <p className="v-muted">{takingBookings ? "Your published experiences can receive new booking requests." : "Your experiences stay visible, but guests cannot send new requests."}</p></div>
+      <button type="button" role="switch" aria-checked={takingBookings} aria-label="Taking bookings"
+        className="v-booking-switch" disabled={availabilityMutation.isPending}
+        onClick={() => availabilityMutation.mutate(!takingBookings)} data-testid="switch-taking-bookings">
+        <span className="v-booking-switch-thumb">{availabilityMutation.isPending ? <LoaderCircle size={14} className="v-switch-pending" aria-hidden="true" /> : null}</span>
+      </button>
+      {availabilityMutation.isError && <div className="v-booking-switch-error" role="alert">
+        <span>Availability could not be updated. Please try again.</span>
+        <button type="button" onClick={() => { availabilityMutation.reset(); availabilityMutation.mutate(!takingBookings); }}>Retry</button>
+      </div>}
+      <span className="sr-only" aria-live="polite">{availabilityMutation.isPending ? "Saving booking availability" : ""}</span>
+    </section>
     {data.accountStatus !== "live" && <section className="v-panel v-checklist">
       <div className="v-panel-heading"><div><p className="v-eyebrow">Your setup</p><h2>Get ready to welcome a group</h2></div><span className="v-step-count">{steps.filter((s) => s.done).length} of {steps.length}</span></div>
       <div className="v-checklist-grid">{steps.map(({ key, text, href, icon: Icon, done }) => <Link key={key} href={href} className={`v-check-step ${done ? "is-done" : ""}`}><span className="v-check-icon">{done ? <CheckCircle2 size={20} /> : <Icon size={19} />}</span><span>{text}</span>{done ? <CheckCircle2 className="v-check-mark" size={17} /> : <ArrowRight className="v-step-arrow" size={17} />}</Link>)}</div>
@@ -77,7 +103,7 @@ export default function VendorDashboard() {
         <section className="v-panel v-week"><div className="v-panel-heading"><div><p className="v-eyebrow">Coming up</p><h2>Next 7 days</h2></div><CalendarDays className="v-heading-icon" size={20} /></div>
           {dayGroups.length ? <div className="v-week-list">{dayGroups.map(({ date, sessions }) => <div className="v-week-day" key={date}>
             <h3 className="v-week-day-heading">{formatVendorDate(date, { weekday: "long", month: "long", day: "numeric" })}</h3>
-            {sessions.map((items) => { const b = items[0]; return <div className="v-week-item" key={`${date}-${b.slotId ?? `${b.experienceId}-${b.startTime ?? ""}`}`}><div className="v-date-rail"><strong>{formatVendorDate(b.bookingDate, { weekday: "short" }).slice(0, 3)}</strong><span>{b.bookingDate.slice(8, 10)}</span></div><div className="v-week-copy"><strong>{b.experience.title}</strong><span>{formatVendorTime(b.startTime)} · {items.reduce((n, row) => n + row.qty, 0)} booked</span></div><div className="v-spots">{b.spotsLeft == null ? "—" : b.spotsLeft}<small>spots left</small></div></div>; })}
+            {sessions.map((items) => { const b = items[0]; return <div className="v-week-item" key={`${date}-${b.slotId ?? `${b.experienceId}-${b.startTime ?? ""}`}`}><div className="v-date-rail"><strong>{formatVendorDate(b.bookingDate, { weekday: "short" }).slice(0, 3)}</strong><span>{b.bookingDate.slice(8, 10)}</span></div><div className="v-week-copy"><strong>{b.experience.title}</strong><span>{formatVendorTime(b.startTime)} · {items.reduce((n, row) => n + row.qty, 0)} booked</span></div><div className="v-spots">{b.spotsLeft == null ? "Not set" : b.spotsLeft}<small>spots left</small></div></div>; })}
           </div>)}</div> : <div className="v-empty v-empty-small"><Clock3 size={22} /><p>No sessions booked in the next week.</p><Link className="v-text-link" href="/vendor/schedule">Manage schedule <ArrowRight size={15} /></Link></div>}
         </section>
         <section className="v-panel v-month"><div className="v-panel-heading"><div><p className="v-eyebrow">This month</p><h2>At a glance</h2></div></div>

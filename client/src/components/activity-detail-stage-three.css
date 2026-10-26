@@ -75,6 +75,10 @@
   background: var(--detail-white); box-shadow: 0 14px 40px rgb(78 44 25 / 7%);
 }
 .activity-detail-panel.sticky-panel { position: sticky; top: 1.25rem; }
+.activity-detail-offline { display: flex; align-items: flex-start; gap: 13px; padding: 20px; border: 1px solid #e6d7c9; border-radius: 16px; background: #fffaf4; color: #453a31; }
+.activity-detail-offline-mark { flex: 0 0 11px; width: 11px; height: 11px; margin-top: 5px; border-radius: 50%; background: #ad7852; box-shadow: 0 0 0 5px #f4e6d8; }
+.activity-detail-offline strong { display: block; font-size: 15px; }
+.activity-detail-offline p { margin: 6px 0 0; color: #75695f; font-size: 13px; line-height: 1.55; }
 .activity-detail-price { font: 800 1.8rem "Plus Jakarta Sans", sans-serif; letter-spacing: -.04em; }
 .activity-detail-per-person { color: var(--detail-muted); font-size: .85rem; }
 .activity-detail-group { padding: 1.2rem 0 1rem; margin-top: .9rem; border-top: 1px solid var(--detail-line); border-bottom: 1px solid var(--detail-line); }

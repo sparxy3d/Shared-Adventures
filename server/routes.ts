@@ -15,6 +15,7 @@ import {
 import { colomboToday, colomboNowHHMM, normaliseHHMM, addMinutesHHMM } from "./time";
 import { sessionPlan } from "./vendor-session-plan";
 import { withApprovalDate } from "./admin-insights";
+import { applicationUpload, validateDocuments } from "./vendor-documents";
 
 const scryptAsync = promisify(scrypt);
 
@@ -156,15 +157,19 @@ const applicationSchema = z.object({
   city: z.enum(SUPPORTED_CITIES.map(c => c.name) as [string, ...string[]]),
   address: z.string().trim().min(1).max(300),
   activityTypes: z.array(z.enum(CATEGORY_VALUES)).min(1),
-  capacity: z.coerce.number().int().min(1).max(10000),
+  groupSizes: z.array(z.enum(["1", "2", "3-5", "6+"])).min(1).max(4),
   typicalPrice: z.coerce.number().int().min(0).max(10_000_000),
   description: z.string().trim().min(1).max(2000),
-  website: z.string().trim().min(1).max(300).refine(v =>
-    /^@[a-zA-Z0-9_.]{1,30}$/.test(v) || /^https?:\/\//i.test(v) && z.string().url().safeParse(v).success,
-    "Enter a website URL or Instagram @handle"),
+  website: z.string().trim().max(300).optional().refine(v =>
+    !v || /^https?:\/\//i.test(v) && z.string().url().safeParse(v).success, "Enter a valid website URL"),
+  instagram: z.string().trim().max(300).optional().refine(v =>
+    !v || /^@[a-zA-Z0-9_.]{1,30}$/.test(v) || /^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9_.]+\/?$/i.test(v),
+    "Enter an Instagram profile URL or @handle"),
   mapsLink: z.string().trim().max(500).optional().nullable().refine(v =>
     !v || /^https?:\/\//i.test(v) && z.string().url().safeParse(v).success, "Enter a valid Maps URL"),
   acceptTerms: z.literal(true, { errorMap: () => ({ message: "Please accept the vendor terms" }) }),
+}).refine(data => Boolean(data.website || data.instagram || data.mapsLink), {
+  message: "Add a Website, Instagram, or Google Maps or Google Business link.", path: ["website"],
 });
 
 const experienceSchema = z.object({
@@ -436,30 +441,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.post("/api/bookings", requireAuth, h(async (req, res) => {
     const data = parse(bookingSchema, req.body, res);
     if (!data) return;
-    const experience = await storage.getPublicExperience(data.experienceId);
-    if (!experience) return res.status(400).json({ message: "This activity is not available" });
-    const slot = await storage.getSlot(data.slotId);
-    if (!slot || slot.experienceId !== experience.id) return res.status(400).json({ message: "Invalid session" });
-    const today = colomboToday();
-    if (slot.date < today || (slot.date === today && normaliseHHMM(slot.startTime) < colomboNowHHMM())) {
-      return res.status(409).json({ message: "That session has already started" });
-    }
-    if (!(await storage.takeSpots(slot.id, data.qty))) {
-      return res.status(409).json({ message: "Not enough spots left in that session" });
-    }
-    const booking = await storage.createBooking({
-      experienceId: experience.id,
-      slotId: slot.id,
-      bookingDate: slot.date,
-      startTime: normaliseHHMM(slot.startTime),
-      qty: data.qty,
-      totalAmount: (experience.priceAmount || 0) * data.qty, // recomputed on the server
-      currencyCode: "LKR",
-      customerProfileId: res.locals.user!.id,
-      customerNote: data.customerNote ?? null,
-      status: "requested",
-    });
-    res.json(booking);
+    const result = await storage.createBookingRequest(data.experienceId, data.slotId, data.qty, res.locals.user!.id, data.customerNote ?? null);
+    if ("error" in result) return res.status(result.status ?? 409).json({ message: result.error });
+    res.json(result.booking);
   }));
 
   app.get("/api/bookings", requireAuth, h(async (_req, res) => {
@@ -490,15 +474,33 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json(vendor ?? null);
   }));
 
+  app.get("/api/vendor-applications/mine/documents", requireAuth, h(async (_req, res) => {
+    const vendor = await storage.getVendorByOwner(res.locals.user!.id);
+    if (!vendor) return res.json([]);
+    const documents = await storage.getVendorDocuments(vendor.id);
+    // Never return file ids, MIME, paths, contents or admin audit to vendors.
+    res.json(documents.filter(d => d.status === "uploaded").map(d => ({ kind: d.kind, status: "Uploaded" })));
+  }));
+
   app.post("/api/vendor-applications", (req, res, next) => {
     if (req.session.userId) return requireAuth(req, res, next);
     next();
-  }, h(async (req, res) => {
-    const data = parse(applicationSchema, req.body, res);
+  }, applicationUpload, h(async (req, res) => {
+    let body: unknown;
+    try { body = JSON.parse(req.body.application); }
+    catch { return res.status(400).json({ message: "Enter valid application details." }); }
+    const data = parse(applicationSchema, body, res);
     if (!data) return;
+    const files = Object.values(req.files as Record<string, Express.Multer.File[]> ?? {}).flat();
+    let documents;
+    try { documents = validateDocuments(files); }
+    catch (error) { return res.status(400).json({ message: (error as Error).message }); }
+    if (!documents.some(document => document.kind === "idCopy")) {
+      return res.status(400).json({ message: "Upload your ID copy to apply." });
+    }
     const user = res.locals.user;
     if (user?.role === "admin") return res.status(400).json({ message: "Admins can't apply as vendors" });
-    const duplicateMessage = "This email already has an account — log in first, then apply";
+    const duplicateMessage = "This email already has an account. Log in first, then apply";
     if (!user && await storage.getUserByEmail(data.contactEmail)) {
       return res.status(400).json({ message: duplicateMessage });
     }
@@ -512,12 +514,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const details = [
       data.description?.trim() || "",
       "",
-      "— Application —",
+      "Application",
       `Contact: ${data.contactName}`,
       `Activity types: ${data.activityTypes.join(", ")}`,
-      `Typical group capacity: ${data.capacity}`,
+      `Typical group sizes: ${data.groupSizes.join(", ")}`,
       `Typical price: LKR ${data.typicalPrice}`,
-      `Website or Instagram: ${data.website}`,
+      data.website ? `Website: ${data.website}` : "",
+      data.instagram ? `Instagram: ${data.instagram}` : "",
       data.mapsLink ? `Google Maps: ${data.mapsLink}` : "",
       `Vendor terms (${VENDOR_TERMS_VERSION}) accepted: ${new Date().toISOString()}`,
     ].filter((l, i) => i > 0 || l).join("\n").trim();
@@ -531,25 +534,20 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       contactPhone: data.contactPhone,
       verificationStatus: "pending",
     };
-    if (!user) {
-      try {
-        const vendor = await storage.createAnonymousVendorApplication({
+    try {
+      const result = await storage.submitVendorApplication(user ? { id: user.id } : {
           email: data.contactEmail, fullName: data.contactName, phone: data.contactPhone,
           role: "customer", password: `!${randomBytes(24).toString("hex")}`,
-        }, fields);
-        return res.json(vendor);
-      } catch (error) {
+      }, fields, documents);
+      if ("error" in result) return res.status(400).json({ message: result.error });
+      return res.json(result.vendor);
+    } catch (error) {
         const databaseError = error as { code?: string; cause?: { code?: string } };
         if ((databaseError.code ?? databaseError.cause?.code) === "23505") {
           return res.status(400).json({ message: duplicateMessage });
         }
         throw error;
-      }
     }
-    const vendor = existing
-      ? await storage.updateVendor(existing.id, fields)
-      : await storage.createVendor({ ...fields, ownerProfileId: user.id });
-    res.json(vendor);
   }));
 
   // ---------------- vendor (router guard: vendor role + linked business) ----------------
@@ -557,6 +555,44 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.get("/api/vendor/profile", (_req, res) => {
     res.json(res.locals.vendor);
   });
+
+  app.patch("/api/vendor/taking-bookings", h(async (req, res) => {
+    const data = parse(z.object({ takingBookings: z.boolean() }).strict(), req.body, res);
+    if (!data) return;
+    res.json(await storage.setTakingBookings(res.locals.vendor!.id, data.takingBookings));
+  }));
+
+  app.get("/api/admin/vendors/:id/documents", h(async (req, res) => {
+    const parsed = z.coerce.number().int().positive().safeParse(req.params.id);
+    if (!parsed.success) return res.status(400).json({ message: "Choose a valid vendor" });
+    if (!await storage.getVendor(parsed.data)) return res.status(404).json({ message: "Vendor not found" });
+    res.set("Cache-Control", "private, no-store");
+    res.json(await storage.getVendorDocuments(parsed.data));
+  }));
+
+  app.get("/api/admin/documents/:id/content", h(async (req, res) => {
+    const parsed = z.coerce.number().int().positive().safeParse(req.params.id);
+    if (!parsed.success) return res.status(400).json({ message: "Choose a valid document" });
+    const document = await storage.getVendorDocumentContents(parsed.data);
+    if (!document?.contents) return res.status(404).json({ message: "Document not found" });
+    const extension = document.mimeType === "application/pdf" ? "pdf" : document.mimeType === "image/png" ? "png" : "jpg";
+    res.set({
+      "Cache-Control": "private, no-store",
+      "Content-Type": document.mimeType,
+      "Content-Disposition": `attachment; filename="${document.kind}.${extension}"`,
+      "X-Content-Type-Options": "nosniff",
+      "Content-Security-Policy": "sandbox; default-src 'none'",
+    });
+    res.send(document.contents);
+  }));
+
+  app.delete("/api/admin/documents/:id", h(async (req, res) => {
+    const parsed = z.coerce.number().int().positive().safeParse(req.params.id);
+    if (!parsed.success) return res.status(400).json({ message: "Choose a valid document" });
+    const document = await storage.deleteVendorDocument(parsed.data, res.locals.user!.id);
+    if (!document) return res.status(404).json({ message: "Document not found or already deleted" });
+    res.json(document);
+  }));
 
   app.patch("/api/vendor/profile", h(async (req, res) => {
     const data = parse(vendorProfileSchema, req.body, res);

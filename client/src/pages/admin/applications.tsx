@@ -10,6 +10,7 @@ import type { AdminColumn } from "@/components/admin/table";
 import { AdminDialog } from "@/components/admin/dialog";
 import { CredentialDialog, type LoginCredentials } from "@/components/admin/credential-dialog";
 import { AdminError, AdminLoading } from "@/components/admin/states";
+import VendorDocuments from "@/components/admin/vendor-documents";
 import { useToast } from "@/hooks/use-toast";
 
 type Application = { id: number; businessName?: string; ownerName?: string; ownerEmail?: string; ownerPhone?: string; contactEmail?: string; contactPhone?: string; address?: string; city?: string; category?: string; description?: string; verificationStatus: string; createdAt?: string; approvedAt?: string; applicationDescription?: string; };
@@ -44,9 +45,9 @@ export default function Applications() {
   const rows = pipeline.filter((row) => filter === "all" || (filter === "waiting" ? ["pending", "contacted"].includes(row.verificationStatus) : filter === "new" ? row.verificationStatus === "pending" : row.verificationStatus === filter));
   const columns: AdminColumn<Application>[] = [
     { key: "businessName", label: "Business / owner", sortValue: (row) => row.businessName ?? row.ownerName ?? "", render: (row) => { const fields = applicationFields(row.description ?? row.applicationDescription ?? ""); return <><button className="ad-business-trigger" onClick={() => setDetails(row)}>{row.businessName ?? fields.businessName ?? "Business application"}</button><div className="ad-cell-sub">{row.ownerName ?? fields.contactName ?? "Owner details pending"}</div></>; } },
-    { key: "contact", label: "Contact", sortValue: (row) => row.contactEmail ?? row.ownerEmail ?? "", render: (row) => { const fields = applicationFields(row.description ?? row.applicationDescription ?? ""); const email = row.contactEmail ?? row.ownerEmail ?? fields.ownerEmail; const phone = row.contactPhone ?? row.ownerPhone ?? fields.ownerPhone; return <><div>{email || "—"}</div>{phone && <div className="ad-cell-sub">{phone}</div>}</>; } },
-    { key: "location", label: "City / category", sortValue: (row) => row.city ?? "", render: (row) => { const fields = applicationFields(row.applicationDescription ?? row.description ?? ""); return <>{row.city ?? fields.city ?? "—"}<div className="ad-cell-sub">{row.category ?? fields.category ?? "—"}</div></>; } },
-    { key: "application", label: "Application", sortValue: (row) => applicationFields(row.description ?? row.applicationDescription ?? "").description, render: (row) => { const description = applicationFields(row.description ?? row.applicationDescription ?? "").description; return <span title={description} style={{ display: "block", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{description || "—"}</span>; } },
+    { key: "contact", label: "Contact", sortValue: (row) => row.contactEmail ?? row.ownerEmail ?? "", render: (row) => { const fields = applicationFields(row.description ?? row.applicationDescription ?? ""); const email = row.contactEmail ?? row.ownerEmail ?? fields.ownerEmail; const phone = row.contactPhone ?? row.ownerPhone ?? fields.ownerPhone; return <><div>{email || "Not provided"}</div>{phone && <div className="ad-cell-sub">{phone}</div>}</>; } },
+    { key: "location", label: "City / category", sortValue: (row) => row.city ?? "", render: (row) => { const fields = applicationFields(row.applicationDescription ?? row.description ?? ""); return <>{row.city ?? fields.city ?? "Not provided"}<div className="ad-cell-sub">{row.category ?? fields.category ?? "Not provided"}</div></>; } },
+    { key: "application", label: "Application", sortValue: (row) => applicationFields(row.description ?? row.applicationDescription ?? "").description, render: (row) => { const description = applicationFields(row.description ?? row.applicationDescription ?? "").description; return <span title={description} style={{ display: "block", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{description || "Not provided"}</span>; } },
     { key: "terms", label: "Terms accepted", sortValue: (row) => applicationFields(row.description ?? row.applicationDescription ?? "").termsAcceptedAt ?? "", render: (row) => formatAdminDate(applicationFields(row.description ?? row.applicationDescription ?? "").termsAcceptedAt, true) },
     { key: "status", label: "Status", render: (row) => <span className={`ad-badge ${row.verificationStatus === "pending" ? "warm" : row.verificationStatus === "rejected" ? "red" : "blue"}`}>{row.verificationStatus === "pending" ? "New" : row.verificationStatus === "rejected" ? "Declined" : "Contacted"}</span> },
     { key: "actions", label: "Actions", render: (row) => { const fields = applicationFields(row.description ?? row.applicationDescription ?? ""); const phone = row.contactPhone ?? row.ownerPhone ?? fields.ownerPhone; const email = row.contactEmail ?? row.ownerEmail ?? fields.ownerEmail; return <div className="ad-row-actions">
@@ -85,25 +86,27 @@ export default function Applications() {
           : "";
       const mapHref = fields.mapsLink ? (/^https?:\/\//i.test(fields.mapsLink) ? fields.mapsLink : `https://${fields.mapsLink}`) : "";
       const detailRows: Array<{ label: string; value: ReactNode }> = [
-        { label: "Business", value: details.businessName ?? "—" },
-        { label: "Contact name", value: details.ownerName ?? fields.contactName ?? "—" },
-        { label: "Contact email", value: email || "—" },
-        { label: "Mobile", value: phone || "—" },
-        { label: "City", value: details.city ?? "—" },
-        { label: "Address", value: details.address || "—" },
-        { label: "Activity types", value: fields.category || details.category || "—" },
-        { label: "Typical group capacity", value: fields.capacity || "—" },
-        { label: "Typical price", value: /^LKR \d+$/i.test(fields.typicalPrice) ? formatPrice(Number(fields.typicalPrice.slice(4)), "LKR") : fields.typicalPrice || "—" },
-        { label: "Website or Instagram", value: websiteHref ? <a href={websiteHref} target="_blank" rel="noreferrer">{fields.website} <ExternalLink size={13} /></a> : "—" },
-        { label: "Google Maps", value: mapHref ? <a href={mapHref} target="_blank" rel="noreferrer">Open map <ExternalLink size={13} /></a> : "—" },
-        { label: "Application description", value: fields.description || "—" },
-        { label: "Vendor terms", value: fields.termsVersion || "—" },
+        { label: "Business", value: details.businessName ?? "Not provided" },
+        { label: "Contact name", value: details.ownerName ?? fields.contactName ?? "Not provided" },
+        { label: "Contact email", value: email || "Not provided" },
+        { label: "Mobile", value: phone || "Not provided" },
+        { label: "City", value: details.city ?? "Not provided" },
+        { label: "Address", value: details.address || "Not provided" },
+        { label: "Activity types", value: fields.category || details.category || "Not provided" },
+        { label: "Typical group sizes", value: fields.groupSizes.join(", ") || "Not provided" },
+        { label: "Typical price", value: /^LKR \d+$/i.test(fields.typicalPrice) ? formatPrice(Number(fields.typicalPrice.slice(4)), "LKR") : fields.typicalPrice || "Not provided" },
+        { label: "Website", value: websiteHref ? <a href={websiteHref} target="_blank" rel="noreferrer">{fields.website} <ExternalLink size={13} /></a> : "Not provided" },
+        { label: "Instagram", value: fields.instagram ? <a href={fields.instagram.startsWith("https://") || fields.instagram.startsWith("http://") ? fields.instagram : `https://www.instagram.com/${fields.instagram.replace(/^@/, "")}/`} target="_blank" rel="noreferrer">{fields.instagram} <ExternalLink size={13} /></a> : "Not provided" },
+        { label: "Google Maps", value: mapHref ? <a href={mapHref} target="_blank" rel="noreferrer">Open map <ExternalLink size={13} /></a> : "Not provided" },
+        { label: "Application description", value: fields.description || "Not provided" },
+        { label: "Vendor terms", value: fields.termsVersion || "Not provided" },
         { label: "Terms accepted", value: formatAdminDate(fields.termsAcceptedAt, true) },
         { label: "Application status", value: details.verificationStatus === "pending" ? "New" : details.verificationStatus === "contacted" ? "Contacted" : "Declined" },
         { label: "Submitted", value: formatAdminDate(details.createdAt, true) },
       ];
       return <AdminDialog title={details.businessName ?? "Application details"} onClose={() => setDetails(null)}>
         <div className="ad-detail-list">{detailRows.map((item) => <div className="ad-detail-row" key={item.label}><span className="ad-detail-label">{item.label}</span><div className="ad-detail-value">{item.value}</div></div>)}</div>
+        <VendorDocuments vendorId={details.id} />
         <div className="ad-dialog-actions"><button className="ad-button secondary" disabled aria-disabled="true">Internal notes are disabled until go-live.</button><button className="ad-button" onClick={() => setDetails(null)}>Close</button></div>
       </AdminDialog>;
     })()}

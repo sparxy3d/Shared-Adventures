@@ -61,7 +61,7 @@ export default function BookingRequestDialog({ flow }: { flow: ActivityBooking }
   useEffect(() => {
     if (flow.requestOpen && flow.slots.data && !flow.selectedSlot && step !== 3 && !request.isPending) flow.conflict();
   }, [flow.requestOpen, flow.slots.data, flow.selectedSlot, step, request.isPending]);
-  if (!activity) return null;
+  if (!activity || !flow.takingBookings) return null;
   const returnUrl = `/activity/${activity.id}?${new URLSearchParams({ slot: String(flow.selectedSlotId || ""), group: String(flow.qty), booking: "1" })}`;
   const authUrl = (path: string) => `${path}?next=${encodeURIComponent(returnUrl)}`;
   const firstName = user?.fullName.trim().split(/\s+/)[0];
@@ -93,7 +93,7 @@ export default function BookingRequestDialog({ flow }: { flow: ActivityBooking }
           {flow.selectedSlot && <p>{memberBookingDate(flow.selectedSlot.date, flow.selectedSlot.startTime.slice(0, 5))}</p>}
           <p>{flow.qty} {flow.qty === 1 ? "person" : "people"}</p>
           <p className="br-total">{activity.priceAmount == null ? "Price not listed" : formatPrice(activity.priceAmount * flow.qty, "LKR")}</p>
-          <p>No payment now — the vendor confirms your request, usually within a few hours</p>
+          <p>No payment now. The vendor usually confirms your request within a few hours.</p>
           <label>Note to the vendor (optional)<textarea maxLength={1000} value={note} onChange={event => setNote(event.target.value)} /></label>
           {!user && <div className="br-error">Guest requests aren’t available to send yet. <Link href={authUrl("/login")}>Log in to send your request</Link></div>}
           <button className="br-primary" data-testid="button-send-request" disabled={!user || !flow.selectedSlot || !detailsComplete || request.isPending} onClick={() => { setError(""); request.mutate(); }}>{request.isPending ? "Sending request…" : "Send request"}</button>

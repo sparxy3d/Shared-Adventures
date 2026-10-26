@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import ExperienceCard from "@/components/experience-card";
 import MemberLayout, { MemberError, MemberLoading } from "@/components/member-layout";
 
-interface SavedActivity { id: number; experienceId: number; experience: Experience }
+interface SavedActivity { id: number; experienceId: number; experience: Experience & { takingBookings?: boolean } }
 export default function Favorites() {
   const { isMember } = useAuth();
   const { toast } = useToast();
@@ -23,7 +23,7 @@ export default function Favorites() {
   return <MemberLayout title="Bucket list">
     {error && <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-white p-4">{error}<Button variant="outline" className="ml-2" onClick={() => { if (remove.variables) remove.mutate(remove.variables); }}>Retry</Button></div>}
     {query.isLoading ? <MemberLoading /> : query.isError ? <MemberError retry={() => query.refetch()} message="We couldn’t load your bucket list." /> : query.data?.length ? <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {query.data.map(saved => <ExperienceCard key={saved.id} experience={saved.experience} saved onRemove={() => remove.mutate(saved.experienceId)} removePending={remove.isPending} memberView />)}
+      {query.data.map(saved => <ExperienceCard key={saved.id} experience={{ ...saved.experience, takingBookings: saved.experience.takingBookings !== false }} saved onRemove={() => remove.mutate(saved.experienceId)} removePending={remove.isPending} memberView />)}
     </div> : <div className="rounded-2xl bg-white p-8 text-center shadow-sm"><p className="mb-4 text-xl font-semibold">Save activities you want to try</p><Link href="/search"><Button>Explore</Button></Link></div>}
   </MemberLayout>;
 }

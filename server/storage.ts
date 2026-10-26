@@ -1,7 +1,7 @@
 import { db } from "./db";
 import { eq, and, ilike, desc, sql, inArray, gte, lte, ne, getTableColumns } from "drizzle-orm";
 import {
-  users, countries, vendors, experiences,
+  users, countries, vendors, experiences, vendorDocuments,
   availabilitySlots, bookings, favorites,
   type InsertUser, type User, type InsertCountry, type Country,
   type InsertVendor, type Vendor, type InsertExperience, type Experience,
@@ -11,11 +11,12 @@ import {
 import { GROUP_MIN_SPOTS } from "@shared/catalog";
 import { colomboToday, colomboNowHHMM, colomboDayOfWeek, addDays, addMinutesHHMM, normaliseHHMM } from "./time";
 import { adminInsights, approvalDate, withApprovalDate } from "./admin-insights";
+import type { DocumentUpload } from "./vendor-documents";
 
 export type SafeUser = Omit<User, "password">;
 
 export type NextSession = { slotId: number; date: string; startTime: string; endTime: string; spotsLeft: number };
-export type PublicExperience = Experience & { vendorName: string | null; nextSession: NextSession | null };
+export type PublicExperience = Experience & { vendorName: string | null; nextSession: NextSession | null; takingBookings: boolean };
 
 export type SearchFilters = {
   category?: string;
@@ -38,8 +39,8 @@ export function stripPassword(u: User): SafeUser {
  * Public views never show seeded social proof: ratings, review counts and offers are
  * invented demo values. They come back when real reviews and agreed offers exist.
  */
-function toPublic(exp: Experience, vendorName: string | null, nextSession: NextSession | null): PublicExperience {
-  return { ...exp, rating: null, reviewCount: null, offerLabel: null, vendorName, nextSession };
+function toPublic(exp: Experience, vendorName: string | null, nextSession: NextSession | null, takingBookings = true): PublicExperience {
+  return { ...exp, rating: null, reviewCount: null, offerLabel: null, vendorName, nextSession, takingBookings };
 }
 
 /**
@@ -170,13 +171,62 @@ export class DatabaseStorage {
     return vendor;
   }
 
+  async setTakingBookings(vendorId: number, takingBookings: boolean) {
+    // UPDATE locks the same vendor row as createBookingRequest.
+    return this.updateVendor(vendorId, { takingBookings });
+  }
+
+  async getVendorDocuments(vendorId: number) {
+    const rows = await db.select({
+      id: vendorDocuments.id, kind: vendorDocuments.kind,
+      mimeType: vendorDocuments.mimeType, sizeBytes: vendorDocuments.sizeBytes,
+      deletedAt: vendorDocuments.deletedAt, deletedByName: users.fullName,
+    }).from(vendorDocuments).leftJoin(users, eq(users.id, vendorDocuments.deletedBy))
+      .where(eq(vendorDocuments.vendorId, vendorId)).orderBy(vendorDocuments.createdAt);
+    return rows.map(row => ({ ...row, status: row.deletedAt ? "deleted" : "uploaded" }));
+  }
+
+  async getVendorDocumentContents(documentId: number) {
+    const [document] = await db.select({
+      kind: vendorDocuments.kind, mimeType: vendorDocuments.mimeType, contents: vendorDocuments.contents,
+    }).from(vendorDocuments).where(and(eq(vendorDocuments.id, documentId), sql`${vendorDocuments.deletedAt} IS NULL`));
+    return document;
+  }
+
+  async deleteVendorDocument(documentId: number, adminId: number) {
+    const [document] = await db.update(vendorDocuments).set({
+      contents: null, deletedAt: new Date(), deletedBy: adminId,
+    }).where(and(eq(vendorDocuments.id, documentId), sql`${vendorDocuments.deletedAt} IS NULL`))
+      .returning({ id: vendorDocuments.id, deletedAt: vendorDocuments.deletedAt });
+    return document;
+  }
+
+  async submitVendorApplication(
+    owner: { id: number } | InsertUser,
+    application: Omit<InsertVendor, "ownerProfileId">,
+    documents: DocumentUpload[],
+  ) {
+    return db.transaction(async tx => {
+      const [user] = "id" in owner
+        ? await tx.select().from(users).where(eq(users.id, owner.id)).for("update")
+        : await tx.insert(users).values(owner).returning();
+      const [existing] = await tx.select().from(vendors).where(eq(vendors.ownerProfileId, user.id)).for("update");
+      if (existing && existing.verificationStatus !== "rejected") return { error: "You have already applied" } as const;
+      const [vendor] = existing
+        ? await tx.update(vendors).set(application).where(eq(vendors.id, existing.id)).returning()
+        : await tx.insert(vendors).values({ ...application, ownerProfileId: user.id }).returning();
+      await tx.insert(vendorDocuments).values(documents.map(document => ({ ...document, vendorId: vendor.id })));
+      return { vendor };
+    });
+  }
+
   // ---------- public discovery ----------
   /**
    * Published listings of approved vendors that have a free session in the requested
    * window (Colombo time). Each result carries its next matching session.
    */
   async searchExperiences(filters: SearchFilters = {}): Promise<PublicExperience[]> {
-    const conditions = [eq(experiences.status, "published"), eq(vendors.verificationStatus, "approved")];
+    const conditions = [eq(experiences.status, "published"), eq(vendors.verificationStatus, "approved"), eq(vendors.takingBookings, true)];
     if (filters.category) conditions.push(eq(experiences.category, filters.category));
     if (filters.countryId) conditions.push(eq(experiences.countryId, filters.countryId));
     if (filters.city) conditions.push(ilike(experiences.city, `%${filters.city}%`));
@@ -230,12 +280,12 @@ export class DatabaseStorage {
 
   async getPublicExperience(id: number): Promise<PublicExperience | undefined> {
     const [row] = await db
-      .select({ exp: experiences, vendorName: vendors.businessName })
+      .select({ exp: experiences, vendorName: vendors.businessName, takingBookings: vendors.takingBookings })
       .from(experiences)
       .innerJoin(vendors, eq(vendors.id, experiences.vendorId))
       .where(and(eq(experiences.id, id), eq(experiences.status, "published"), eq(vendors.verificationStatus, "approved")));
     if (!row) return undefined;
-    return toPublic(row.exp, row.vendorName, null);
+    return toPublic(row.exp, row.vendorName, null, row.takingBookings);
   }
 
   /** Future sessions for a public listing (Colombo time), past ones omitted. */
@@ -524,6 +574,30 @@ export class DatabaseStorage {
   async createBooking(data: InsertBooking): Promise<Booking> {
     const [booking] = await db.insert(bookings).values(data).returning();
     return booking;
+  }
+
+  async createBookingRequest(experienceId: number, slotId: number, qty: number, customerId: number, customerNote: string | null) {
+    return db.transaction(async tx => {
+      const [exp] = await tx.select().from(experiences).where(eq(experiences.id, experienceId)).for("share");
+      if (!exp || exp.status !== "published") return { error: "This activity is not available", status: 400 } as const;
+      const [vendor] = await tx.select().from(vendors).where(eq(vendors.id, exp.vendorId)).for("update");
+      if (!vendor || vendor.verificationStatus !== "approved") return { error: "This activity is not available", status: 400 } as const;
+      if (!vendor.takingBookings) return { error: "Not taking bookings right now", status: 409 } as const;
+      if (exp.capacity && qty > exp.capacity) return { error: "Your group exceeds this activity's capacity", status: 400 } as const;
+      const [slot] = await tx.select().from(availabilitySlots).where(eq(availabilitySlots.id, slotId)).for("update");
+      if (!slot || slot.experienceId !== exp.id) return { error: "Invalid session", status: 400 } as const;
+      if (slot.date < colomboToday() || (slot.date === colomboToday() && normaliseHHMM(slot.startTime) < colomboNowHHMM())) {
+        return { error: "That session has already started", status: 409 } as const;
+      }
+      if (slot.status !== "open" || slot.capacity < qty) return { error: "Not enough spots left in that session", status: 409 } as const;
+      await tx.update(availabilitySlots).set({ capacity: slot.capacity - qty }).where(eq(availabilitySlots.id, slot.id));
+      const [booking] = await tx.insert(bookings).values({
+        experienceId: exp.id, slotId: slot.id, bookingDate: slot.date, startTime: normaliseHHMM(slot.startTime),
+        qty, totalAmount: (exp.priceAmount || 0) * qty, currencyCode: "LKR",
+        customerProfileId: customerId, customerNote, status: "requested",
+      }).returning();
+      return { booking };
+    });
   }
 
   async updateBooking(id: number, data: Partial<InsertBooking>): Promise<Booking | undefined> {

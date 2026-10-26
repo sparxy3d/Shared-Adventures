@@ -152,6 +152,22 @@
 .ad-detail-label { display:block; color:#64748B; font-size:13px; font-weight:600; margin-bottom:5px; }
 .ad-detail-value { color:#171717; font-size:13px; line-height:1.5; overflow-wrap:anywhere; }
 .ad-detail-value a { color:#FF6B24; display:inline-flex; align-items:center; gap:5px; text-decoration:underline; }
+.ad-vendor-documents { margin-top:23px; padding-top:19px; border-top:1px solid #E8DED4; }
+.ad-vendor-documents .ad-section-head { align-items:flex-start; }
+.ad-vendor-documents .ad-eyebrow { margin:0 0 4px; color:#FF6B24; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }
+.ad-doc-list { display:grid; gap:9px; }
+.ad-doc-row { display:grid; grid-template-columns:38px minmax(0,1fr) auto; align-items:center; gap:10px; padding:12px; border:1px solid #E8DED4; border-radius:12px; background:#FFFDFB; }
+.ad-doc-icon { display:grid; place-items:center; width:36px; height:36px; border-radius:10px; color:#9B4D23; background:#FFF0E6; }
+.ad-doc-info { display:grid; gap:4px; min-width:0; }
+.ad-doc-info strong { color:#171717; font-size:12px; }
+.ad-doc-info span,.ad-doc-info small { color:#64748B; font-size:10px; overflow-wrap:anywhere; }
+.ad-doc-actions { grid-column:2 / -1; display:flex; justify-content:flex-end; align-items:center; gap:7px; }
+.ad-doc-actions .ad-button { min-height:38px; padding:0 10px; }
+.ad-doc-actions .ad-icon-button { min-width:38px; min-height:38px; color:#9D3920; }
+.ad-doc-state { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:13px; border:1px solid #E8DED4; border-radius:11px; color:#64748B; font-size:12px; }
+.ad-doc-state p { margin:0; }
+.ad-doc-skeleton { display:grid; gap:9px; }
+.ad-doc-skeleton span { height:64px; border-radius:11px; background:linear-gradient(90deg,#F4EBE2 20%,#FFF8F1 40%,#F4EBE2 60%); background-size:300% 100%; animation:ad-shimmer 1.5s ease-in-out infinite; }
 .ad-stat:hover { border-color:#FF6B24; }
 .ad-table-empty { color:#64748B !important; }
 .ad-field label { color:#64748B; }
@@ -175,6 +191,9 @@
   outline-offset:2px;
 }
 @media(max-width:700px) {
+  .ad-doc-row { grid-template-columns:36px minmax(0,1fr); }
+  .ad-doc-row > .ad-badge { grid-column:2; justify-self:start; }
+  .ad-doc-actions { grid-column:1 / -1; justify-content:flex-start; }
   .ad-user-chip > span:first-child { display:none; }
   .ad-crumb { max-width:40vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .ad-detail-list { grid-template-columns:1fr; }

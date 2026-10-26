@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, customType } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -41,12 +41,30 @@ export const vendors = pgTable("vendors", {
   contactEmail: text("contact_email"),
   contactPhone: text("contact_phone"),
   verificationStatus: text("verification_status").notNull().default("pending"),
+  takingBookings: boolean("taking_bookings").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const insertVendorSchema = createInsertSchema(vendors).omit({ id: true, createdAt: true });
 export type InsertVendor = z.infer<typeof insertVendorSchema>;
 export type Vendor = typeof vendors.$inferSelect;
+
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType() { return "bytea"; },
+});
+
+// Contents must only be selected by the admin-only download path.
+export const vendorDocuments = pgTable("vendor_documents", {
+  id: serial("id").primaryKey(),
+  vendorId: integer("vendor_id").notNull().references(() => vendors.id),
+  kind: text("kind").notNull(),
+  mimeType: text("mime_type").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  contents: bytea("contents"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  deletedBy: integer("deleted_by").references(() => users.id),
+});
 
 export const experiences = pgTable("experiences", {
   id: serial("id").primaryKey(),

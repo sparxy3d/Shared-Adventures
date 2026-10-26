@@ -208,6 +208,24 @@
 .v4-category-choice { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 9px 12px; border: 1px solid #e5ddd6; border-radius: 11px; background: #fffdfa; font-size: 14px; cursor: pointer; }
 .v4-category-choice:has(input:checked) { border-color: var(--v4-orange); background: #fff2e9; }
 .v4-category-choice input { width: 18px; height: 18px; accent-color: var(--v4-orange); }
+.v4-optional { color: #758078; font-size: 12px; font-weight: 500; }
+.v4-group-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.v4-group-pill { position: relative; cursor: pointer; }
+.v4-group-pill input { position: absolute; opacity: 0; inset: 0; }
+.v4-group-pill span { display: inline-flex; align-items: center; min-height: 42px; padding: 0 15px; border: 1px solid #e5ddd6; border-radius: 999px; background: #fffdfa; color: #424943; font-size: 13px; font-weight: 700; transition: background .16s ease, border-color .16s ease, color .16s ease; }
+.v4-group-pill input:checked + span { border-color: var(--v4-orange); background: #fff2e9; color: #8f411c; }
+.v4-group-pill input:focus-visible + span { outline: 3px solid #f3b28c; outline-offset: 2px; }
+.v4-document-fieldset { min-width: 0; border: 0; padding: 0; margin: 0; }
+.v4-privacy-copy { margin: 0 0 14px; max-width: 760px; color: #58645d; font-size: 12px; line-height: 1.65; }
+.v4-document-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.v4-document-upload { min-width: 0; padding: 14px; border: 1px solid #e6dfd8; border-radius: 12px; background: #fffdfa; }
+.v4-document-upload label { display: block; margin-bottom: 9px; color: #292d30; font-size: 13px; font-weight: 700; }
+.v4-document-upload input { display: block; width: 100%; max-width: 100%; color: #535c56; font-size: 12px; }
+.v4-document-upload input::file-selector-button { margin-right: 8px; padding: 7px 9px; border: 1px solid #ded5cc; border-radius: 8px; background: #f8f4ef; color: #373d39; font: inherit; font-weight: 700; cursor: pointer; }
+.v4-document-upload small { margin-top: 8px; }
+.v4-document-selected { overflow-wrap: anywhere; color: #425d49 !important; }
+.v4-uploaded-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.v4-uploaded-list span { display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid #d9e6d7; border-radius: 999px; color: #35583a; background: #fff; font-size: 12px; font-weight: 700; }
 .v4-check-wrap { display: flex; align-items: flex-start; gap: 11px; }
 .v4-check-wrap input { width: 20px; height: 20px; flex: none; margin: 1px 0 0; accent-color: var(--v4-orange); }
 .v4-check-wrap label { margin: 0; color: #4f5a65; font-size: 13px; font-weight: 500; line-height: 1.7; }
@@ -227,6 +245,7 @@
 .v4-footer-gap { padding-top: 0; }
 
 @media (max-width: 760px) {
+  .v4-document-grid { grid-template-columns: 1fr; }
   .v4-shell { width: min(100% - 32px, 620px); }
   .v4-hero { min-height: 0; }
   .v4-hero-shell { width: min(100% - 32px, 620px); grid-template-columns: 1fr; gap: 26px; padding-block: 42px 38px; }

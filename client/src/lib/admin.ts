@@ -11,8 +11,10 @@ export type AdminApplicationFields = {
   category: string;
   activityTypes: string[];
   capacity: string;
+  groupSizes: string[];
   typicalPrice: string;
   website: string;
+  instagram: string;
   mapsLink: string;
   description: string;
   termsVersion: string;
@@ -34,9 +36,9 @@ export function refreshAdmin() {
 }
 
 export function formatAdminDate(value?: string | Date | null, withTime = false): string {
-  if (!value) return "—";
+  if (!value) return "Not provided";
   const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) return "Not provided";
   return new Intl.DateTimeFormat("en-LK", {
     day: "numeric", month: "short", year: "numeric",
     ...(withTime ? { hour: "numeric", minute: "2-digit" } : {}),
@@ -45,10 +47,17 @@ export function formatAdminDate(value?: string | Date | null, withTime = false):
 }
 
 export function applicationFields(description = ""): AdminApplicationFields {
-  const marker = "— Application —";
-  const markerIndex = description.indexOf(marker);
+  const legacyMarker = "— Application —";
+  const legacyIndex = description.indexOf(legacyMarker);
+  const plainMarker = legacyIndex < 0 ? /(?:^|\n)\s*Application\s*:?\s*(?:\n|$)/i.exec(description) : null;
+  const markerIndex = legacyIndex >= 0 ? legacyIndex : plainMarker?.index ?? -1;
+  const blockStart = legacyIndex >= 0
+    ? legacyIndex + legacyMarker.length
+    : plainMarker
+      ? plainMarker.index + plainMarker[0].length
+      : -1;
   const profileDescription = (markerIndex < 0 ? description : description.slice(0, markerIndex)).trim();
-  const block = markerIndex < 0 ? description : description.slice(markerIndex + marker.length);
+  const block = blockStart < 0 ? description : description.slice(blockStart);
   const field = (source: string, names: string[]) => {
     const labels = names.map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
     const match = source.match(new RegExp(`(?:^|\\n)\\s*(?:${labels})\\s*:\\s*(.*)`, "i"));
@@ -75,8 +84,10 @@ export function applicationFields(description = ""): AdminApplicationFields {
     category: activityTypes.length ? activityTypes.map(categoryLabel).join(", ") : rawCategory,
     activityTypes,
     capacity: either(["Typical group capacity", "Capacity"]),
+    groupSizes: either(["Group sizes", "Typical group sizes"]).split(",").map((value) => value.trim()).filter(Boolean),
     typicalPrice: either(["Typical price", "Price"]),
-    website: either(["Website or Instagram", "Website", "Instagram"]),
+    website: either(["Website", "Website or Instagram"]),
+    instagram: either(["Instagram"]),
     mapsLink: either(["Google Maps", "Maps link"]),
     description: profileDescription,
     termsVersion,
@@ -103,7 +114,7 @@ export function isDemoEmail(email?: string | null): boolean {
 }
 
 export function formatLkr(value?: number | string | null): string {
-  if (value == null || value === "") return "—";
+  if (value == null || value === "") return "Not provided";
   const amount = Number(value);
-  return Number.isFinite(amount) ? `LKR ${new Intl.NumberFormat("en-LK", { maximumFractionDigits: 0 }).format(amount)}` : "—";
+  return Number.isFinite(amount) ? `LKR ${new Intl.NumberFormat("en-LK", { maximumFractionDigits: 0 }).format(amount)}` : "Not provided";
 }

@@ -210,3 +210,87 @@ mtime_ms = 1793014467392
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/235c563d-ac2e-4758-9fb4-231fcc70e31e/c0b73282-0a38-4c93-a353-73d46376d445"
 storage_version_token = "1793014560467609"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "KdXPgSQPbLA2t42gT3umh"
+uri = "file://attached_assets/stage1-application-1440.jpg"
+type = "image"
+title = "Application form, desktop"
+description = "Stage 1 development screenshot"
+logical_id = "f1736809-f995-4671-a97c-6edf1582bcf0"
+content_hash = "sha256:23003ba3188daa7df0b1db63e4ac8ca5229a65aeba10fa046a7ce28f753e008f"
+size = 116016
+mtime_ms = 1793018391884
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/f1736809-f995-4671-a97c-6edf1582bcf0/9a2c3a81-afd5-4ccf-b560-2f8483bd14d4"
+storage_version_token = "1793018584810116"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "ylaKFAlCjQQp-UtZwHwoJ"
+uri = "file://attached_assets/stage1-application-375.jpg"
+type = "image"
+title = "Application form, phone"
+description = "Stage 1 development screenshot"
+logical_id = "e0618799-9b34-498a-93e7-4c9cd709eb29"
+content_hash = "sha256:f1038b69f918dbdf76ac902da3f001866d7947a0026a71a0171488ffc48b6a5d"
+size = 110206
+mtime_ms = 1793018398228
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/e0618799-9b34-498a-93e7-4c9cd709eb29/27986c31-d54a-454f-b645-01c04d71a584"
+storage_version_token = "1793018586589392"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "104--oNFIVISuKeKO3weA"
+uri = "file://attached_assets/stage1-admin-documents-1440.jpg"
+type = "image"
+title = "Admin document view, desktop"
+description = "Stage 1 development screenshot"
+logical_id = "7efaeac1-6421-4a14-990e-349ac3bef085"
+content_hash = "sha256:8c5ee1aed27cc9dca058e39c163e874b47ec3ab72019580ea0955c2983c0c362"
+size = 134070
+mtime_ms = 1793018414580
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/7efaeac1-6421-4a14-990e-349ac3bef085/bc5959a0-4a89-4782-840e-01f7bee456a7"
+storage_version_token = "1793018588414796"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "qvKfXXB3LupV4VOlgMRfe"
+uri = "file://attached_assets/stage1-admin-documents-375.jpg"
+type = "image"
+title = "Admin document view, phone"
+description = "Stage 1 development screenshot"
+logical_id = "75986895-bf0b-4acf-a030-d1043e155cd1"
+content_hash = "sha256:3c654e7dcd4e908de03c511e150a291b748ca765a6ec0dc83cb16e953663fca0"
+size = 117414
+mtime_ms = 1793018424384
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/75986895-bf0b-4acf-a030-d1043e155cd1/c06d5f18-0329-47f3-b3aa-a648c18b31ed"
+storage_version_token = "1793018590182188"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "xmLygD3lP5WObge9_ryER"
+uri = "file://attached_assets/stage1-vendor-switch-1440.jpg"
+type = "image"
+title = "Vendor taking-bookings switch, desktop"
+description = "Stage 1 development screenshot"
+logical_id = "930780e2-a66a-4a61-b70a-bbb814b2ffa4"
+content_hash = "sha256:321260f9e6183c7c3d021e84f0c3999cafd226002c5b22b8c9f1bea95f9e861d"
+size = 98788
+mtime_ms = 1793018434512
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/930780e2-a66a-4a61-b70a-bbb814b2ffa4/f9ce2449-eba1-45b3-a0e4-522344646c39"
+storage_version_token = "1793018592054462"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "oXSioUr0KYfNcQYvclzlZ"
+uri = "file://attached_assets/stage1-vendor-switch-375.jpg"
+type = "image"
+title = "Vendor taking-bookings switch, phone"
+description = "Stage 1 development screenshot"
+logical_id = "3f0cac07-bcda-4cc6-bdd6-6a1a8d5c0360"
+content_hash = "sha256:8cf22d5552ccd86ae29209b5481844cc78a0503a168c1ce67be275097c72fc7e"
+size = 73730
+mtime_ms = 1793018443712
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/3f0cac07-bcda-4cc6-bdd6-6a1a8d5c0360/98d089c1-a3fa-400a-8051-9df836679d17"
+storage_version_token = "1793018593590036"
+content_type = "image/jpeg"

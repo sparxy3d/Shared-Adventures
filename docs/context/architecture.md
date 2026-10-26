@@ -77,7 +77,7 @@ Tables (`shared/schema.ts`): `users`, `countries`, `vendors`, `experiences`,
 `session` (owned by connect-pg-simple, not in the schema).
 
 - Primary keys are `serial`. Foreign keys are declared, with no cascade rules.
-- No soft delete and no `updated_at`. Only `created_at` on most tables.
+- No soft delete and no `updated_at` on core records. Verification document contents are nulled on admin deletion, retaining the deletion audit.
 - Status columns are free text with defaults, not enums:
   - experiences: `draft`, `published`
   - bookings: `requested`, then `confirmed` or `cancelled` (the vendor's Decline sets
@@ -110,8 +110,9 @@ volleyball, yoga. There is no upload pipeline: vendors cannot add photos.
 
 ## Integrations
 
-None. No payments, email, SMS, maps, storage, or analytics. Booking is request-only, and
-the vendor confirms or declines it.
+No payments, email, SMS, maps, external storage service, or analytics. Vendor verification
+documents are stored privately in PostgreSQL and served only by admin-guarded routes.
+Booking is request-only, and the vendor confirms or declines it.
 
 ## Cross-cutting concerns
 

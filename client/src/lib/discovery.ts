@@ -3,7 +3,7 @@ import { SUPPORTED_CITIES } from "@shared/catalog";
 import { formatTime12h } from "./dates";
 
 export type Session = { slotId: number; date: string; startTime: string; endTime: string; spotsLeft: number };
-export type Activity = Experience & { vendorName?: string | null; nextSession?: Session | null };
+export type Activity = Experience & { vendorName?: string | null; nextSession?: Session | null; takingBookings: boolean };
 export type DiscoveryChoices = { city: string; group: "1" | "2" | "3-5" | "6+"; time: "now" | "tonight" | "weekend" | "date"; date: string };
 
 export function sriLankaToday(now = new Date()) {

@@ -11,7 +11,7 @@ import { AdminError, AdminLoading } from "@/components/admin/states";
 import { useToast } from "@/hooks/use-toast";
 import { SUPPORTED_CITIES } from "@shared/catalog";
 
-type Vendor = { id: number; businessName: string; ownerProfileId?: number; ownerName?: string; ownerEmail?: string; contactPhone?: string; city?: string; verificationStatus: string; live?: boolean; approvedAt?: string; listingCount?: number; publishedCount?: number; bookingsThisMonth?: number; };
+type Vendor = { id: number; businessName: string; ownerProfileId?: number; ownerName?: string; ownerEmail?: string; contactPhone?: string; city?: string; verificationStatus: string; live?: boolean; takingBookings: boolean; approvedAt?: string; listingCount?: number; publishedCount?: number; bookingsThisMonth?: number; };
 type NewVendor = { businessName: string; contactName: string; contactEmail: string; contactPhone: string; city: string; description: string };
 const initial: NewVendor = { businessName: "", contactName: "", contactEmail: "", contactPhone: "", city: "", description: "" };
 
@@ -62,8 +62,9 @@ export default function Vendors() {
     { key: "businessName", label: "Vendor", sortValue: (row) => row.businessName, render: (row) => <Link href={`/admin/vendors/${row.id}`} className="ad-cell-title" style={{ textDecoration: "none" }}>{row.businessName}{isDemoEmail(row.ownerEmail) && <span className="ad-badge warm" style={{ marginLeft: 7 }}>Demo</span>}<div className="ad-cell-sub">{row.ownerName ?? "Owner"} · {row.ownerEmail ?? "Email unavailable"}</div></Link> },
     { key: "city", label: "City", sortValue: (row) => row.city ?? "" },
     { key: "verificationStatus", label: "Status", render: (row) => <span className={`ad-badge ${row.live ? "green" : row.verificationStatus === "paused" ? "red" : "warm"}`}>{row.live ? "Live" : row.verificationStatus}</span> },
-    { key: "listingCount", label: "Listings", sortValue: (row) => row.listingCount ?? 0, render: (row) => row.listingCount == null ? "—" : <>{row.listingCount} total <span className="ad-cell-sub">{row.publishedCount ?? "—"} published</span></> },
-    { key: "bookingsThisMonth", label: "Bookings · month", sortValue: (row) => row.bookingsThisMonth ?? 0, render: (row) => row.bookingsThisMonth ?? "—" },
+    { key: "takingBookings", label: "Bookings", sortValue: (row) => row.takingBookings ? 1 : 0, render: (row) => <span className={`ad-badge ${row.takingBookings ? "green" : "warm"}`}>{row.takingBookings ? "Taking bookings" : "Offline"}</span> },
+    { key: "listingCount", label: "Listings", sortValue: (row) => row.listingCount ?? 0, render: (row) => row.listingCount == null ? "Not available" : <>{row.listingCount} total <span className="ad-cell-sub">{row.publishedCount ?? "Not available"} published</span></> },
+    { key: "bookingsThisMonth", label: "Bookings · month", sortValue: (row) => row.bookingsThisMonth ?? 0, render: (row) => row.bookingsThisMonth ?? "Not available" },
     { key: "approvedAt", label: "Approved", sortValue: (row) => row.approvedAt ?? "", render: (row) => formatAdminDate(row.approvedAt) },
     { key: "actions", label: "Actions", render: (row) => <div className="ad-row-actions">
       <Link className="ad-icon-button" href={`/admin/vendors/${row.id}`} aria-label={`Open ${row.businessName}`}><Store size={15} /></Link>
