@@ -16,7 +16,7 @@ import { ideasHeading, nearestCity, sriLankaToday, type Activity, type Discovery
 import "@/components/homepage.css";
 
 const categoryTiles = {
-  sports: { line: "Play together", image: "/images/volleyball.png" },
+  sports: { line: "Play together", image: "/images/category-sports-800.webp" },
   adventure: { line: "Feel the thrill", image: "/images/rafting.png" },
   arts: { line: "Create something", image: "/images/pottery.png" },
   wellness: { line: "Unwind together", image: "/images/yoga.png" },
@@ -243,7 +243,14 @@ export default function Home() {
 
         <section className="home-categories home-section-shell" aria-labelledby="categories-title">
           <div className="home-section-heading"><div><h2 id="categories-title">Explore by category</h2></div><Link href="/search" className="home-text-link">Browse all <ArrowRight size={16} /></Link></div>
-          <div className="home-category-rail">{categories.map((category) => <Link key={category.category} href={`/search?category=${category.category}`} className="home-category-tile"><img src={category.image} alt={`${category.title} activities`} loading="lazy" /><span className="home-category-shade" /><span className="home-category-copy"><strong>{category.title}</strong><span>{category.line}</span></span><ArrowRight size={18} className="home-category-arrow" aria-hidden="true" /></Link>)}</div>
+          <div className="home-category-rail">{categories.map((category) => <Link key={category.category} href={`/search?category=${category.category}`} className="home-category-tile">
+            {category.category === "sports" ? (
+              <picture>
+                <source media="(max-width: 767px)" srcSet="/images/category-sports-400.webp 400w" sizes="(max-width: 600px) 69vw, 160px" />
+                <img src={category.image} srcSet="/images/category-sports-400.webp 400w, /images/category-sports-800.webp 800w" sizes="(max-width: 900px) 160px, (min-width: 1248px) 230px, calc((100vw - 100px) / 5)" width={800} height={600} alt="Friends playing futsal together at sunset" loading="lazy" style={{ objectFit: "cover", objectPosition: "50% 45%" }} />
+              </picture>
+            ) : <img src={category.image} alt={`${category.title} activities`} loading="lazy" />}
+            <span className="home-category-shade" /><span className="home-category-copy"><strong>{category.title}</strong><span>{category.line}</span></span><ArrowRight size={18} className="home-category-arrow" aria-hidden="true" /></Link>)}</div>
         </section>
 
         {(openNow.isLoading || openNow.isError || nowCards.length > 0) && <section className="home-now home-section-shell" aria-label={choices.city ? "Open near you" : "Open now"}>

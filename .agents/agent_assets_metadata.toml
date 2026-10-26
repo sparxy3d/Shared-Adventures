@@ -112,3 +112,31 @@ mtime_ms = 1792997604292
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/b2b02674-90d2-4ea1-8f31-cccd1b4b586a/d4d56301-e163-42d2-83db-c3e6f0fcd323"
 storage_version_token = "1792998020639074"
 content_type = "image/png"
+
+[[outputs]]
+id = "d-mv6dMyddHDUE8xnFPV0"
+uri = "file://attached_assets/sports-category-row-1440.jpg"
+type = "image"
+title = "Category row — 1440px"
+description = "Updated Sports photo; the other four tiles, gradient and labels are unchanged."
+logical_id = "1e2a0fbe-3612-495d-9cb6-87b725a8f0b1"
+content_hash = "sha256:d5edcd735e79e97f804c47c08591a6b44c77cdbb8a412f3b875e85a4aa265cdd"
+size = 81707
+mtime_ms = 1792998506232
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/1e2a0fbe-3612-495d-9cb6-87b725a8f0b1/deb268af-38e5-4ba0-b4d1-9bc83a57dcc3"
+storage_version_token = "1792998525247378"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "MFp2NvKt9qayF1r-NEUGW"
+uri = "file://attached_assets/sports-category-row-375.jpg"
+type = "image"
+title = "Category row — 375px"
+description = "Phone layout using the 400px WebP image."
+logical_id = "509e8a65-f705-42d3-b064-40507aee0919"
+content_hash = "sha256:70744b83a32a58cbcf778c37a627ed94faba1f483dbb0f4cff38f4c7c2d72b8a"
+size = 25131
+mtime_ms = 1792998506477
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/509e8a65-f705-42d3-b064-40507aee0919/e2d3dbda-0ca4-4093-a9f5-9798f1c36afc"
+storage_version_token = "1792998526537951"
+content_type = "image/jpeg"
