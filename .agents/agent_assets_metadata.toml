@@ -140,3 +140,31 @@ mtime_ms = 1792998506477
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/509e8a65-f705-42d3-b064-40507aee0919/e2d3dbda-0ca4-4093-a9f5-9798f1c36afc"
 storage_version_token = "1792998526537951"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "SmXnS67uIYjovEvwPNkce"
+uri = "file://client/public/images/og-image-v2.jpg"
+type = "image"
+title = "Free Spirit social share image"
+description = "1200 × 630px JPEG, 202.6 KB. The final image is shown in the screenshot above."
+logical_id = "c1b2ed15-be4b-4aea-88b5-f523477e3b9f"
+content_hash = "sha256:b24219ceee692a7a62caf30546e0daec3f0cbdff8a0cda276dd1af4d6aeb427e"
+size = 202589
+mtime_ms = 1793002919282
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/c1b2ed15-be4b-4aea-88b5-f523477e3b9f/676012ad-75e1-46b9-a6e6-f43fa9c654fc"
+storage_version_token = "1793003062685942"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "pJNvbAdx2Cw_UiZ8rLazS"
+uri = "file://client/public/images/logo-transparent.png"
+type = "image"
+title = "Transparent Free Spirit logo"
+description = "PNG with transparent outer background and internal cut-outs. Original upload preserved."
+logical_id = "031cbf5b-8035-481b-977b-c4ce98005d93"
+content_hash = "sha256:469bf9b6e42d752dc20c8cca9034d9cc8de3d4af2d0c223778ed83192bc2531e"
+size = 738461
+mtime_ms = 1793002860846
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/031cbf5b-8035-481b-977b-c4ce98005d93/ce0df5e4-e155-43c5-812e-9459c44a5129"
+storage_version_token = "1793003065582916"
+content_type = "image/png"

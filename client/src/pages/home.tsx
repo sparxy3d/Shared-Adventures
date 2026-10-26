@@ -62,7 +62,7 @@ export default function Home() {
   const [surpriseBusy, setSurpriseBusy] = useState(false);
   const [surpriseExclude, setSurpriseExclude] = useState<number | undefined>();
 
-  useEffect(() => { document.title = "Free Spirit — More moments together"; }, []);
+  useEffect(() => { document.title = "Free Spirit | What should we do right now?"; }, []);
 
   const scrollToDiscovery = () => discoveryRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
   const submitIdeas = () => {

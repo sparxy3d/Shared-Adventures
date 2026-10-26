@@ -7,7 +7,7 @@ import VendorApplicationForm from "@/components/vendor-application-form";
 import "@/components/vendor-pitch-stage-four.css";
 
 export default function VendorApply() {
-  useEffect(() => { document.title = "Apply to list your experience — Free Spirit"; }, []);
+  useEffect(() => { document.title = "Apply to list your experience | Free Spirit"; }, []);
   return (
     <div className="v4">
       <Navbar />

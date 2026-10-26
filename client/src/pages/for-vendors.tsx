@@ -15,7 +15,7 @@ const faqs = [
 
 export default function ForVendors() {
   const applicationRef = useRef<HTMLElement>(null);
-  useEffect(() => { document.title = "For experience providers — Free Spirit"; }, []);
+  useEffect(() => { document.title = "For experience providers | Free Spirit"; }, []);
   const scrollToApplication = () => applicationRef.current?.scrollIntoView({
     behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
     block: "start",
