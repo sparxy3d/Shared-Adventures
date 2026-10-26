@@ -259,19 +259,19 @@ export default function VendorApplicationForm({ onBack }: { onBack?: () => void 
           </div>
           {fieldError("activityTypes")}
         </fieldset>
-        <fieldset className="v4-field" style={{ border: 0, padding: 0, margin: 0 }}>
+        <fieldset className="v4-field v4-field--full" style={{ border: 0, padding: 0, margin: 0 }}>
           <legend className="v4-field-legend">Typical group sizes</legend>
           <div className="v4-group-pills" role="group" aria-label="Choose typical group sizes">
             {["1", "2", "3-5", "6+"].map((size) => <label className="v4-group-pill" key={size}>
               <input type="checkbox" name="groupSizes" value={size} checked={fields.groupSizes.includes(size)}
                 onChange={(event) => updateField("groupSizes", event.target.checked ? [...fields.groupSizes, size] : fields.groupSizes.filter((item) => item !== size))}
                 aria-invalid={!!errors.groupSizes} aria-describedby={errors.groupSizes ? "vendor-error-groupSizes" : undefined} />
-              <span>{size === "1" ? "1 person" : size === "2" ? "2 people" : `${size} people`}</span>
+              <span>{size === "1" ? "1 person" : size === "2" ? "2 people" : size === "3-5" ? "3–5 people" : `${size} people`}</span>
             </label>)}
           </div>
           {fieldError("groupSizes")}
         </fieldset>
-        <div className="v4-field">
+        <div className="v4-field v4-field--full">
           <label htmlFor="vendor-price">Typical price per person (LKR)</label>
           <input className="v4-input" id="vendor-price" name="typicalPrice" type="number" min="0" max="10000000" step="1" inputMode="numeric" placeholder="e.g. 3500" value={fields.typicalPrice} onChange={(event) => updateField("typicalPrice", event.target.value)} onBlur={handleBlur("typicalPrice")} aria-invalid={!!errors.typicalPrice} aria-describedby={errors.typicalPrice ? "vendor-error-typicalPrice" : undefined} required />
           {fieldError("typicalPrice")}

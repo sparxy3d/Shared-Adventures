@@ -350,3 +350,31 @@ mtime_ms = 1793026130290
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/7900d704-8f45-44dc-9775-f990a2700a58/c01b9244-1895-4db5-9218-131737b332c2"
 storage_version_token = "1793026162284978"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "9rz6vxOI4NcMxZSCT6PMp"
+uri = "file://screenshots/vendor-form-alignment-1440.jpg"
+type = "image"
+title = "Application form close-up, 1440px viewport"
+description = "Aligned category columns, centred checkboxes, four group-size pills and a separate price row."
+logical_id = "bd112898-c281-4378-9ce4-b39611410ede"
+content_hash = "sha256:5d202c7a1cedc971dacd656223d0f4bd4d23abcb2aedbe2e405f754695f1277d"
+size = 46941
+mtime_ms = 1793028180618
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/bd112898-c281-4378-9ce4-b39611410ede/14092419-5baf-4d48-8254-cfa7901a60f4"
+storage_version_token = "1793028232602090"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "skmzFFDWtHJ4r6MIlniGu"
+uri = "file://screenshots/vendor-form-alignment-375.jpg"
+type = "image"
+title = "Application form close-up, 375px viewport"
+description = "Full-width category boxes and evenly wrapped two-by-two group-size pills."
+logical_id = "9aec2ff8-132e-4576-84e5-eb8f1d7fe253"
+content_hash = "sha256:2701345d2fa7aef713ddf442b6df28ebe64b41a09b14c2d01cb6c021ac7a9a0f"
+size = 45227
+mtime_ms = 1793028185954
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/9aec2ff8-132e-4576-84e5-eb8f1d7fe253/54b597ac-c568-4d9a-84b8-99b7f0ca50c2"
+storage_version_token = "1793028233862451"
+content_type = "image/jpeg"

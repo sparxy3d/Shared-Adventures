@@ -97,3 +97,15 @@ works at the requested screenshots can still wrap poorly at intermediate widths.
 
 **How to apply:** Await `document.fonts.ready`, compare rendered height with
 computed line height, and check tablet breakpoints as well as desktop and phone.
+
+## Vendor application alignment verification
+
+Check close-up screenshots of the actual application form, including selected
+controls, before reporting an alignment fix as complete.
+
+**Why:** A previous alignment pass was reported complete but the user still saw
+checkboxes jammed against labels and an orphaned group-size pill.
+
+**How to apply:** Verify checkbox centring, the visible label gap, matching field
+and category edges, and pill wrapping at desktop and phone widths. Wait for checked
+state transitions before measuring colours.
