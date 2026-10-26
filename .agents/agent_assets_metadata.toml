@@ -294,3 +294,31 @@ mtime_ms = 1793018443712
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/3f0cac07-bcda-4cc6-bdd6-6a1a8d5c0360/98d089c1-a3fa-400a-8051-9df836679d17"
 storage_version_token = "1793018593590036"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "ohm12q-V0fmZpmeZKaTrJ"
+uri = "file://screenshots/vendor-hero-grid-1440.jpg"
+type = "image"
+title = "Vendor hero, 1440px"
+description = "Desktop view of the four-category photo grid."
+logical_id = "4daabafd-5837-4120-9c67-599a49ae14db"
+content_hash = "sha256:e404d294630ac92545b8eadf51cf5b2fc34704b3627c10d9b80d94b546e0a28e"
+size = 153158
+mtime_ms = 1793019089020
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/4daabafd-5837-4120-9c67-599a49ae14db/7fe7b125-9295-46d9-8f1a-efd0cbe480dc"
+storage_version_token = "1793019142931755"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "Berob66nLB7oc2ypxkRb4"
+uri = "file://screenshots/vendor-hero-grid-375.jpg"
+type = "image"
+title = "Vendor hero, 375px"
+description = "Phone view of the four-category photo grid."
+logical_id = "68255ad2-b8cf-4253-a5bb-ee274b3da53b"
+content_hash = "sha256:72901c5b74117e591c8c6d8cb5a815842b5083a1e515a82c74dbbb9ea183090d"
+size = 73809
+mtime_ms = 1793019091344
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/68255ad2-b8cf-4253-a5bb-ee274b3da53b/1bafd9b2-358e-4257-b202-a9fc9b3049d7"
+storage_version_token = "1793019144456404"
+content_type = "image/jpeg"

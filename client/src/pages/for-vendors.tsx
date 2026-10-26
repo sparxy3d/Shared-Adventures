@@ -43,8 +43,26 @@ export default function ForVendors() {
                 <li><BadgeCheck size={17} aria-hidden="true" /><span>You confirm every booking</span></li>
               </ul>
             </div>
-            <div className="v4-hero-photo">
-              <img src="/images/pottery.png" alt="Two people shaping clay at pottery wheels in a sunlit workshop" />
+            <div className="v4-hero-gallery">
+              <div className="v4-hero-grid" aria-label="Experiences on Free Spirit">
+                <div className="v4-hero-tile">
+                  <img src="/images/category-sports-800.webp" srcSet="/images/category-sports-400.webp 400w, /images/category-sports-800.webp 800w" sizes="(max-width: 760px) 50vw, 22vw" alt="Friends playing sports together outdoors" />
+                  <span>Sports</span>
+                </div>
+                <div className="v4-hero-tile">
+                  <img src="/images/rafting.png" alt="A group rafting together on a flowing river" />
+                  <span>Adventure</span>
+                </div>
+                <div className="v4-hero-tile">
+                  <img src="/images/pottery.png" alt="People shaping clay at pottery wheels in a sunlit workshop" />
+                  <span>Arts &amp; Classes</span>
+                </div>
+                <div className="v4-hero-tile">
+                  <img src="/images/yoga.png" alt="A guided yoga session in a peaceful studio" />
+                  <span>Wellness</span>
+                </div>
+              </div>
+              <p className="v4-hero-caption">Sports · Adventure · Arts &amp; Classes · Wellness · Recreation</p>
             </div>
           </div>
         </section>
