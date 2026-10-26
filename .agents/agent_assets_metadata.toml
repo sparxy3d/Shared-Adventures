@@ -1,0 +1,44 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "oL_sSpg1b_qSXO6Q_Vr2R"
+uri = "file://attached_assets/home-hero-1440.jpg"
+type = "image"
+title = "Homepage hero — 1440px"
+description = "Desktop screenshot at 1440 × 1000."
+logical_id = "49944491-32a4-4f9e-bcf4-98b0c2a5ef41"
+content_hash = "sha256:bb94d3a1cbb6cbd3b0a73f43348f1aa9afba53487c46cea73ca09540eec3035c"
+size = 192617
+mtime_ms = 1792997009104
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/49944491-32a4-4f9e-bcf4-98b0c2a5ef41/61c4a3a8-b23c-4a5a-9d90-b513c1aa995a"
+storage_version_token = "1792997243393570"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "uShUH2eHMTP5b7vFaX3wy"
+uri = "file://attached_assets/home-hero-1024.jpg"
+type = "image"
+title = "Homepage hero — 1024px"
+description = "Screenshot at 1024 × 900."
+logical_id = "a22c5774-6476-46e9-b534-089166565c84"
+content_hash = "sha256:559b81c6062c76d62828d918a17a7367d0619e4ee504b58c7ae2e7863d644789"
+size = 139908
+mtime_ms = 1792997011452
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/a22c5774-6476-46e9-b534-089166565c84/11dfd152-7343-403f-831d-345ab8ba6bf8"
+storage_version_token = "1792997245242777"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "qc1vTFGRkjPsQGW8J-utM"
+uri = "file://attached_assets/home-hero-375.jpg"
+type = "image"
+title = "Homepage hero — 375px"
+description = "Phone screenshot at 375 × 812, using the group-focused mobile image."
+logical_id = "f3feaab3-83a4-40c6-8732-c31be8f2046e"
+content_hash = "sha256:02572be593317a39f9bf0e7d0fe956f49f88b39dd956945e9df6055dc641a741"
+size = 55751
+mtime_ms = 1792997013448
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/f3feaab3-83a4-40c6-8732-c31be8f2046e/afe0bbd5-11b7-43b8-8a2e-168ae160fd61"
+storage_version_token = "1792997246683629"
+content_type = "image/jpeg"

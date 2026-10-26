@@ -138,7 +138,20 @@ export default function Home() {
       <Navbar variant="transparent" />
       <main>
         <section className="home-hero" aria-labelledby="home-title">
-          <img className="home-hero-photo" src="/images/hero-bg.png" alt="Friends enjoying an outdoor activity together" />
+          <picture>
+            <source media="(max-width: 767px)" srcSet="/images/hero-sunset-768.webp 768w" sizes="100vw" width={768} height={609} />
+            <img
+              className="home-hero-photo"
+              src="/images/hero-sunset-2400.webp"
+              srcSet="/images/hero-sunset-1440.webp 1440w, /images/hero-sunset-2400.webp 2400w"
+              sizes="100vw"
+              width={2400}
+              height={960}
+              loading="eager"
+              {...{ fetchpriority: "high" }}
+              alt="Friends pointing out the view from a hilltop over a bay at sunset"
+            />
+          </picture>
           <div className="home-hero-shade" />
           <div className="home-hero-content">
             <p className="home-handwritten">More moments together</p>

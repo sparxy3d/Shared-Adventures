@@ -31,8 +31,8 @@
 .home-button--wide { width: 100%; }
 .home-hero { position: relative; min-height: 520px; height: min(570px, 68vh); display: flex; align-items: center; overflow: hidden; background: #594f45; color: white; }
 .home-hero-photo, .home-final-cta > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.home-hero-photo { object-position: center 54%; }
-.home-hero-shade { position: absolute; inset: 0; background: linear-gradient(90deg, #171717c9 0%, #17171786 43%, #17171716 100%), linear-gradient(0deg, #17171761, transparent 52%); }
+.home-hero-photo { object-position: 50% 55%; }
+.home-hero-shade { position: absolute; inset: 0; background: linear-gradient(90deg, #171717ad 0%, #17171773 34%, transparent 70%); }
 .home-hero-content { position: relative; width: min(1200px, calc(100% - 48px)); margin: 0 auto; padding: 30px 0 62px; }
 .home-handwritten { margin: 0 0 12px; color: #ffd2b7; font-size: clamp(19px, 2vw, 25px); font-weight: 600; letter-spacing: -.03em; font-style: italic; transform: rotate(-2deg); transform-origin: left; }
 .home-hero h1 { max-width: 760px; margin: 0; color: #fffaf6; font-size: clamp(48px, 7vw, 88px); font-weight: 800; line-height: .99; letter-spacing: -.075em; }
@@ -154,8 +154,6 @@
 }
 @media (max-width: 600px) {
   .home-hero { height: 50svh; min-height: 405px; max-height: 480px; align-items: center; }
-  .home-hero-photo { object-position: 57% center; }
-  .home-hero-shade { background: linear-gradient(90deg, #171717b8, #17171742), linear-gradient(0deg, #17171772, transparent 67%); }
   .home-hero-content { width: calc(100% - 32px); padding: 16px 0 42px; }
   .home-handwritten { margin-bottom: 9px; font-size: 18px; }
   .home-hero h1 { font-size: clamp(45px, 13vw, 62px); }
@@ -270,6 +268,10 @@
 }
 @media (min-width: 400px) and (max-width: 600px) {
   .home-stage .home-activity-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+  .home-stage .home-hero { height: min(55svh, 464px); min-height: 0; max-height: 55svh; }
+  .home-hero-photo { object-position: 80% 60%; }
 }
 @media (prefers-reduced-motion: reduce) {
   .home-stage *, .home-surprise-dialog * { animation: none !important; transition: none !important; }
