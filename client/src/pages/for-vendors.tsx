@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Link } from "wouter";
-import { ArrowDown, ArrowRight, Bell, CalendarDays, Check, Clock3, Store } from "lucide-react";
+import { ArrowDown, ArrowRight, BadgeCheck, Bell, CalendarDays, Check, CircleDollarSign, Clock3, List, Store } from "lucide-react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import VendorApplicationForm from "@/components/vendor-application-form";
@@ -9,7 +9,7 @@ import "@/components/vendor-pitch-stage-four.css";
 const faqs = [
   { question: "Who sets prices?", answer: "You do. You set the price for your experience." },
   { question: "How are bookings confirmed?", answer: "You confirm each request after checking the session and group size." },
-  { question: "How do I get paid?", answer: "After the session — payment details are agreed on application." },
+  { question: "How do I get paid?", answer: "After the session, payment details are agreed on application." },
   { question: "Can I pause?", answer: "Yes, ask us and we’ll help pause your listing." },
 ];
 
@@ -26,20 +26,27 @@ export default function ForVendors() {
       <Navbar />
       <main>
         <section className="v4-hero" aria-labelledby="vendor-pitch-title">
-          <img className="v4-hero-image" src="/images/hero-bg.png" alt="Friends taking time out together in Sri Lanka" />
-          <div className="v4-hero-shade" />
-          <div className="v4-shell v4-hero-inner">
-            <p className="v4-eyebrow">For experience providers</p>
-            <h1 id="vendor-pitch-title">Fill your sessions with groups who want to do something <span>together.</span></h1>
-            <p className="v4-hero-copy">Bring the things you love hosting to friends tonight, team outings, families and couples planning a weekend.</p>
-            <div className="v4-hero-actions">
-              <button className="v4-button v4-button--orange" type="button" onClick={scrollToApplication} data-testid="button-apply-to-list">
-                Apply to list <ArrowDown size={17} aria-hidden="true" />
-              </button>
-              <Link className="v4-button v4-button--outline" href="/login">Log in as vendor <ArrowRight size={16} aria-hidden="true" /></Link>
+          <div className="v4-shell v4-hero-shell">
+            <div className="v4-hero-inner">
+              <p className="v4-eyebrow">For experience providers</p>
+              <h1 id="vendor-pitch-title">Fill your sessions with groups who want to do something <span>together.</span></h1>
+              <p className="v4-hero-copy">Friends planning tonight, teams booking an outing, families looking for a weekend plan. Free Spirit brings them to you.</p>
+              <div className="v4-hero-actions">
+                <button className="v4-button v4-button--orange" type="button" onClick={scrollToApplication} data-testid="button-apply-to-list">
+                  Apply to list <ArrowDown size={17} aria-hidden="true" />
+                </button>
+                <Link className="v4-button v4-button--outline" href="/login">Log in as vendor <ArrowRight size={16} aria-hidden="true" /></Link>
+              </div>
+              <ul className="v4-hero-points" aria-label="Your listing, your terms">
+                <li><List size={17} aria-hidden="true" /><span>List as many activities as you run</span></li>
+                <li><CircleDollarSign size={17} aria-hidden="true" /><span>You set your prices</span></li>
+                <li><BadgeCheck size={17} aria-hidden="true" /><span>You confirm every booking</span></li>
+              </ul>
+            </div>
+            <div className="v4-hero-photo">
+              <img src="/images/pottery.png" alt="Two people shaping clay at pottery wheels in a sunlit workshop" />
             </div>
           </div>
-          <span className="v4-hero-caption">A good day out starts with a local host.</span>
         </section>
 
         <section className="v4-section">
@@ -63,9 +70,9 @@ export default function ForVendors() {
               <p className="v4-process-note">A clear process, with each booking request in your hands.</p>
             </div>
             <div className="v4-steps">
-              <article className="v4-step"><span className="v4-step-number">01 / YOUR LISTING</span><h3>You list — we set you up</h3><p>Tell us what you offer, where you host and the groups you can welcome. We’ll help you get started.</p></article>
-              <article className="v4-step"><span className="v4-step-number">02 / EACH BOOKING</span><h3>Customers book — you confirm</h3><p>Review every request and confirm the sessions that work for your schedule.</p></article>
-              <article className="v4-step"><span className="v4-step-number">03 / AFTER THE SESSION</span><h3>You get paid — after the session</h3><p>Payment follows the experience. We’ll talk through the arrangements together.</p></article>
+              <article className="v4-step"><span className="v4-step-number">01 / YOUR LISTING</span><h3>You list, we set you up</h3><p>Tell us what you offer, where you host and the groups you can welcome. We’ll help you get started.</p></article>
+              <article className="v4-step"><span className="v4-step-number">02 / EACH BOOKING</span><h3>Customers book, you confirm</h3><p>Review every request and confirm the sessions that work for your schedule.</p></article>
+              <article className="v4-step"><span className="v4-step-number">03 / AFTER THE SESSION</span><h3>You get paid after the session</h3><p>Payment follows the experience. We’ll talk through the arrangements together.</p></article>
             </div>
           </div>
         </section>
@@ -79,7 +86,7 @@ export default function ForVendors() {
             </div>
             <div className="v4-cost-note">
               <span className="v4-eyebrow">How we charge</span>
-              <p>Simple commission only on completed bookings — <em>details on application.</em></p>
+              <p>Simple commission only on completed bookings, <em>details on application.</em></p>
             </div>
           </div>
         </section>

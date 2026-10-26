@@ -86,3 +86,14 @@ which are hard to distinguish from a viewer's black transparency background.
 
 **How to apply:** Check both the outer background and interior cut-outs on light
 and dark backgrounds; preserve illustrated negative space when removing a solid colour.
+
+## Responsive headline checks
+
+Measure heading line counts after the actual web font has loaded; do not infer
+fit from font size or the intended grid proportions.
+
+**Why:** A heading can fit differently once its web font loads, and a layout that
+works at the requested screenshots can still wrap poorly at intermediate widths.
+
+**How to apply:** Await `document.fonts.ready`, compare rendered height with
+computed line height, and check tablet breakpoints as well as desktop and phone.

@@ -168,3 +168,45 @@ mtime_ms = 1793002860846
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/031cbf5b-8035-481b-977b-c4ce98005d93/ce0df5e4-e155-43c5-812e-9459c44a5129"
 storage_version_token = "1793003065582916"
 content_type = "image/png"
+
+[[outputs]]
+id = "w5W-JQZJmHabccT8kN5s0"
+uri = "file://attached_assets/vendor-hero-1440.jpg"
+type = "image"
+title = "Vendor hero at 1440px"
+description = "Two-line desktop headline with cream background and pottery photo."
+logical_id = "1d93e3b1-1f87-452c-8afa-4e50f1e39011"
+content_hash = "sha256:88b880b6426ef91723b74fce387be19d7d06e1d3289ac8b340de595e5d36c7f9"
+size = 111484
+mtime_ms = 1793014463568
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/1d93e3b1-1f87-452c-8afa-4e50f1e39011/9691c9c2-ce8c-42bb-9c86-40e51e6ccc4b"
+storage_version_token = "1793014557215521"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "lyNRkfD3VSz0aNQb_7dPs"
+uri = "file://attached_assets/vendor-hero-1024.jpg"
+type = "image"
+title = "Vendor hero at 1024px"
+description = "Tablet layout with natural headline wrapping and matching buttons."
+logical_id = "3e48c1e1-78e5-49a3-833f-4d8b6be96096"
+content_hash = "sha256:a2a43ce558a35cf5d624f0add50b8b6a2920345de552f7eb6e83f6c69837d14a"
+size = 90172
+mtime_ms = 1793014465584
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/3e48c1e1-78e5-49a3-833f-4d8b6be96096/571ca56b-1df0-4ed4-85fa-4d85649c02d2"
+storage_version_token = "1793014558883054"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "wcSUdZMQFXvx59i5WYzHM"
+uri = "file://attached_assets/vendor-hero-375.jpg"
+type = "image"
+title = "Vendor hero at 375px"
+description = "Four-line phone headline, stacked actions and points, with photo below."
+logical_id = "235c563d-ac2e-4758-9fb4-231fcc70e31e"
+content_hash = "sha256:b92ed62a40dfd940d6100e01ff1375ffe69e4564003832f4280d95da00a1b9c6"
+size = 68503
+mtime_ms = 1793014467392
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/235c563d-ac2e-4758-9fb4-231fcc70e31e/c0b73282-0a38-4c93-a353-73d46376d445"
+storage_version_token = "1793014560467609"
+content_type = "image/jpeg"
