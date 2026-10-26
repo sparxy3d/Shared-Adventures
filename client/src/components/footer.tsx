@@ -2,6 +2,7 @@ import "@/components/stage-one.css";
 import { Link } from "wouter";
 import { ArrowUpRight } from "lucide-react";
 import { CATEGORIES, SUPPORT_EMAIL } from "@shared/catalog";
+import BrandLogo from "./brand-logo";
 
 export default function Footer() {
   return (
@@ -31,7 +32,7 @@ export default function Footer() {
         </section>
       </div>
       <div className="stage-footer-bottom">
-        <Link href="/" className="stage-footer-brand">Free Spirit</Link>
+        <Link href="/" className="stage-footer-brand"><BrandLogo variant="footer" /></Link>
         <span>© {new Date().getFullYear()} Free Spirit · Sri Lanka</span>
       </div>
     </footer>

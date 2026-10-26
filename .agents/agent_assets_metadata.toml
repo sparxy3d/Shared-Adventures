@@ -42,3 +42,73 @@ mtime_ms = 1792997013448
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/f3feaab3-83a4-40c6-8732-c31be8f2046e/afe0bbd5-11b7-43b8-8a2e-168ae160fd61"
 storage_version_token = "1792997246683629"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "wewgIoX779Uug99uFCmp1"
+uri = "file://attached_assets/logo-header-1440.jpg"
+type = "image"
+title = "Header — 1440px"
+description = "Transparent Free Spirit logo at 44px tall."
+logical_id = "20c4303a-de82-41b4-95c1-05b653fca946"
+content_hash = "sha256:ca9dfc606719b9b9270988e701915e1cf57f534ad99f5d57b62c4230fda7d86c"
+size = 186904
+mtime_ms = 1792997810132
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/20c4303a-de82-41b4-95c1-05b653fca946/bfe8c020-6f8a-4db0-a0e1-1c7bad0a36b4"
+storage_version_token = "1792998012686210"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "Mt_7Ncw3tYb7KYN27YfQH"
+uri = "file://attached_assets/logo-header-375.jpg"
+type = "image"
+title = "Header — 375px"
+description = "Phone header with the 36px logo."
+logical_id = "7cd194ab-1a69-48d9-bd0c-25a69793c9f2"
+content_hash = "sha256:5b37ec010680a7b29ccc49183945317b5f3fc39c80c7275fecbd3cc34dab663b"
+size = 55890
+mtime_ms = 1792997812312
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/7cd194ab-1a69-48d9-bd0c-25a69793c9f2/d6f38c93-ceb5-46f2-864a-1fa1e05c66ec"
+storage_version_token = "1792998014203373"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "D7B0DFaqljKo6fjZUk7dR"
+uri = "file://attached_assets/logo-footer-1440.jpg"
+type = "image"
+title = "Footer logo"
+description = "Footer with the transparent logo at 96px tall."
+logical_id = "ac654a94-994d-4e3d-8dba-6148321d1509"
+content_hash = "sha256:a9176e10b91297d77aba9f444b5e129e570c838740eda3ec02120a6ca9a8121a"
+size = 113203
+mtime_ms = 1792997865688
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/ac654a94-994d-4e3d-8dba-6148321d1509/ff64e881-f23e-4a7c-91d5-2d65c95e3a44"
+storage_version_token = "1792998016007961"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "43PF9cQz_cNuJ4cegy4xL"
+uri = "file://attached_assets/logo-login-1440.jpg"
+type = "image"
+title = "Login page"
+description = "72px logo centred above the login card."
+logical_id = "751da317-3300-42e1-a3f0-6c93df66211c"
+content_hash = "sha256:87eb67a318c5a2d41e17cd2e6af9854a725b9d8940f2a2c192a780ee177955ab"
+size = 87541
+mtime_ms = 1792997814372
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/751da317-3300-42e1-a3f0-6c93df66211c/ab5416a2-5010-48f4-966d-4fde64dd1ae9"
+storage_version_token = "1792998017544366"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "rjy3y2r3gvxC9vgIu-6PF"
+uri = "file://attached_assets/free-spirit-logo-transparent.png"
+type = "image"
+title = "Free Spirit — transparent logo"
+description = "Background removed, preserving the hiker and landscape cut-outs."
+logical_id = "b2b02674-90d2-4ea1-8f31-cccd1b4b586a"
+content_hash = "sha256:fdae6cfda61c7b046c32fef11cd33d2e6f60f7246364663f3f652603759c9954"
+size = 827850
+mtime_ms = 1792997604292
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/b2b02674-90d2-4ea1-8f31-cccd1b4b586a/d4d56301-e163-42d2-83db-c3e6f0fcd323"
+storage_version_token = "1792998020639074"
+content_type = "image/png"

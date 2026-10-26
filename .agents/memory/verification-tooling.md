@@ -1,6 +1,6 @@
 ---
 name: Browser verification tooling
-description: Available browser tooling and timing safeguards for React UI verification
+description: Browser timing safeguards and raster transparency verification
 ---
 
 The bundled testing instructions may advertise a testing subagent kind that this
@@ -75,3 +75,14 @@ user was still editing the same listing.
 
 **How to apply:** Include same-page anchors and browser history in unsaved-change
 tests, not just links to another screen.
+
+## Raster transparency verification
+
+Verify transparency with actual pixel alpha and a flattened preview on a contrasting
+background before deriving small logo assets. An RGBA file alone is not proof.
+
+**Why:** Alpha transformations can leave opaque black or coloured edge artifacts,
+which are hard to distinguish from a viewer's black transparency background.
+
+**How to apply:** Check both the outer background and interior cut-outs on light
+and dark backgrounds; preserve illustrated negative space when removing a solid colour.

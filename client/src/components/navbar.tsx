@@ -1,6 +1,7 @@
 import "@/components/stage-one.css";
 import { useState, type FormEvent } from "react";
 import { Link, useLocation } from "wouter";
+import BrandLogo from "./brand-logo";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -64,7 +65,7 @@ export default function Navbar(_props: { variant?: "default" | "transparent" } =
       <nav className="stage-nav" aria-label="Main navigation">
         <div className="stage-nav-inner">
           <Link href="/" className="stage-brand" aria-label="Free Spirit home">
-            <span className="stage-brand-mark">fs</span><span>Free Spirit</span>
+            <BrandLogo />
           </Link>
           <div className="stage-desktop-links">
             <Link href="/search" className="stage-nav-link">Explore</Link>

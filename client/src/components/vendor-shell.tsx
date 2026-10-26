@@ -5,6 +5,7 @@ import { LayoutDashboard, CalendarDays, ClipboardList, BarChart3, Store, Menu, X
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
 import "./vendor-stage-four.css";
+import BrandLogo from "./brand-logo";
 
 const links = [
   { label: "Dashboard", href: "/vendor", icon: LayoutDashboard },
@@ -34,14 +35,14 @@ export default function VendorShell({ children }: { children: React.ReactNode })
 
   return <div className="vendor-app">
     <aside className="vs-sidebar" aria-label="Vendor navigation">
-      <Link href="/vendor" className="vs-brand"><span className="vs-mark">f.</span><span>free spirit</span><b>Vendor</b></Link>
+      <Link href="/" className="vs-brand"><BrandLogo /><b>Vendor</b></Link>
       <nav className="vs-links">
         {links.map(({ label, href, icon: Icon }) => <Link key={href} href={href} className={`vs-link ${active(href) ? "is-active" : ""}`} aria-current={active(href) ? "page" : undefined}><Icon size={19} strokeWidth={1.8} />{label}</Link>)}
       </nav>
       <div className="vs-bottom"><div className="vs-business"><span className="vs-business-mark">{businessName.slice(0, 1).toUpperCase()}</span><span><strong>{businessName}</strong><small>Vendor account</small></span></div>{logoutButton}</div>
     </aside>
     <header className="vs-mobile-head">
-      <Link href="/vendor" className="vs-brand"><span className="vs-mark">f.</span><span>free spirit</span><b>Vendor</b></Link>
+      <Link href="/" className="vs-brand"><BrandLogo /><b>Vendor</b></Link>
       <button className="vs-more-trigger" aria-expanded={moreOpen} onClick={() => setMoreOpen(!moreOpen)}>{moreOpen ? <X size={20} /> : <Menu size={20} />}<span>More</span></button>
       {moreOpen && <div className="vs-more-menu">{links.filter((l) => ["Stats", "Business profile"].includes(l.label)).map((l) => <Link key={l.href} href={l.href} onClick={() => setMoreOpen(false)}>{l.label}</Link>)}{logoutButton}</div>}
     </header>

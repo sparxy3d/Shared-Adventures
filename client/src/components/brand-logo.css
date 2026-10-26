@@ -1,0 +1,9 @@
+.fs-logo { display: block; flex: none; }
+.fs-logo > img { display: block; width: auto; height: 44px; object-fit: contain; }
+.fs-logo--footer > img { height: 96px; }
+.fs-logo--auth > img { height: 72px; }
+.stage-auth > .fs-auth-brand { display: inline-flex; justify-self: center; margin-bottom: 24px; }
+
+@media (max-width: 767px) {
+  .fs-logo--header > img { height: 36px; }
+}

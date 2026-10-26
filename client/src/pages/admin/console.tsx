@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, Route, Switch, useLocation } from "wouter";
+import BrandLogo from "@/components/brand-logo";
 import { Activity, ClipboardList, LayoutDashboard, LogOut, Menu, Settings2, Store, Users, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { getJson, errorMessage } from "@/lib/admin";
@@ -53,13 +54,13 @@ export default function AdminConsole() {
   return <div className="admin-app">
     <div className="ad-layout">
       <aside className="ad-sidebar" aria-label="Admin sidebar">
-        <Link href="/admin" className="ad-logo"><span className="ad-logo-mark">f.</span><span>free spirit</span><span className="ad-admin-tag">Admin</span></Link>
+        <Link href="/" className="ad-logo"><BrandLogo /><span className="ad-admin-tag">Admin</span></Link>
         {links()}
         <div className="ad-side-foot">Sri Lanka<br />Free Spirit operations</div>
       </aside>
       <div className="ad-main">
         <header className="ad-mobile-top">
-          <Link href="/admin" className="ad-logo" style={{ padding: 0 }}><span className="ad-logo-mark">f.</span><span>free spirit</span><span className="ad-admin-tag">Admin</span></Link>
+          <Link href="/" className="ad-logo" style={{ padding: 0 }}><BrandLogo /><span className="ad-admin-tag">Admin</span></Link>
           <button className="ad-mobile-menu" aria-label={menuOpen ? "Close menu" : "Open menu"} aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>{menuOpen ? <X size={20} /> : <Menu size={20} />}</button>
           {menuOpen && links(true)}
         </header>
