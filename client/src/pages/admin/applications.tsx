@@ -79,11 +79,6 @@ export default function Applications() {
       const fields = applicationFields(details.description ?? details.applicationDescription ?? "");
       const email = details.contactEmail ?? details.ownerEmail ?? fields.ownerEmail;
       const phone = details.contactPhone ?? details.ownerPhone ?? fields.ownerPhone;
-      const websiteHref = /^https?:\/\//i.test(fields.website)
-        ? fields.website
-        : /^@[a-zA-Z0-9_.]{1,30}$/.test(fields.website)
-          ? `https://www.instagram.com/${fields.website.slice(1)}/`
-          : "";
       const mapHref = fields.mapsLink ? (/^https?:\/\//i.test(fields.mapsLink) ? fields.mapsLink : `https://${fields.mapsLink}`) : "";
       const detailRows: Array<{ label: string; value: ReactNode }> = [
         { label: "Business", value: details.businessName ?? "Not provided" },
@@ -95,8 +90,6 @@ export default function Applications() {
         { label: "Activity types", value: fields.category || details.category || "Not provided" },
         { label: "Typical group sizes", value: fields.groupSizes.join(", ") || "Not provided" },
         { label: "Typical price", value: /^LKR \d+$/i.test(fields.typicalPrice) ? formatPrice(Number(fields.typicalPrice.slice(4)), "LKR") : fields.typicalPrice || "Not provided" },
-        { label: "Website", value: websiteHref ? <a href={websiteHref} target="_blank" rel="noreferrer">{fields.website} <ExternalLink size={13} /></a> : "Not provided" },
-        { label: "Instagram", value: fields.instagram ? <a href={fields.instagram.startsWith("https://") || fields.instagram.startsWith("http://") ? fields.instagram : `https://www.instagram.com/${fields.instagram.replace(/^@/, "")}/`} target="_blank" rel="noreferrer">{fields.instagram} <ExternalLink size={13} /></a> : "Not provided" },
         { label: "Google Maps", value: mapHref ? <a href={mapHref} target="_blank" rel="noreferrer">Open map <ExternalLink size={13} /></a> : "Not provided" },
         { label: "Application description", value: fields.description || "Not provided" },
         { label: "Vendor terms", value: fields.termsVersion || "Not provided" },

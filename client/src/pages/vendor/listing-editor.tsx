@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "wouter";
 import { ArrowLeft, CalendarDays, Check, ChevronDown, Save } from "lucide-react";
 import { CATEGORIES } from "@shared/catalog";
+import { CONTACT_DETAILS_MESSAGE, containsContactDetails } from "@shared/contact-policy";
 import type { AvailabilitySlot, Experience } from "@shared/schema";
 import ExperienceCard from "@/components/experience-card";
 import type { Activity } from "@/lib/discovery";
@@ -61,6 +62,20 @@ export default function ListingEditor({ adminVendorId, adminListingId, backHref 
   const validTitle=form.title.trim().length>0 && form.title.trim().length<=60;
   const validCategory=CATEGORIES.some(item=>item.value===form.category);
   const minimalValid=validTitle && validCategory && !!form.city;
+  const contactErrors={
+    title:containsContactDetails(form.title),
+    description:containsContactDetails(form.description),
+    safetyNotes:containsContactDetails(form.safetyNotes),
+  };
+  const checkContactPolicy=()=>{
+    const firstInvalid=(["title","description","safetyNotes"] as const).find(field=>contactErrors[field]);
+    if(!firstInvalid)return true;
+    setSubmitted(true);
+    setTouched(current=>({...current,title:true,description:true,safetyNotes:true}));
+    setExpanded(current=>({...current,basics:true,details:true}));
+    window.requestAnimationFrame(()=>document.getElementById(firstInvalid==="title"?"listing-title":firstInvalid==="description"?"listing-description":"listing-notes")?.focus());
+    return false;
+  };
   const integerErrors=useMemo(()=>({
     price:!isValidInteger(form.priceAmount,0,10_000_000), capacity:!isValidInteger(form.capacity,1,10_000), duration:!isValidInteger(form.durationMinutes,0,1440), age:!isValidInteger(form.ageMin,0,120),
   }),[form]);
@@ -139,12 +154,16 @@ export default function ListingEditor({ adminVendorId, adminListingId, backHref 
   });
   const save=(status?:"draft"|"published")=>{
     setSubmitted(true);
+    if(!checkContactPolicy())return;
     if(!minimalValid){document.getElementById(!validTitle?"listing-title":!validCategory?"listing-category":"listing-city")?.focus();return;}
     if(Object.values(integerErrors).some(Boolean)){document.getElementById(integerErrors.price?"listing-price":integerErrors.capacity?"listing-capacity":integerErrors.duration?"listing-duration":"listing-age")?.focus();return;}
     if(status==="published" && !form.imageUrl){document.getElementById("section-photo")?.scrollIntoView({behavior:"smooth"});toast({title:"Choose a listing photo before publishing"});return;}
     lastSaveStatus.current=status;
     setActionError(null);
     saveMutation.mutate({status});
+  };
+  const publish=()=>{
+    if(checkContactPolicy())publishMutation.mutate();
   };
   const change=(key:keyof FormState,value:string|string[])=>{setForm(prev=>({...prev,[key]:value}));setDirty(true);setSaved("");setActionError(null);};
   const status=listingQuery.data?.status || "draft";
@@ -197,7 +216,7 @@ export default function ListingEditor({ adminVendorId, adminListingId, backHref 
         <section id="section-basics" className="v5-panel v5-section">
           <button type="button" className="v5-section-toggle" onClick={()=>toggle("basics")} aria-expanded={expanded.basics}><h2>01 · The essentials</h2><ChevronDown size={18}/></button>
           {expanded.basics&&<div className="v5-fields">
-            <div className="v5-field full"><label htmlFor="listing-title">Listing title <span aria-hidden="true">*</span></label><input id="listing-title" maxLength={60} value={form.title} onBlur={()=>setTouched(old=>({...old,title:true}))} onChange={e=>change("title",e.target.value)} aria-invalid={(touched.title||submitted)&&!validTitle} aria-describedby="title-help title-error"/><div style={{display:"flex",justifyContent:"space-between"}}><span id="title-help" className="v5-hint">Make it easy to picture the experience.</span><span className="v5-hint">{form.title.length}/60</span></div>{(touched.title||submitted)&&!validTitle&&<span className="v5-error-text" id="title-error">Enter a title up to 60 characters.</span>}</div>
+             <div className="v5-field full"><label htmlFor="listing-title">Listing title <span aria-hidden="true">*</span></label><input id="listing-title" maxLength={60} value={form.title} onBlur={()=>setTouched(old=>({...old,title:true}))} onChange={e=>change("title",e.target.value)} aria-invalid={(touched.title||submitted)&&(!validTitle||contactErrors.title)} aria-describedby="title-help title-error title-contact-error"/><div style={{display:"flex",justifyContent:"space-between"}}><span id="title-help" className="v5-hint">Make it easy to picture the experience.</span><span className="v5-hint">{form.title.length}/60</span></div>{(touched.title||submitted)&&!validTitle&&<span className="v5-error-text" id="title-error">Enter a title up to 60 characters.</span>}{(touched.title||submitted)&&contactErrors.title&&<span className="v5-error-text" id="title-contact-error" role="alert">{CONTACT_DETAILS_MESSAGE}</span>}</div>
             <div className="v5-field"><label htmlFor="listing-category">Category <span aria-hidden="true">*</span></label><select id="listing-category" value={form.category} onBlur={()=>setTouched(old=>({...old,category:true}))} onChange={e=>change("category",e.target.value)} aria-invalid={(touched.category||submitted)&&!validCategory}>{CATEGORIES.map(c=><option value={c.value} key={c.value}>{c.label}</option>)}</select>{(touched.category||submitted)&&!validCategory&&<span className="v5-error-text">Choose a category.</span>}</div>
             <div className="v5-field"><label htmlFor="listing-city">City <span aria-hidden="true">*</span></label><select id="listing-city" value={form.city} onBlur={()=>setTouched(old=>({...old,city:true}))} onChange={e=>change("city",e.target.value)} aria-invalid={(touched.city||submitted)&&!form.city}><option value="">Choose a city</option>{CITY_CHOICES.map(city=><option key={city}>{city}</option>)}</select>{(touched.city||submitted)&&!form.city&&<span className="v5-error-text">Choose a city.</span>}</div>
           </div>}
@@ -214,10 +233,10 @@ export default function ListingEditor({ adminVendorId, adminListingId, backHref 
           <button type="button" className="v5-section-toggle" onClick={()=>toggle("details")} aria-expanded={expanded.details}><h2>03 · Details</h2><ChevronDown size={18}/></button>
           {expanded.details&&<div className="v5-fields">
             <div className="v5-field full"><label htmlFor="listing-location">Meeting point / location details</label><input id="listing-location" value={form.locationText} onChange={e=>change("locationText",e.target.value)} placeholder="Neighbourhood, landmark or meeting point"/></div>
-            <div className="v5-field full"><label htmlFor="listing-description">About the experience</label><textarea id="listing-description" value={form.description} onChange={e=>change("description",e.target.value)} rows={5} placeholder="What will guests do, and what makes it worth their time?"/></div>
+             <div className="v5-field full"><label htmlFor="listing-description">About the experience</label><textarea id="listing-description" value={form.description} onBlur={()=>setTouched(old=>({...old,description:true}))} onChange={e=>change("description",e.target.value)} rows={5} placeholder="What will guests do, and what makes it worth their time?" aria-invalid={(touched.description||submitted)&&contactErrors.description} aria-describedby="description-contact-error"/>{(touched.description||submitted)&&contactErrors.description&&<span className="v5-error-text" id="description-contact-error" role="alert">{CONTACT_DETAILS_MESSAGE}</span>}</div>
             <div className="v5-field"><label htmlFor="listing-age">Minimum age</label><input id="listing-age" type="number" inputMode="numeric" min="0" max="120" step="1" value={form.ageMin} onBlur={()=>setTouched(old=>({...old,age:true}))} onChange={e=>change("ageMin",e.target.value)} aria-invalid={(touched.age||submitted)&&integerErrors.age}/>{(touched.age||submitted)&&integerErrors.age&&<span className="v5-error-text">Enter a whole age from 0 to 120.</span>}</div>
             <div className="v5-field full"><span className="v5-label">Good for</span><div className="v5-chips">{IDEAL_FOR.map(tag=><button className="v5-chip" type="button" key={tag} aria-pressed={form.idealForTags.includes(tag)} onClick={()=>change("idealForTags",form.idealForTags.includes(tag)?form.idealForTags.filter(t=>t!==tag):[...form.idealForTags,tag])}>{tag[0].toUpperCase()+tag.slice(1)}</button>)}</div></div>
-            <div className="v5-field full"><label htmlFor="listing-notes">What’s included, what to bring, age or fitness notes</label><textarea id="listing-notes" rows={3} value={form.safetyNotes} onChange={e=>change("safetyNotes",e.target.value)} placeholder="Share anything guests should know before they arrive."/></div>
+             <div className="v5-field full"><label htmlFor="listing-notes">What’s included, what to bring, age or fitness notes</label><textarea id="listing-notes" rows={3} value={form.safetyNotes} onBlur={()=>setTouched(old=>({...old,safetyNotes:true}))} onChange={e=>change("safetyNotes",e.target.value)} placeholder="Share anything guests should know before they arrive." aria-invalid={(touched.safetyNotes||submitted)&&contactErrors.safetyNotes} aria-describedby="safety-contact-error"/>{(touched.safetyNotes||submitted)&&contactErrors.safetyNotes&&<span className="v5-error-text" id="safety-contact-error" role="alert">{CONTACT_DETAILS_MESSAGE}</span>}</div>
           </div>}
         </section>
         <section id="section-photo" className="v5-panel v5-section">
@@ -230,13 +249,13 @@ export default function ListingEditor({ adminVendorId, adminListingId, backHref 
           {expanded.preview&&<><p className="v5-hint">A private view of the guest card. Save a photo and real open session before publishing.</p>
             {form.priceAmount===""&&<p className="v5-price-placeholder">Enter a price to preview its place on the guest card.</p>}
             <div className={`v5-card-inert${form.priceAmount===""?" no-price":""}`} aria-hidden="true" ref={previewCardRef}><ExperienceCard experience={previewExperience} saved/></div>
-            <p className="v5-hint" aria-live="polite">{status==="published"?"Published · edits save directly to the live listing.":status==="unpublished"?"Unpublished by Free Spirit — contact us.":publishReady?"Ready to publish once your draft changes are saved.":"Publishing requires business approval, a photo and an upcoming open session."}</p>
-            {editing&&canChangeStatus&&status!=="published"&&<button className="v5-btn v5-primary" disabled={!publishReady||publishMutation.isPending||dirty} onClick={()=>publishMutation.mutate()} title={dirty?"Save your details before publishing":!publishReady?(adminMode?"A photo and an upcoming open session are required":"Approval, a photo and an upcoming open session are required"):undefined}>Publish listing</button>}
+            <p className="v5-hint" aria-live="polite">{status==="published"?"Published · edits save directly to the live listing.":status==="unpublished"?"Unpublished by Free Spirit. Contact us.":publishReady?"Ready to publish once your draft changes are saved.":"Publishing requires business approval, a photo and an upcoming open session."}</p>
+             {editing&&canChangeStatus&&status!=="published"&&<button className="v5-btn v5-primary" disabled={!publishReady||publishMutation.isPending||dirty} onClick={publish} title={dirty?"Save your details before publishing":!publishReady?(adminMode?"A photo and an upcoming open session are required":"Approval, a photo and an upcoming open session are required"):undefined}>Publish listing</button>}
           </>}
         </section>
-        {actionError&&<div className="v5-alert" role="alert"><strong>{actionError==="publish"?"Couldn’t publish this listing":actionError==="draft"?"Couldn’t update listing status":"Couldn’t save this listing"}</strong><p>{actionError==="publish"?"Confirm your business is approved, the listing has a photo, and an upcoming open session exists. Your edits remain on this page.":"Your edits remain on this page. Please retry."}</p><button className="v5-btn v5-quiet" onClick={()=>{if(actionError==="publish")publishMutation.mutate();else if(actionError==="draft")draftMutation.mutate();else save(lastSaveStatus.current);}}>Retry</button></div>}
+       {actionError&&<div className="v5-alert" role="alert"><strong>{actionError==="publish"?"Couldn’t publish this listing":actionError==="draft"?"Couldn’t update listing status":"Couldn’t save this listing"}</strong><p>{actionError==="publish"?"Confirm your business is approved, the listing has a photo, and an upcoming open session exists. Your edits remain on this page.":"Your edits remain on this page. Please retry."}</p><button className="v5-btn v5-quiet" onClick={()=>{if(actionError==="publish")publish();else if(actionError==="draft")draftMutation.mutate();else save(lastSaveStatus.current);}}>Retry</button></div>}
          {editing&&<section className="v5-panel"><h2 style={{marginTop:0}}>Availability</h2><p className="v5-hint">{slotsQuery.isLoading?"Checking real sessions…":upcoming?"An upcoming open session is ready.":"Add an open session before publishing this listing."}</p><Link className="v5-btn v5-quiet" href={adminMode?`/admin/vendors/${adminVendorId}?tab=schedule&listing=${listingId}`:`/vendor/schedule?listing=${listingId}`}><CalendarDays size={16}/> Manage sessions</Link>{slotsQuery.isError&&<button className="v5-btn v5-quiet" onClick={()=>slotsQuery.refetch()}>Retry availability</button>}</section>}
-         {editing&&status==="unpublished"&&<div className="v5-notice" role="status">{adminMode?"This listing is unpublished. Admin review can republish it once it has a photo and an upcoming session.":"Unpublished by Free Spirit — contact us. Your listing status cannot be changed here."}</div>}
+         {editing&&status==="unpublished"&&<div className="v5-notice" role="status">{adminMode?"This listing is unpublished. Admin review can republish it once it has a photo and an upcoming session.":"Unpublished by Free Spirit. Contact us. Your listing status cannot be changed here."}</div>}
         {editing&&vendor&&vendor.verificationStatus!=="approved"&&<div className="v5-notice" role="status">Your business must be approved before a listing can go live.</div>}
       </main>
       <aside className="v5-panel v5-anchor"><p className="v5-eyebrow">In this listing</p><nav aria-label="Editor sections"><a href="#section-basics">Basics</a><a href="#section-group">Group and price</a><a href="#section-details">Details</a><a href="#section-photo">Photo</a><a href="#section-preview">Preview and publish</a></nav><div className="v5-sticky-save">
@@ -244,7 +263,7 @@ export default function ListingEditor({ adminVendorId, adminListingId, backHref 
         {status==="unpublished"&&<button className="v5-btn v5-quiet" disabled={saveMutation.isPending||!minimalValid||!dirty} onClick={()=>save()}><Save size={16}/> Save details</button>}
         {status==="published"&&<button className="v5-btn v5-primary" disabled={saveMutation.isPending||!minimalValid} onClick={()=>save("published")}><Save size={16}/> Save changes</button>}
          {status==="published"&&<button className="v5-btn v5-quiet" disabled={draftMutation.isPending||dirty} onClick={()=>setConfirmDraft(true)}>Move to draft</button>}
-        {canChangeStatus&&status!=="published"&&editing&&<button className="v5-btn v5-primary" disabled={!publishReady||publishMutation.isPending||dirty} onClick={()=>publishMutation.mutate()} title={!upcoming?"Add an upcoming open session first":!form.imageUrl?"Choose a photo first":vendor?.verificationStatus!=="approved"?"Business approval is required":dirty?"Save your changes before publishing":undefined}>Publish</button>}
+         {canChangeStatus&&status!=="published"&&editing&&<button className="v5-btn v5-primary" disabled={!publishReady||publishMutation.isPending||dirty} onClick={publish} title={!upcoming?"Add an upcoming open session first":!form.imageUrl?"Choose a photo first":vendor?.verificationStatus!=="approved"?"Business approval is required":dirty?"Save your changes before publishing":undefined}>Publish</button>}
         {!editing&&<button className="v5-btn v5-primary" disabled={saveMutation.isPending||!minimalValid} onClick={()=>save("draft")}>{saveMutation.isPending?"Saving…":"Save draft"}</button>}
         {editing&&<div className="v5-hint" aria-live="polite">{dirty?"Unsaved changes":saved||"All changes saved"}</div>}
       </div></aside>
@@ -252,7 +271,7 @@ export default function ListingEditor({ adminVendorId, adminListingId, backHref 
     <div className="v5-mobile-save">
       {editing&&status==="published"?<button className="v5-btn v5-primary" disabled={saveMutation.isPending||!minimalValid||!dirty} onClick={()=>save("published")}><Save size={16}/> Save changes</button>:status==="unpublished"?<button className="v5-btn v5-quiet" disabled={saveMutation.isPending||!minimalValid||!dirty} onClick={()=>save()}><Save size={16}/> Save details</button>:<button className="v5-btn v5-quiet" disabled={saveMutation.isPending||!minimalValid} onClick={()=>save("draft")}><Save size={16}/> Save draft</button>}
         {editing&&status==="published"&&<button className="v5-btn v5-quiet" disabled={draftMutation.isPending||dirty} onClick={()=>setConfirmDraft(true)}>Move to draft</button>}
-      {editing&&canChangeStatus&&status!=="published"&&<button className="v5-btn v5-primary" disabled={!publishReady||publishMutation.isPending||dirty} onClick={()=>publishMutation.mutate()}>Publish</button>}
+       {editing&&canChangeStatus&&status!=="published"&&<button className="v5-btn v5-primary" disabled={!publishReady||publishMutation.isPending||dirty} onClick={publish}>Publish</button>}
       {!editing&&<Link className="v5-btn v5-quiet" href="/vendor/listings">Cancel</Link>}
     </div>
      {confirmDraft&&<div className="v5-modal-backdrop" role="presentation"><div className="v5-modal" role="alertdialog" aria-modal="true" aria-labelledby="draft-confirm-title"><h2 id="draft-confirm-title">Move this listing to draft?</h2><p>This removes it from public discovery. Existing bookings and sessions are not changed.</p><div className="v5-modal-actions"><button className="v5-btn v5-quiet" disabled={draftMutation.isPending} onClick={()=>setConfirmDraft(false)}>Keep published</button><button className="v5-btn v5-danger" disabled={draftMutation.isPending} onClick={()=>draftMutation.mutate()}>{draftMutation.isPending?"Moving…":"Move to draft"}</button></div></div></div>}

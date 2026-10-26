@@ -59,7 +59,7 @@ export function nextOpenSession(slots: AvailabilitySlot[] | undefined): Availabi
 }
 export function applicationDetails(description?: string | null) {
   const raw = description || "";
-  const marker = /^— Application —$/m;
+  const marker = /^(?:— Application —|Application)$/m;
   const match = marker.exec(raw);
   const about = match ? raw.slice(0, match.index).trimEnd() : raw.trim();
   const block = match ? raw.slice(match.index) : "";

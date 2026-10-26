@@ -8,6 +8,9 @@ export default function Footer() {
   return (
     <footer className="stage-footer stage-one" data-testid="footer">
       <div className="stage-footer-main">
+        <div className="stage-footer-brand-cell">
+          <Link href="/" className="stage-footer-brand"><BrandLogo variant="footer" /></Link>
+        </div>
         <section className="stage-footer-column">
           <h2>Explore</h2>
           <Link href="/search">All experiences</Link>
@@ -32,7 +35,6 @@ export default function Footer() {
         </section>
       </div>
       <div className="stage-footer-bottom">
-        <Link href="/" className="stage-footer-brand"><BrandLogo variant="footer" /></Link>
         <span>© {new Date().getFullYear()} Free Spirit · Sri Lanka</span>
       </div>
     </footer>

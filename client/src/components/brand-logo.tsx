@@ -20,7 +20,7 @@ export default function BrandLogo({ variant = "header" }: { variant?: LogoVarian
         width={dimensions[variant].width}
         height={dimensions[variant].height}
         alt="Free Spirit"
-        loading={variant === "footer" ? "lazy" : "eager"}
+        loading="eager"
       />
     </picture>
   );

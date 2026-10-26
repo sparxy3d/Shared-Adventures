@@ -16,6 +16,7 @@ import { colomboToday, colomboNowHHMM, normaliseHHMM, addMinutesHHMM } from "./t
 import { sessionPlan } from "./vendor-session-plan";
 import { withApprovalDate } from "./admin-insights";
 import { applicationUpload, validateDocuments } from "./vendor-documents";
+import { CONTACT_DETAILS_MESSAGE, GOOGLE_MAPS_MESSAGE, containsContactDetails, isGoogleBusinessUrl } from "@shared/contact-policy";
 
 const scryptAsync = promisify(scrypt);
 
@@ -119,6 +120,8 @@ const id = (v: string | string[] | undefined) => {
 const hhmm = z.string().regex(/^\d{1,2}:\d{2}$/, "Use HH:MM").transform(normaliseHHMM);
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD");
 const optionalText = (max: number) => z.string().trim().max(max).optional().nullable();
+const publicListingText = (max: number) => z.string().trim().max(max).optional().nullable()
+  .refine(value => !containsContactDetails(value), CONTACT_DETAILS_MESSAGE);
 
 const signupSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -160,22 +163,15 @@ const applicationSchema = z.object({
   groupSizes: z.array(z.enum(["1", "2", "3-5", "6+"])).min(1).max(4),
   typicalPrice: z.coerce.number().int().min(0).max(10_000_000),
   description: z.string().trim().min(1).max(2000),
-  website: z.string().trim().max(300).optional().refine(v =>
-    !v || /^https?:\/\//i.test(v) && z.string().url().safeParse(v).success, "Enter a valid website URL"),
-  instagram: z.string().trim().max(300).optional().refine(v =>
-    !v || /^@[a-zA-Z0-9_.]{1,30}$/.test(v) || /^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9_.]+\/?$/i.test(v),
-    "Enter an Instagram profile URL or @handle"),
   mapsLink: z.string().trim().max(500).optional().nullable().refine(v =>
-    !v || /^https?:\/\//i.test(v) && z.string().url().safeParse(v).success, "Enter a valid Maps URL"),
+    isGoogleBusinessUrl(v), GOOGLE_MAPS_MESSAGE),
   acceptTerms: z.literal(true, { errorMap: () => ({ message: "Please accept the vendor terms" }) }),
-}).refine(data => Boolean(data.website || data.instagram || data.mapsLink), {
-  message: "Add a Website, Instagram, or Google Maps or Google Business link.", path: ["website"],
 });
 
 const experienceSchema = z.object({
-  title: z.string().trim().min(1).max(160),
+  title: z.string().trim().min(1).max(160).refine(value => !containsContactDetails(value), CONTACT_DETAILS_MESSAGE),
   category: z.enum(CATEGORY_VALUES),
-  description: optionalText(5000),
+  description: publicListingText(5000),
   locationText: optionalText(300),
   region: optionalText(120),
   city: optionalText(120),
@@ -183,7 +179,7 @@ const experienceSchema = z.object({
   priceAmount: z.coerce.number().int().min(0).max(10_000_000).optional().nullable(),
   capacity: z.coerce.number().int().min(0).max(10000).optional().nullable(),
   ageMin: z.coerce.number().int().min(0).max(120).optional().nullable(),
-  safetyNotes: optionalText(2000),
+  safetyNotes: publicListingText(2000),
   idealForTags: z.array(z.enum(IDEAL_FOR_TAGS)).optional().nullable(),
   openTime: hhmm.optional().nullable(),
   closeTime: hhmm.optional().nullable(),
@@ -193,7 +189,7 @@ const experienceSchema = z.object({
 });
 
 const vendorExperienceSchema = experienceSchema.extend({
-  title: z.string().trim().min(1).max(60),
+  title: z.string().trim().min(1).max(60).refine(value => !containsContactDetails(value), CONTACT_DETAILS_MESSAGE),
   status: z.enum(["draft", "published"]).optional(),
 });
 
@@ -519,8 +515,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       `Activity types: ${data.activityTypes.join(", ")}`,
       `Typical group sizes: ${data.groupSizes.join(", ")}`,
       `Typical price: LKR ${data.typicalPrice}`,
-      data.website ? `Website: ${data.website}` : "",
-      data.instagram ? `Instagram: ${data.instagram}` : "",
       data.mapsLink ? `Google Maps: ${data.mapsLink}` : "",
       `Vendor terms (${VENDOR_TERMS_VERSION}) accepted: ${new Date().toISOString()}`,
     ].filter((l, i) => i > 0 || l).join("\n").trim();

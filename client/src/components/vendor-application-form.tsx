@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { ArrowLeft, ArrowRight, FileText } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { CATEGORIES, SUPPORTED_CITIES, VENDOR_APPLICATION_THANK_YOU, VENDOR_TERMS_VERSION } from "@shared/catalog";
+import { GOOGLE_MAPS_MESSAGE, isGoogleBusinessUrl } from "@shared/contact-policy";
 
 type ApplicationFields = {
   businessName: string;
@@ -15,8 +16,6 @@ type ApplicationFields = {
   description: string;
   groupSizes: string[];
   typicalPrice: string;
-  website: string;
-  instagram: string;
   mapsLink: string;
   acceptTerms: boolean;
 };
@@ -25,7 +24,7 @@ type FieldErrors = Partial<Record<FieldName, string>>;
 
 const initialFields: ApplicationFields = {
   businessName: "", contactName: "", contactEmail: "", contactPhone: "", city: "", address: "",
-  activityTypes: [], description: "", groupSizes: [], typicalPrice: "", website: "", instagram: "", mapsLink: "", acceptTerms: false,
+  activityTypes: [], description: "", groupSizes: [], typicalPrice: "", mapsLink: "", acceptTerms: false,
 };
 
 const DOCUMENT_TYPES = ["application/pdf", "image/jpeg", "image/png"];
@@ -56,23 +55,7 @@ function validateField(field: FieldName, value: ApplicationFields[FieldName]): s
     return Number.isInteger(Number(text)) && Number(text) >= 0 && Number(text) <= 10000000 ? "" : "Enter a whole LKR amount between 0 and 10,000,000.";
   }
   if (field === "mapsLink") {
-    if (!text) return "";
-    try { const url = new URL(text); return url.protocol === "https:" || url.protocol === "http:" ? "" : "Enter a valid map link."; }
-    catch { return "Enter a full map URL beginning with https://."; }
-  }
-  if (field === "website") {
-    if (!text) return "";
-    if (/^@[a-zA-Z0-9._]{2,30}$/.test(text)) return "";
-    try {
-      const url = new URL(/^https?:\/\//i.test(text) ? text : `https://${text}`);
-      return (url.protocol === "https:" || url.protocol === "http:") && url.hostname.includes(".") ? "" : "Enter a valid website or Instagram profile.";
-    }
-    catch { return "Enter a valid website or Instagram profile."; }
-  }
-  if (field === "instagram") {
-    if (!text) return "";
-    return /^@[a-zA-Z0-9._]{1,30}$/.test(text) || /^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9._]+\/?$/i.test(text)
-      ? "" : "Enter an Instagram profile URL or @handle.";
+    return isGoogleBusinessUrl(text) ? "" : GOOGLE_MAPS_MESSAGE;
   }
   if (!text) {
     const labels: Partial<Record<FieldName, string>> = {
@@ -124,9 +107,6 @@ export default function VendorApplicationForm({ onBack }: { onBack?: () => void 
   const updateField = <K extends FieldName>(field: K, value: ApplicationFields[K]) => {
     setFields((current) => ({ ...current, [field]: value }));
     if (errors[field]) setErrors((current) => ({ ...current, [field]: validateField(field, value) }));
-    if (field === "website" || field === "instagram" || field === "mapsLink") {
-      setErrors((current) => ({ ...current, website: "", instagram: "", mapsLink: "" }));
-    }
     if (serverError) { setServerError(""); setDuplicateEmail(false); }
   };
 
@@ -152,12 +132,6 @@ export default function VendorApplicationForm({ onBack }: { onBack?: () => void 
       const error = validateField(field, fields[field]);
       if (error) nextErrors[field] = error;
     });
-    if (!fields.website.trim() && !fields.instagram.trim() && !fields.mapsLink.trim()) {
-      const linksError = "Add at least one website, Instagram profile or Google Maps link.";
-      nextErrors.website = linksError;
-      nextErrors.instagram = linksError;
-      nextErrors.mapsLink = linksError;
-    }
     setErrors(nextErrors);
     setServerError("");
     setDuplicateEmail(false);
@@ -174,11 +148,6 @@ export default function VendorApplicationForm({ onBack }: { onBack?: () => void 
       return;
     }
     try {
-      const website = fields.website.trim();
-      const websiteValue = !website || website.startsWith("@")
-        ? website
-        : (/^https?:\/\//i.test(website) ? website : `https://${website}`);
-      const instagram = fields.instagram.trim();
       const payload = new FormData();
       payload.append("application", JSON.stringify({
         businessName: fields.businessName.trim(),
@@ -191,8 +160,6 @@ export default function VendorApplicationForm({ onBack }: { onBack?: () => void 
         groupSizes: fields.groupSizes,
         typicalPrice: Number(fields.typicalPrice),
         description: fields.description.trim(),
-        website: websiteValue,
-        instagram,
         mapsLink: fields.mapsLink.trim(),
         acceptTerms: fields.acceptTerms,
       }));
@@ -315,21 +282,11 @@ export default function VendorApplicationForm({ onBack }: { onBack?: () => void 
           <small id="vendor-description-hint">{fields.description.length}/600 characters</small>
           {fieldError("description")}
         </div>
-        <div className="v4-field">
-          <label htmlFor="vendor-website">Website <span className="v4-optional">(optional)</span></label>
-          <input className="v4-input" id="vendor-website" name="website" type="text" autoComplete="url" placeholder="yourbusiness.lk" value={fields.website} onChange={(event) => updateField("website", event.target.value)} onBlur={handleBlur("website")} aria-invalid={!!errors.website} aria-describedby={errors.website ? "vendor-error-website" : "vendor-links-hint"} />
-          {fieldError("website")}
-        </div>
-        <div className="v4-field">
-          <label htmlFor="vendor-instagram">Instagram <span className="v4-optional">(optional)</span></label>
-          <input className="v4-input" id="vendor-instagram" name="instagram" type="text" autoComplete="off" placeholder="@yourbusiness" value={fields.instagram} onChange={(event) => updateField("instagram", event.target.value)} onBlur={handleBlur("instagram")} aria-invalid={!!errors.instagram} aria-describedby={errors.instagram ? "vendor-error-instagram" : "vendor-links-hint"} />
-          {fieldError("instagram")}
-        </div>
         <div className="v4-field v4-field--full">
-          <label htmlFor="vendor-maps-link">Google Maps link <span className="v4-optional">(optional)</span></label>
-          <input className="v4-input" id="vendor-maps-link" name="mapsLink" type="url" placeholder="https://maps.app.goo.gl/" value={fields.mapsLink} onChange={(event) => updateField("mapsLink", event.target.value)} onBlur={handleBlur("mapsLink")} aria-invalid={!!errors.mapsLink} aria-describedby={errors.mapsLink ? "vendor-error-mapsLink" : "vendor-links-hint"} />
+          <label htmlFor="vendor-maps-link">Google Maps link to your business (optional)</label>
+          <input className="v4-input" id="vendor-maps-link" name="mapsLink" type="url" placeholder="https://maps.app.goo.gl/" value={fields.mapsLink} onChange={(event) => updateField("mapsLink", event.target.value)} onBlur={handleBlur("mapsLink")} aria-invalid={!!errors.mapsLink} aria-describedby={errors.mapsLink ? "vendor-error-mapsLink" : "vendor-maps-hint"} />
           {fieldError("mapsLink")}
-          <small id="vendor-links-hint">Add at least one website, Instagram profile or Google Maps link.</small>
+          <small id="vendor-maps-hint">We use this to show your Google rating on your listing.</small>
         </div>
         <fieldset className="v4-field v4-field--full v4-document-fieldset">
           <legend className="v4-field-legend">Verification documents</legend>

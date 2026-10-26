@@ -322,3 +322,31 @@ mtime_ms = 1793019091344
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/68255ad2-b8cf-4253-a5bb-ee274b3da53b/1bafd9b2-358e-4257-b202-a9fc9b3049d7"
 storage_version_token = "1793019144456404"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "GzTJfYaRH2Z0f_wJLPWvh"
+uri = "file://screenshots/vendor-pitch-contact-1440.jpg"
+type = "image"
+title = "Full vendor page at 1440px"
+description = "Desktop full-page screenshot with application form and aligned footer."
+logical_id = "8629bbbb-1587-4af4-bf42-beed0213206b"
+content_hash = "sha256:f8bfcc1aabdd87bf47b019a981399aabb1f334638569a564782320506875e322"
+size = 534978
+mtime_ms = 1793026127998
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/8629bbbb-1587-4af4-bf42-beed0213206b/95545843-eb7c-42a1-b4b4-6a2a751b37bd"
+storage_version_token = "1793026159853952"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "i3sVYQ85ogXvZMKjHQOWi"
+uri = "file://screenshots/vendor-pitch-contact-375.jpg"
+type = "image"
+title = "Full vendor page at 375px"
+description = "Phone-width full-page screenshot, 375 × 9319 pixels."
+logical_id = "7900d704-8f45-44dc-9775-f990a2700a58"
+content_hash = "sha256:5dca135b4a333bbff6285ac35521c3a16eb916fefd9421a0678ae7120306a523"
+size = 413275
+mtime_ms = 1793026130290
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/7900d704-8f45-44dc-9775-f990a2700a58/c01b9244-1895-4db5-9218-131737b332c2"
+storage_version_token = "1793026162284978"
+content_type = "image/jpeg"

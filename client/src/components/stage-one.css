@@ -301,12 +301,13 @@
 
 /* White link footer, four required groups */
 .stage-footer { background: #171717; color: white; font-family: "Plus Jakarta Sans", sans-serif; }
-.stage-footer-main { max-width: 1200px; margin: auto; padding: 48px 24px 40px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px; }
+.stage-footer-main { width: min(1200px, calc(100% - 48px)); max-width: 1200px; margin: auto; padding: 48px 0 40px; display: grid; grid-template-columns: 1.05fr repeat(4, minmax(0, 1fr)); gap: 28px; align-items: start; }
+.stage-footer-brand-cell { display: flex; align-items: flex-start; }
 .stage-footer-column { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
 .stage-footer-column h2 { margin: 0 0 10px; color: #ff9b69; font-size: 14px; font-weight: 800; }
 .stage-footer-column a { min-height: 44px; display: inline-flex; align-items: center; gap: 5px; color: #f3f4f6; font-size: 14px; text-decoration: none; overflow-wrap: anywhere; }
 .stage-footer-column a:hover { color: #ff9b69; }
-.stage-footer-bottom { max-width: 1200px; min-height: 58px; margin: auto; padding: 12px 24px; border-top: 1px solid #ffffff26; display: flex; justify-content: space-between; align-items: center; gap: 15px; color: #cbd5e1; font-size: 13px; }
+.stage-footer-bottom { width: min(1200px, calc(100% - 48px)); max-width: 1200px; min-height: 58px; margin: auto; padding: 12px 0; border-top: 1px solid #ffffff26; display: flex; justify-content: space-between; align-items: center; gap: 15px; color: #cbd5e1; font-size: 13px; }
 .stage-footer-brand { color: white; font-weight: 800; text-decoration: none; }
 
 /* ExperienceCard member mode inherits readable type without its demo details. */
@@ -336,8 +337,10 @@
   .stage-auth-title { font-size: 34px; }
   .stage-content { padding: 42px 18px 68px; }
   .stage-info-grid { grid-template-columns: 1fr; }
-  .stage-footer-main { grid-template-columns: 1fr 1fr; gap: 25px 18px; padding: 36px 20px 30px; }
-  .stage-footer-bottom { padding: 14px 20px; }
+  .stage-footer-main, .stage-footer-bottom { width: calc(100% - 32px); }
+  .stage-footer-main { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 25px 18px; padding: 36px 0 30px; }
+  .stage-footer-brand-cell { grid-column: 1 / -1; }
+  .stage-footer-bottom { padding: 14px 0; }
 }
 @media (max-width: 390px) {
   .stage-nav-inner { gap: 3px; padding-inline: 10px; }
@@ -360,7 +363,7 @@
 .stage-one [role="dialog"], .stage-one [role="alertdialog"] { overflow-wrap: anywhere; }
 @media (max-width: 760px) {
   .stage-nav-inner, .stage-auth, .stage-content { padding-left: 16px; padding-right: 16px; }
-  .stage-footer-main, .stage-footer-bottom { padding-left: 16px; padding-right: 16px; }
+  .stage-footer-main, .stage-footer-bottom { width: calc(100% - 32px); padding-left: 0; padding-right: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .stage-shell *, .stage-auth *, .stage-content *, .stage-footer *, .stage-one * {

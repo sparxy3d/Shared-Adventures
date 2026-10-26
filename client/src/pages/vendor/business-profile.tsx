@@ -48,6 +48,9 @@ export default function BusinessProfile() {
   if(profile.isLoading)return <div className="v5-page" aria-label="Loading business profile"><div className="v5-skeleton v5-skel-hero"/><div className="v5-skeleton v5-skel-panel"/></div>;
   if(profile.isError || !profile.data)return <div className="v5-page v5-alert" role="alert"><h2>Business profile unavailable</h2><p>We couldn’t load your business details.</p><button className="v5-btn v5-quiet" onClick={()=>profile.refetch()}>Retry</button></div>;
   const metadata=applicationDetails(profile.data.description);
+  const vendorVisibleMetadata = metadata.metadata.split(/\r?\n/)
+    .filter((line) => !/^\s*(?:Website(?: or Instagram)?|Instagram|Google Maps(?: link)?|Maps(?: link)?)\s*:/i.test(line))
+    .join("\n") || "Not recorded (onboarded by Free Spirit)";
   const setField=(setter:(value:string)=>void)=>(event:React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement>)=>setter(event.target.value);
   return <div className="v5-page">
     <header className="v5-heading"><div><p className="v5-eyebrow">Account settings</p><h1>Business profile</h1><p className="v5-sub">Your public details, contact information and account security.</p></div><button className="v5-btn v5-quiet" onClick={()=>logout.mutate()} disabled={logout.isPending}><LogOut size={16}/>{logout.isPending?"Signing out…":"Log out"}</button></header>
@@ -72,8 +75,7 @@ export default function BusinessProfile() {
       <div className="v5-fields">
         <div className="v5-field"><label>Vendor terms version</label><input className="v5-readonly" value={metadata.termsVersion} readOnly/></div>
         <div className="v5-field"><label>Accepted on</label><input className="v5-readonly" value={metadata.termsDate} readOnly/></div>
-        <div className="v5-field full"><label>Website or Instagram</label><input className="v5-readonly" value={metadata.metadata.match(/^Website or Instagram: (.*)$/m)?.[1]||"Not recorded (onboarded by Free Spirit)"} readOnly/></div>
-        <div className="v5-field full"><label>Original application details</label><textarea className="v5-readonly" rows={5} value={metadata.metadata} readOnly/></div>
+        <div className="v5-field full"><label>Original application details</label><textarea className="v5-readonly" rows={5} value={vendorVisibleMetadata} readOnly/></div>
       </div>
     </section>
     <section className="v5-panel" style={{marginTop:16}}>
