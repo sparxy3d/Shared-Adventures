@@ -1,6 +1,6 @@
 # Conventions
 
-Last verified: 2026-10-08 (/onboard run by Claude; owner review pending)
+Last verified: 2026-10-27 (kit refresh by Claude)
 
 This file holds the rules that apply across the whole repo and indexes the stack profiles.
 Where a profile and the existing code disagree, the code wins until someone updates the
@@ -12,7 +12,7 @@ profile on purpose.
 |---|---|---|
 | Node / TypeScript | `profiles/node-ts.md` | `server/`, `shared/`, `script/` |
 | React | `profiles/react.md` | `client/` |
-| SQL (PostgreSQL, drizzle) | `profiles/sql.md` | `shared/schema.ts`, `server/storage.ts`, `server/seed.ts` |
+| SQL (PostgreSQL, drizzle) | `profiles/sql.md` | `migrations/`, `shared/schema.ts`, `server/storage.ts`, `server/seed.ts` |
 
 There are no .NET or Angular profiles, because no code in this repo uses either.
 
@@ -20,54 +20,57 @@ There are no .NET or Angular profiles, because no code in this repo uses either.
 
 ### Naming
 
-- Use the glossary in `product.md`. An activity is an "experience", and a session is a
-  "slot" in code.
+- Use the glossary in `product.md`. In code an activity is an "experience" and a session is a
+  "slot".
 - TypeScript is camelCase and SQL is snake_case. drizzle maps between them in `shared/schema.ts`.
 - A user id is named for its role: `customerProfileId`, `ownerProfileId`. Keep that pattern.
+- Migration files: `migrations/NNN_short_description.sql`, next free number, lowercase.
 
 ### Errors
 
-- Handlers return a status and `{ message }`. 400 means bad input, 401 means not signed in,
-  403 means the caller does not own the record, 404 means not found, and 409 means a state
-  conflict (for example, a slot that is no longer available).
-- New code must not return raw `error.message` from a 500. Log it, and return a generic
-  message. Existing handlers still do this (known debt).
+- Handlers return a status and `{ message }`. 400 bad input, 401 not signed in, 403 not
+  allowed, 404 not found or not visible to this caller, 409 state conflict, 429 rate limited,
+  503 a dependency (storage) is unavailable.
+- A 500 never returns internal details. The central handler logs and returns a generic message.
 - A `catch` is never empty.
 
 ### Logging
 
-- `console.*` with a bracketed prefix, for example `[seed]` or `[bookings]`.
-- Never log passwords, session ids, connection strings, or personal data (email, phone,
-  full name).
+- `console.*` with a bracketed prefix, for example `[migrations]` or `[auth]`.
+- Never log passwords, session ids, connection strings, request or response bodies, or
+  personal data (email, phone, full name, documents).
 
 ### Security
 
-- The session decides identity, and the server decides ownership (`AGENTS.md` rules 1–3).
-- Validate every request body with zod, and allow-list the fields each role may set.
-- Parameterised queries only. Use the drizzle query builder or `sql` template parameters,
-  never string concatenation.
+- The session decides identity, and the server decides ownership (`AGENTS.md` rules 1 to 3).
+- Validate every request body with a strict zod schema, and allow-list the fields each role may set.
+- Parameterised queries only: the drizzle query builder or `sql` template parameters.
+- Uploads: check size, content signature and type on the server, and never serve user files
+  from a public path without an access check.
 
 ### Tests
 
-- There is no test runner yet. Every PR states how it was verified, by naming the manual
-  check and the test account used.
-- Once a runner exists, a fix for an ownership or pricing bug gets a test that fails without it.
+- Each feature area has an integration script in `script/test-<area>.ts` using disposable
+  development schemas. Extend the script for the area you change.
+- A fix for an ownership, pricing or permission bug gets a test case that fails without it.
+- Every change records how each acceptance criterion was verified in `verification.md`.
 
-### Git and pull requests
+### Copy
 
-- `main` is the only long-lived branch, and Replit Agent commits to it directly.
-- Branch names: `<type>/<short-name>`, for example `fix/vendor-slot-ownership` or
-  `feat/012-reviews`. Types: `feat`, `fix`, `chore`, `docs`, `refactor`.
-- Commits use the imperative mood. Prefer `type(scope): summary` for new work.
-- One PR covers one spec or one tier 0 change. A PR over roughly 400 changed lines gets split.
-- The PR description links the spec and says how each acceptance criterion was verified.
+- No em dashes in user-facing text. Plain, friendly sentences. Prices as "LKR 2,500".
+
+### Git
+
+- `main` is the only long-lived branch. Replit Agent commits to it directly in the workspace.
+- Work outside Replit uses branches named `<type>/<short-name>` (`feat`, `fix`, `chore`,
+  `docs`, `refactor`) and a PR into `main`.
+- One spec per PR or Replit task. Split anything over roughly 400 changed lines.
 
 ### Documentation
 
-- A PR that changes behaviour, a boundary, a command, or a decision updates the matching
-  doc in the same PR.
-- Comments explain why. Code explains what. Keep the existing "why" comments in
-  `server/db.ts`, `server/seed.ts`, and the booking handler.
+- A change that alters behaviour, a boundary, a command, a setting or a decision updates the
+  matching doc in the same change.
+- Comments explain why. Code explains what.
 - When you discover a trap, add a note under `.agents/memory/` and one line to
   `.agents/memory/MEMORY.md`.
 
@@ -75,15 +78,14 @@ There are no .NET or Angular profiles, because no code in this repo uses either.
 
 Things that are true here and would surprise a competent engineer from another codebase.
 
-- **All endpoints live in `server/routes.ts`, and all queries in `server/storage.ts`.** Add to
-  them. Do not start a second pattern (routers or services) inside a feature PR.
-- **Ownership checks are inline in each handler.** There is no vendor middleware. Copy the
-  `PATCH /api/vendor/experiences/:id` pattern, not `DELETE /api/vendor/slots/:id`.
-- **The seed runs at boot, and must be safe to repeat** (`.agents/memory/seed-idempotency.md`).
+- **Endpoints live in `server/routes.ts`** (plus `onboarding-routes.ts` and `listing-photos.ts`),
+  and all queries in `server/storage.ts`. Do not start a new layering pattern inside a feature.
+- **Vendor endpoints sit under `/api/vendor`** behind `requireVendor`; use
+  `res.locals.vendor` and check ownership of the target record in the handler.
 - **Admins edit listings on vendors' behalf.** Keep that working when you change listing
   management (`.agents/memory/vendor-onboarding.md`).
-- **Dates are `YYYY-MM-DD` text, and times are `HH:MM` text.** Compare them as strings only
-  when both sides are in the same zone. Use `client/src/lib/dates.ts` helpers on the client.
-- **No migrations folder.** Schema changes are `drizzle-kit push`. See `profiles/sql.md`.
-- **The lockfile has three Replit-only URLs.** See `tech.md`. Do not "fix" it by hand in an
-  unrelated PR.
+- **Schema changes are numbered SQL files**, applied at start-up (ADR 013). `db:push` and
+  drizzle-kit `generate` are disabled on purpose.
+- **The seed runs only with `ENABLE_SEED=true`**, is development-only, and must be safe to repeat.
+- **Dates are `YYYY-MM-DD` text, and times are `HH:MM` text**, in Sri Lanka time.
+- **The lockfile has three Replit-only URLs.** See `tech.md`. Fix it only as its own Small fix.

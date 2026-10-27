@@ -1,94 +1,67 @@
 # Context kit
 
 A small set of markdown files that gives AI agents and engineers the same project context,
-plus a spec, plan, implement, review loop for changes. Plain files, no tooling.
+plus one process for every change. Plain files, no tooling. Last refreshed 2026-10-27.
 
 ## What is in it
 
 ```
-AGENTS.md                      entry point for any agent: rules and pointers (must be at the root)
+AGENTS.md                      entry point for any agent: process, rules, commands (must be at the root)
 CLAUDE.md                      imports AGENTS.md for Claude Code (must be at the root)
-.claude/commands/              slash-command wrappers for the prompts (must be at the root)
+replit.md                      Replit Agent's entry point: repeats the request process (must be at the root)
+.claude/commands/              slash-command wrappers for the prompts
+.agents/memory/                trap notes and standing rules for agents (index: MEMORY.md)
 docs/
   CONTEXT-KIT.md               this file
+  HOW-TO-REQUEST-CHANGES.md    for Sudeshi and other non-technical requesters
   context/
-    product.md                 what, for whom, non-goals, glossary
-    architecture.md            boundaries, request path, tenancy, auth, data
-    tech.md                    stack, versions, verified commands, config, environments
+    product.md                 what, for whom, business rules, non-goals, glossary
+    architecture.md            boundaries, request path, ownership, auth, data, known debt
+    tech.md                    stack, commands, configuration, environments, migrations, release
     conventions.md             cross-stack rules and index of profiles
-    profiles/                  dotnet, node-ts, react, angular, sql (keep what applies)
-  decisions/                   ADRs, append-only
+    profiles/                  node-ts, react, sql
+  decisions/                   ADRs, append-only (index: README.md)
   specs/
-    _template/                 spec.md, design.md, tasks.md
-  prompts/                     onboard, spec, plan, implement, review
+    _template/                 spec.md, design.md, tasks.md, verification.md
+  prompts/                     request, spec, plan, implement, review, release, onboard
 ```
 
-The repo root gains two visible files. Everything else sits under `docs/`.
+## The process
 
-## Install
+Every request goes through `docs/prompts/request.md`, whoever asks and however it is worded.
 
-1. Copy `AGENTS.md`, `CLAUDE.md`, and `.claude/` to the repo root, and merge the kit's
-   `docs/` folder into the repo's `docs/` folder. If the repo already has an `AGENTS.md`,
-   a `CLAUDE.md`, or files under `.claude/commands/` with the same names, merge by hand
-   instead of overwriting.
-2. Existing project: run `/onboard` and answer the questions it ends with.
-   New project: fill `product.md` and `architecture.md` by hand, write the first two or
-   three ADRs, then fill `tech.md` once the skeleton builds.
-3. Delete the profiles that do not apply.
-4. Commit as one PR titled `docs: add project context kit`.
-
-Agents other than Claude Code read `AGENTS.md` directly. For those, paste the matching
-file from `docs/prompts/` as the instruction, or wire it into that tool's own command system.
-
-## The loop
-
-| Step | Command | Output | Who approves |
+| Step | Prompt | Output | Who approves |
 |---|---|---|---|
-| Specify | `/spec <description>` | `docs/specs/NNN-name/spec.md` | Owner sets status to `approved` |
-| Plan | `/plan NNN` | `design.md`, `tasks.md`, ADR if needed | Owner reads the design |
-| Build | `/implement NNN` | Code, tests, updated docs | Tests and verification steps |
-| Review | `/review NNN` | Findings against spec and rules | Human reviewer |
+| Intake | `request` | Plain restatement and category | — |
+| Specify | `spec` | `docs/specs/<NNN>-<name>/spec.md` | Feature: Sudeshi or Madushan. Risky: Madushan |
+| Plan (Risky) | `plan` | `design.md`, `tasks.md`, ADRs | Madushan reads the design |
+| Build | `implement` | Code, migration, tests, docs, `verification.md` | Tests and verification |
+| Review | `review` | Findings against spec and rules | Optional second agent or person |
+| Release | `release` | "OK to publish" and "Live site" checks | A person publishes |
 
-## Tiers
+Categories and approvals are defined once in `AGENTS.md` and repeated in `replit.md`.
 
-| Tier | When | Artifacts |
-|---|---|---|
-| 0 | Bug fix, copy, dependency bump, refactor with no behaviour change | None |
-| 1 | New behaviour inside one module, no schema or contract change | `spec.md` |
-| 2 | Crosses modules, or changes schema, public API, auth, tenancy, billing | `spec.md`, `design.md`, `tasks.md`, ADR |
+## Guards that do not depend on the agent
 
-If specs are being written after the code, the tier is too high. Drop a tier.
+- The migration runner refuses to start the server if an applied migration was edited or is
+  missing, and applies new ones in a transaction before serving traffic (ADR 013).
+- CI fails if an applied migration file is edited, renamed or deleted, or if typecheck or
+  build fails.
+- Production secrets belong only in the deployment's secrets. The workspace (where agents
+  run) should not hold `NEON_DATABASE_URL_PROD`, so nothing run there can reach production.
 
 ## Keeping it true
 
-One rule: a PR that changes behaviour, a boundary, a command, or a decision updates the
-matching doc in the same PR. The `/review` prompt checks for this.
+One rule: a change that alters behaviour, a boundary, a command, a setting or a decision
+updates the matching doc in the same change. The `review` and `implement` prompts check this.
 
-Each context file has a "Last verified" line. Re-run `/onboard` when it is older than three months.
+Each context file has a "Last verified" line. Re-run `onboard` when it is older than three
+months, or after a burst of releases.
 
 Only document what the code cannot tell you: intent, boundaries, reasons, and traps.
 
-## Several repos, one product
+## Shared kit
 
-Pick one repo as the home of shared context (`product.md`, shared parts of
-`architecture.md`, `docs/decisions/`). Every other repo keeps:
-
-- its own `AGENTS.md` with its commands and non-negotiables
-- its own `tech.md` and the profiles it uses
-- one line in `AGENTS.md` pointing to the shared context repo and path
-
-Do not copy shared files between repos. Copies drift.
-
-## Using it as Claude Project knowledge
-
-Add `AGENTS.md`, `docs/context/`, and `docs/decisions/` to the Project. Leave `docs/specs/`
-out except the one in progress. Use the body of `AGENTS.md` as the Project instructions.
-
-## Pilot checklist (one week)
-
-- [ ] Kit copied in and `/onboard` run
-- [ ] Open questions from `/onboard` answered, `UNKNOWN` items resolved or accepted
-- [ ] Three to five retrospective ADRs written
-- [ ] One real tier 1 or tier 2 change taken through the full loop
-- [ ] Notes on what was unused, wrong, or too heavy
-- [ ] Unused sections deleted from the templates
+The reusable kit lives in the Mira-Dev-V2 repo. Improvements made here that are not
+Free Spirit-specific (the request and release prompts, the verification template, the CI
+migration guard) should be copied back there deliberately, not left to drift.

@@ -1,10 +1,23 @@
 # <NNN> <Feature name>
 
-- Status: draft | approved | in progress | done | dropped
-- Tier: 1 | 2
-- Owner: <name>
+- Status: draft | awaiting approval | approved | in progress | done | dropped
+- Category: Feature (tier 1) | Risky (tier 2)
+- Requested by: <name>
 - Created: <YYYY-MM-DD>
-- Tracking: <work item or issue link>
+
+## Plain-language summary
+
+<For the requester and approver. Four to eight short sentences, no technical terms:
+what changes for customers, vendors and admins; what stays the same; whether the database,
+money, logins, permissions or personal data are affected; and the main risk.>
+
+## Approval
+
+| Who | Decision | Date | Their words |
+|---|---|---|---|
+| <Sudeshi or Madushan; Madushan for Risky> | <approved / changes requested> | <YYYY-MM-DD> | "<as given>" |
+
+Risky changes need Madushan's approval in this table before any code changes.
 
 ## Problem
 
@@ -42,11 +55,13 @@ Each criterion is testable and numbered. Use the form: WHEN <trigger> [AND <cond
 
 | Area | Requirement |
 |---|---|
-| Tenancy | <which tenant data is touched, and how isolation holds> |
-| Authorization | <who may do this> |
-| Data | <new or changed entities, retention, audit> |
-| Performance | <volume and response expectations> |
-| Compatibility | <existing clients, API versions, data that must keep working> |
+| Ownership | <whose data is touched (customer, vendor, admin), and how a vendor is kept out of another vendor's data> |
+| Authorization | <who may do this, checked on the server> |
+| Data and migrations | <new or changed tables or columns (a new `migrations/` file), retention, audit; "none" if no database change> |
+| Money | <prices, commission, totals affected; "none" otherwise> |
+| Personal data | <what personal or ID data is touched and who can see it; "none" otherwise> |
+| Production needs | <new secrets, settings or manual steps; "none" otherwise> |
+| Compatibility | <existing data, pages and links that must keep working> |
 
 ## Open questions
 

@@ -1,3 +1,4 @@
+- [Request intake](request-intake.md) — every request goes through docs/prompts/request.md; Risky changes need Madushan's recorded approval; agents never publish or touch production.
 - [Seed idempotency](seed-idempotency.md) — deliberately enabled demo upgrades must be per-record idempotent; SQL parameters for integer columns must be integers.
 - [Manual vendor onboarding](vendor-onboarding.md) — vendors are onboarded manually; admins need to edit listings on vendors' behalf.
 - [Browser verification](verification-tooling.md) — use existing tools; wait for React/new-document navigation; distinguish hash changes from leaving a page.

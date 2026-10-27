@@ -1,71 +1,77 @@
 # Stack profile: Node.js / TypeScript
 
-Edited 2026-10-08 to match this repo. Applies to `server/`, `shared/`, `script/`.
+Edited 2026-10-27 to match this repo. Applies to `server/`, `shared/`, `script/`.
 
 ## Structure
 
 ```
 server/
-  index.ts     boot: body parsers, /api logger, optional seed, routes, error handler, Vite or static, listen
-  routes.ts    every endpoint, plus requireAuth / requireAdmin and password hashing
-  storage.ts   IStorage interface and DatabaseStorage: every query
-  db.ts        pg.Pool + drizzle, picking Neon DEV or PROD
-  seed.ts      demo seed, currency normalization, idempotent demo upgrades
-  vite.ts      dev middleware;  static.ts  prod static and SPA fallback
-shared/schema.ts   tables, zod insert schemas, types (imported as @shared/schema)
+  index.ts              boot: parsers, request log, migrations, seed gate, routes, error handler, Vite or static, listen
+  migrations.ts         migration runner (advisory lock, checksums, schema_migrations)
+  routes.ts             most endpoints, guards (requireAuth, requireAdmin, requireVendor), password hashing
+  onboarding-routes.ts  site settings, waiting list
+  listing-photos.ts     photo upload, ordering, deletion, public image API (App Storage)
+  vendor-documents.ts   verification document upload parsing and validation
+  storage.ts            DatabaseStorage: every query and transaction
+  db.ts                 pg.Pool + drizzle, picking Neon DEV or PROD
+  time.ts               Sri Lanka date and time helpers
+  seed.ts               demo seed (ENABLE_SEED=true only)
+shared/  schema.ts (tables, zod, types), pricing.ts (totals, commission), catalog.ts (enums, constants)
+script/  build.ts, migrate.ts, test-*.ts integration scripts
 ```
 
-Dependency direction: `routes.ts` → `storage.ts` → `db.ts`. `storage.ts` never touches
-`req` or `res`. The client may import types and schemas from `shared/`, never from `server/`.
+Dependency direction: routes → `storage.ts` → `db.ts`. `storage.ts` never touches `req` or
+`res`. The client may import from `shared/`, never from `server/`.
 
 ## Conventions
 
-- `strict: true` (`tsconfig.json`). Avoid `any`. New storage methods return typed rows,
-  not `any[]` (several existing ones return `any[]`, which is debt).
-- ESM source (`"type": "module"`), bundled to a CommonJS `dist/index.cjs` by esbuild.
-  Packages not in the allowlist in `script/build.ts` stay external. Add a server dependency
-  to that list only if you want it bundled.
-- Validate request bodies with zod at the top of the handler:
-  `insertExperienceSchema.pick({...}).parse(req.body)`, or `safeParse` returning 400.
-  Never spread `req.body` into storage.
-- Read `process.env` at the point of use, as today. A new required variable must fail
-  loudly at boot (copy the pattern in `server/db.ts`) and be added to `tech.md`.
-- `async`/`await` only.
-- Dates for business logic are computed in Asia/Colombo. Add a small helper in `server/`
-  rather than repeating `toISOString().split("T")[0]` (that gives a UTC date).
+- `strict: true`. Avoid `any`. New storage methods return typed rows.
+- ESM source, bundled to CommonJS `dist/index.cjs` by esbuild. Packages on the allowlist in
+  `script/build.ts` are bundled; their bundled assets are not copied (that is why the session
+  table now comes from a migration). Check this when adding a package that reads its own files.
+- Validate request bodies with a strict zod schema at the top of the handler (`parse()` helper
+  returning 400). Never spread `req.body` into storage.
+- Read `process.env` at the point of use. A new variable must fail clearly when missing and be
+  added to the Configuration table in `tech.md`, with its DEV and PROD values noted.
+- `async`/`await` only. Wrap handlers with `h(...)` so errors reach the central handler.
+- Business dates and times: use `server/time.ts` (`colomboToday`, `colomboNowHHMM`), never
+  `toISOString().split("T")[0]`.
 
 ## Data access
 
 - All SQL goes through `storage.ts` with the drizzle query builder or `sql` templates.
-- Scope by owner inside the query when you can (`where vendor_id = $vendorId`), rather than
-  loading and checking afterwards.
-- Use a join, or `inArray`, instead of a query per row in list endpoints.
-- Use a transaction (`db.transaction`) for multi-step writes, for example booking plus slot capacity.
+- Scope by owner inside the query when you can, rather than loading and checking afterwards.
+- Use a join or `inArray` instead of a query per row in list endpoints.
+- Multi-step writes use `db.transaction` with row locks (`.for("update")`), as the booking
+  request and vendor approval do.
 
 ## Security
 
-- Sessions only. `requireAuth` for signed-in users, `requireAdmin` for admin endpoints,
-  plus an ownership check for vendor endpoints.
-- Passwords use scrypt (`hashPassword` / `comparePasswords` in `routes.ts`). Never return
-  the `password` column. Strip it as the auth handlers do.
-- No rate limiting exists. Adding it to login and signup is its own change.
+- Sessions only. `requireAuth`, `requireAdmin` (on `/api/admin`), `requireVendor` (on
+  `/api/vendor`), plus an ownership check in each vendor handler.
+- Passwords use scrypt (`hashPassword` / `comparePasswords`). Never return the `password`
+  column. Temporary passwords set `mustChangePassword`.
+- Rate limits exist for login and the waiting list (in memory). Add one to any new public
+  endpoint that accepts uploads or creates records.
 
 ## Testing
 
-None yet. Do not add a test framework as a side effect of a feature.
+Integration scripts in `script/test-<area>.ts` with disposable development schemas. Extend the
+script for the area you change. No unit-test framework.
 
 ## Commands
 
 ```
 npm run check     # tsc
-npm run build     # client + server bundle
-npm run dev       # needs a database URL
+npm run build     # client + server bundle + migrations copy
+npm run dev       # applies DEV migrations, then serves
+npm run db:status # applied and pending migrations
 ```
 
 ## Do not
 
 - Spread `req.body` into a create or update.
-- Trust an id, role, status, or price from the client.
-- Return `error.message` from a 500 in new code.
-- Log response bodies that contain personal data.
-- Bind to a fixed host or port in new hosting code. Use `PORT`, and `0.0.0.0` off Replit.
+- Trust an id, role, status, price or commission from the client.
+- Return internal error details from a 500.
+- Log request or response bodies, or personal data.
+- Run `npm start` in the workspace: it selects the production database.

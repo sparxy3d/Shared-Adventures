@@ -1,4 +1,4 @@
-# Deterministic gate: install, typecheck, build. No secrets, no database, about a minute.
+# Deterministic gate: install, typecheck, build, migration immutability. No secrets, no database.
 # Runs on every PR and on every push to main (Replit Agent commits straight to main).
 name: PR guards
 
@@ -20,6 +20,24 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Applied migrations are immutable (ADR 013). Any edit, rename or deletion of an
+      # existing file in migrations/ fails here; the server would also refuse to start.
+      - name: Applied migrations are unchanged
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+            echo "No comparable base commit; skipping."; exit 0
+          fi
+          CHANGED=$(git diff --name-status "$BASE_SHA" HEAD -- migrations/ | grep -E '^(M|D|R)' || true)
+          if [ -n "$CHANGED" ]; then
+            echo "::error::Existing migration files must never be edited, renamed or deleted. Add a new numbered file instead."
+            echo "$CHANGED"
+            exit 1
+          fi
 
       - uses: actions/setup-node@v4
         with:

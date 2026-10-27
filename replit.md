@@ -1,89 +1,53 @@
-# Free Spirit - Activity Booking Platform
+# Free Spirit
 
-> **Agents: read `AGENTS.md` first.** It holds the rules (identity from the session, vendor
-> ownership checks, no `req.body` spreading, whole-LKR prices, idempotent seed, Colombo time)
-> and points to `docs/context/` for architecture, tech, and conventions. For a feature, work
-> from its spec in `docs/specs/<NNN>-<name>/`, one task per prompt. This file describes UI
-> and design. Where it disagrees with the code or `docs/context/`, the code wins.
+<!-- Owners: Madushan (technical) and Sudeshi (product). Keep this section first and
+     unchanged unless a spec changes the process. Replit Agent reads this file every session. -->
 
-## Overview
-A multi-vendor activity and experience booking marketplace that helps people connect through shared activities. Users can discover and book sports, adventures, arts & classes, and wellness experiences to enjoy with friends, family, teams, or someone special.
+## Every request follows the same process (mandatory)
 
-## Tech Stack
-- **Frontend**: React + TypeScript + Tailwind CSS + shadcn/ui + wouter (routing) + TanStack Query + Framer Motion
-- **Backend**: Express.js + TypeScript
-- **Database**: PostgreSQL with Drizzle ORM
-- **Auth**: Session-based with scrypt password hashing
+Whoever is asking, and however the request is worded, handle it with
+`docs/prompts/request.md`. In short:
 
-## Architecture
-- `client/src/pages/` - Page components organized by section (vendor/, admin/)
-- `client/src/components/` - Shared components (navbar, footer, experience-card)
-- `server/routes.ts` - All API endpoints
-- `server/storage.ts` - Database storage layer (DatabaseStorage class)
-- `server/db.ts` - Drizzle database connection
-- `server/seed.ts` - Seed data for demo
-- `shared/schema.ts` - Drizzle schema definitions and Zod types
+1. **Restate** the request in two or three plain sentences. No jargon.
+2. **Classify** it as a Small fix, Feature or Risky change (table below), and say why in one line.
+3. **Spec**: for a Feature or Risky change, write `docs/specs/<NNN>-<name>/spec.md` from the
+   template, starting with a plain-language summary. Ask at most five questions, all at once.
+4. **Wait for approval.** Do not change code until the right person has approved (table below).
+5. **Build** from the approved spec. Any database change is a new numbered file in `migrations/`.
+6. **Test** with the commands in `AGENTS.md`. Fix failures. Never weaken a test to pass.
+7. **Report** with `docs/specs/_template/verification.md`, ending with
+   **Ready to publish: Yes / No** in plain words.
+8. **Never publish**, never change production data or secrets, and never run SQL against
+   production. Publishing is a human decision.
 
-## Database Tables
-- users, countries, vendors, experiences, experience_images, availability_slots, bookings, favorites, reviews
+| Category | What it covers | Approval needed before building |
+|---|---|---|
+| Small fix | Text, layout, styling, a bug fix with no change to data, money, logins or permissions | Requester says "go ahead" |
+| Feature | New or changed behaviour in one area, no database change | Sudeshi or Madushan: "Approved" |
+| Risky | Database or migration, prices, commission, payments or payouts, login, roles or permissions, personal or ID data, deleting data, new external service, secret or environment variable, deployment or build settings | **Madushan only**: "Madushan approved" recorded in the spec |
 
-## User Roles
-- **customer** (default) - Browse, book, favorite
-- **vendor** - List activities, manage bookings
-- **admin** - Manage vendors, experiences, countries, analytics
+If you are unsure which category applies, choose the higher one.
 
-## Test Accounts (seeded)
-- Admin: admin@freespirit.com / admin123
-- Vendor: vendor1@freespirit.com / vendor123
-- Customer: user@freespirit.com / customer123
+## Where everything is
 
-## Homepage Design
-- Premium cinematic hero with full-width background image (`/images/hero-bg.png`) and dark gradient overlay
-- Headline: "Adventure Starts Here" with amber gradient text
-- Large search bar in hero area, "Explore Adventures" + "Surprise Us" CTAs
-- Scroll indicator: "What should we do right now?" bouncing arrow
-- Promo banner above navbar: "Launch Offer — Free listings for early vendors"
-- Navbar: sticky positioning with transparent variant on homepage, search bar, cart icon, category sub-nav
-- **Decision Engine** section: location input, group size chips (1/2/3-5/6+), time mode (Now/Tonight/Weekend), "Show Ideas" + "Surprise Us" buttons
-- Category shortcut cards with background images
-- **Open Near You** section (live-filtered from featured by open status)
-- Popular Right Now grid, How it works steps, bottom CTA
-- **Surprise Us** modal dialog: loading animation → random experience card → "View Details" / "Try Another"
+- Rules, commands and definition of done: `AGENTS.md` (read it before any change)
+- Product, architecture, tech and conventions: `docs/context/`
+- Decisions and why: `docs/decisions/` (index in `README.md`)
+- Work in progress: `docs/specs/<NNN>-<name>/`
+- Known traps: `.agents/memory/MEMORY.md`
+- How Sudeshi works with the agent: `docs/HOW-TO-REQUEST-CHANGES.md`
 
-## Experience Cards
-- "Open Now" / next-session badges via `getOpenStatus()` (exported from experience-card.tsx)
-- Ideal-for tags with emoji icons: friends 👫, couples 💑, families 👨‍👩‍👧, teams 🏢, solo 🧘
-- Duration overlay, hover lift animation (framer-motion), premium rounded-2xl design
-- Category color badges, heart favorite button
+Where this file and the code disagree, the code wins. Propose a doc fix in the same change.
 
-## Search Page
-- Discovery-first: dynamic headline changes based on filters ("Things you can do right now", "Weekend adventures", etc.)
-- Category chips, city input, collapsible advanced filters (time mode, group size)
-- Animated results grid with staggered entrance
+## Current UI pointers
 
-## Experience Detail
-- Hero image with Open Now/Closed badge, favorite + share buttons
-- "Perfect for" section with emoji ideal-for tags
-- "Share with Friends" copy-to-clipboard button
-- Gradient booking CTA ("Request Booking"), sticky sidebar on desktop
-- Duration/capacity badges, safety notes callout
+Kept short on purpose. The code is the reference, so read the page before changing it.
 
-## Key Pages
-- `/` - Home (hero, decision engine, categories, open near you, popular, how it works)
-- `/search` - Discovery-first browse with filters
-- `/experience/:id` - Experience detail + booking
-- `/login`, `/signup` - Authentication
-- `/account`, `/bookings`, `/favorites` - Customer portal
-- `/vendor`, `/vendor/profile`, `/vendor/experiences`, `/vendor/bookings` - Vendor portal
-- `/admin` - Admin panel (tabs: vendors, experiences, bookings, countries)
-
-## Color Theme
-- Primary: Warm amber/orange (hsl 22 93% 53%)
-- Font: Plus Jakarta Sans
-
-## MVP Booking Flow
-1. Customer browses experiences
-2. Selects group size and optional time slot
-3. Submits "Request to Book"
-4. Vendor confirms or declines
-5. Booking status: requested → confirmed → completed
+- Routes are in `client/src/App.tsx`. Public: `/`, `/search`, `/activity/:id`, `/for-vendors`,
+  `/for-vendors/apply`. Member: `/account/*`. Vendor: `/vendor/*`. Admin: `/admin/*`.
+- Brand: warm orange primary, Plus Jakarta Sans. Logos are WebP files in `client/public/brand/`.
+- Listing photos are a curated set in `client/public/images/` plus vendor uploads served from
+  `/api/listing-images/<id>/<width>.webp` (App Storage, separate DEV and PROD buckets).
+- Copy rule: no em dashes in user-facing text.
+- Demo listings are hidden in production unless an admin turns on Admin > Settings >
+  Show demo content. Booking requests are refused until Admin > Settings > Bookings open.

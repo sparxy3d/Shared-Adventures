@@ -1,6 +1,8 @@
 # Architecture context
 
-Last verified: 2026-10-08 (/onboard run by Claude against `main` at `3f4195a`; owner review pending)
+Last verified: 2026-10-27 (kit refresh by Claude against `main` at `41e6f9f`, reading
+`server/routes.ts`, `server/storage.ts`, `server/index.ts`, `server/migrations.ts`,
+`server/listing-photos.ts`, `server/onboarding-routes.ts` and `client/src/App.tsx`)
 
 Only what the code cannot tell you quickly: boundaries, the request path, where ownership is
 enforced, and the traps.
@@ -8,170 +10,124 @@ enforced, and the traps.
 ## System in one picture
 
 ```
-Browser (React SPA, wouter routes)
+Browser (React SPA, wouter routes in client/src/App.tsx)
    │  fetch /api/*  (cookie: connect.sid, credentials: include)
    ▼
 Express, one process on PORT  ── server/index.ts
-   ├─ JSON body parser, /api response logger
-   ├─ express-session (store: Postgres "session" table, via connect-pg-simple)
-   ├─ server/routes.ts      all endpoints, auth middleware, ownership checks inline
-   │     └─ server/storage.ts   DatabaseStorage: every query, search filters
+   boot order: tracked migrations (advisory lock) → seed gate (ENABLE_SEED) → routes → listen
+   ├─ JSON parser; request log of method, path, status and duration only
+   ├─ express-session (Postgres "session" table from migration 013)
+   ├─ guards: /api/admin → requireAdmin, /api/vendor → requireVendor,
+   │          temporary-password accounts → 403 PASSWORD_CHANGE_REQUIRED on other APIs
+   ├─ server/routes.ts, onboarding-routes.ts, listing-photos.ts   (HTTP, validation, ownership)
+   │     └─ server/storage.ts   DatabaseStorage: every query, row locks, booking transaction
    │            └─ server/db.ts  pg.Pool + drizzle (Neon DEV or PROD)
+   ├─ Replit App Storage: listing photo variants (DEV or PROD bucket)
    ├─ dev:  Vite middleware (server/vite.ts)
    └─ prod: static dist/public, with SPA fallback (server/static.ts)
-Boot: tracked migrations first; then existing ENABLE_SEED gate; then routes and listening.
-Migration failure exits non-zero before the server accepts requests.
 ```
 
 ## Components
 
 | Component | Responsibility | Must not |
 |---|---|---|
-| `shared/schema.ts` | Tables, inferred types, zod insert schemas | Contain logic |
-| `server/routes.ts` | HTTP, auth, ownership checks, server-side recomputation (price, slot validity) | Hold SQL. Queries go in `storage.ts` |
-| `server/storage.ts` | All database access, through the `IStorage` interface | Know about `req` or the session |
-| `server/seed.ts` | First-time demo data, plus idempotent upgrades and a rolling slot window | Run anything that is unsafe to repeat |
-| `client/src/pages/*` | One file per route (see `App.tsx`). Vendor and admin areas are in subfolders | Make authorization decisions. The server decides |
-| `client/src/lib/queryClient.ts` | `apiRequest` and the default query function (the query key is the URL) | — |
+| `migrations/`, `server/migrations.ts` | Numbered SQL, applied once each, recorded in `schema_migrations` with a checksum | Be edited after applying |
+| `shared/schema.ts` | Tables, inferred types, zod insert schemas, matching the migrations | Contain logic |
+| `shared/pricing.ts` | Booking totals (resident LKR, visitor USD converted to LKR) and commission selection | Read the database |
+| `server/routes.ts` and the other route files | HTTP, auth, validation, ownership checks | Hold SQL. Queries go in `storage.ts` |
+| `server/storage.ts` | All database access and transactions | Know about `req` or the session |
+| `server/seed.ts` | Demo data and demo upgrades, only with `ENABLE_SEED=true` | Run in production, or change schema |
+| `client/src/pages/*` | One file per route. Vendor and admin areas in subfolders | Make authorization decisions. The server decides |
 
-There is one server module and no service layer: handlers call `storage` directly.
+## Ownership model
 
-## Request lifecycle (authenticated vendor write)
-
-`PATCH /api/vendor/experiences/:id`:
-
-1. `server/index.ts` parses JSON and starts the response logger.
-2. `express-session` loads `req.session.userId` from the Postgres store.
-3. `requireAuth` (`routes.ts`) returns 401 without a session.
-4. The handler resolves `vendor = storage.getVendorByOwner(userId)`, loads the experience,
-   and returns 403 unless `exp.vendorId === vendor.id`.
-5. `storage.updateExperience(id, req.body)` runs a drizzle `UPDATE ... RETURNING`.
-6. The JSON response is logged in full (see sharp edges) and returned.
-
-## Ownership model (this app's tenancy)
-
-There is no multi-tenancy. The isolation boundary is ownership:
+There is no multi-tenancy. The isolation boundary is ownership, enforced on the server:
 
 | Data | Owner | Enforced by |
 |---|---|---|
-| Vendor profile | user (`vendors.owner_profile_id`) | `getVendorByOwner(session user)` |
-| Experiences, slots | vendor (`experiences.vendor_id`, `availability_slots.experience_id`) | Inline check in each vendor handler |
-| Bookings, favorites | customer (`customer_profile_id`) | Queries filtered by the session user |
-| Everything | admin | `requireAdmin`, which loads the user and checks `role === "admin"` |
+| Vendor business, listings, sessions, vendor bookings | vendor (`vendors.owner_profile_id`) | `requireVendor` puts the session user's vendor in `res.locals.vendor`; handlers check `experience.vendorId === vendor.id` |
+| Bookings, favorites, profile | customer (`customer_profile_id`) | Queries filtered by the session user |
+| Verification documents | admin only | `/api/admin/...`; vendors see "Uploaded" status only, never contents or ids |
+| Everything else | admin | `requireAdmin` on `/api/admin` |
 
-Roles live in `users.role` (`customer` default, `vendor`, `admin`). Creating a vendor
-profile (`POST /api/vendor/profile`) promotes the caller to `vendor`. No middleware
-requires the vendor role: vendor endpoints rely on `getVendorByOwner` returning a row.
+Roles are in `users.role`: `customer` (default), `vendor`, `admin`, with a disabled prefix for
+switched-off accounts. A customer becomes a vendor only when an admin approves their
+application or creates the vendor.
 
 ## Authentication
 
-- Email and password. scrypt with a 16-byte salt, stored as `hex.salt`, and compared with `timingSafeEqual`.
-- Sessions are server-side in the Postgres `session` table (created by migration 013). The cookie
-  lasts 30 days, `httpOnly`, `sameSite: lax`, `secure: false`.
-- `GET /api/auth/me` is how the client learns who is signed in. Client role checks (for
-  example `admin-dashboard.tsx`) only affect what is shown.
+- Email and password, scrypt with a 16-byte salt (`hex.salt`), compared with `timingSafeEqual`.
+- Server-side sessions in Postgres, 30-day cookie, `httpOnly`, `sameSite: lax`, `secure` and
+  `trust proxy` in production. Login regenerates the session.
+- Login limiter: 10 attempts per 15 minutes per IP and email, held in memory.
+- Temporary passwords (application approval, admin-created accounts, resets) set
+  `must_change_password`; such sessions can only change the password or log out.
+
+## Key flows
+
+- **Discovery** shows listings that are `published`, whose vendor is `approved` and taking
+  bookings, and hides demo vendors and listings unless `site_settings.show_demo_content` is on.
+- **Booking request**: one transaction locks the listing, vendor and session, refuses when
+  bookings are closed (`site_settings.bookings_open`), the vendor is offline, the listing is
+  hidden demo content or the session is full or past, then takes the spots and stores a
+  financial snapshot (counts, unit prices, exchange rate, commission rate, commission,
+  vendor net). Snapshots are never rewritten.
+- **Commission**: vendor fee plan (introductory rate, months, standard rate) or the global
+  `pricing_settings`, with introductory time counted from first publication (ADR 012).
+- **Vendor application**: public form with up to ten activities and identity documents.
+  Approval creates the vendor's draft listings in the same transaction.
+- **Listing photos**: uploads are resized to 1600, 800 and 400 px WebP without metadata and
+  stored in App Storage under `listing-photos/<uuid>/`. `/api/listing-images/:id/:width.webp`
+  checks the listing is public, or the viewer owns it or is an admin.
 
 ## Data
 
-Tables (`shared/schema.ts`): `users`, `countries`, `vendors`, `experiences`,
-`experience_images`, `availability_slots`, `bookings`, `favorites`, `reviews`, plus
-`session` (migration 013, used by connect-pg-simple), and `schema_migrations`
-(filename, SHA-256 checksum, applied_at, owned by the migration runner).
-
+- Tables: `users`, `countries`, `vendors`, `experiences`, `experience_images`,
+  `availability_slots`, `bookings`, `favorites`, `reviews`, `vendor_documents`,
+  `pricing_settings`, `site_settings`, `waiting_list`, `session`, `schema_migrations`.
 - Primary keys are `serial`. Foreign keys are declared, with no cascade rules.
-- No soft delete and no `updated_at` on core records. Verification document contents are nulled on admin deletion, retaining the deletion audit.
-- Status columns are free text with defaults, not enums:
-  - experiences: `draft`, `published`
-  - bookings: `requested`, then `confirmed` or `cancelled` (the vendor's Decline sets
-    `cancelled`). `completed` has a badge colour, but no code sets it. The server
-    accepts any status string a vendor sends.
-  - vendors: `pending`, `approved`, `rejected`
-  - slots: `open`
-- `availability_slots.date` is `YYYY-MM-DD` text, and times are `HH:MM` text.
-  `experiences.open_time` and `close_time` are `HH:MM` text.
-- `price_amount` and `total_amount` are whole LKR. `rating` is tenths.
-- `experiences.ideal_for_tags` is `text[]` (friends, couples, families, teams, solo).
-- Categories in use: `sports`, `adventure`, `arts`, `wellness`, `recreation`.
-- Every schema change is a new numbered SQL file in migrations/, mirrored in
-  shared/schema.ts where applicable. Never edit or remove applied files.
-- server/migrations.ts checks immutable history and serializes runs with a direct
-  PostgreSQL advisory lock. Each file and history record commit together.
-- Only additive, backward-compatible changes; expand then contract across separate
-  releases. Never db:push or hand SQL against production. New environments branch
-  Neon production. Existing hand-applied databases require the one-time baseline
-  described in ADR 013; the runner refuses to replay legacy files without it.
-
-### Seed and the rolling slot window
-
-`seedDatabase()` runs only when `ENABLE_SEED=true`. On an already-seeded database it still
-runs `standardizeCurrencyToLKR()` and `applyDemoUpgrades()`. These backfill ratings, add
-Recreation experiences, top up 30 days of slots per experience, and backfill `image_url`.
-Search filters for "tonight", "weekend", and dates depend on that top-up. Without
-`ENABLE_SEED=true`, slots go stale and those filters return nothing.
-
-### Images
-
-Experience photos are static files at `/images/<name>.png` in `client/public/images/`.
-Each experience's `image_url` points at one of them, and the UI renders
-`imageUrl || "/images/fallback.png"`. The files available on 2026-10-08: arcade, billiards,
-cooking, darts, fallback, golf, hero-bg, pottery, rafting, recreation, spa, surfing,
-volleyball, yoga. There is no upload pipeline: vendors cannot add photos.
+- Status values (free text, validated by zod in routes):
+  - experiences: `draft`, `published`, `unpublished` (set by admin)
+  - vendors: `pending`, `contacted`, `approved`, `paused`, `rejected`
+  - bookings: `requested`, then `confirmed` or `declined`; `confirmed` then `cancelled` or
+    `completed` (admin)
+  - slots: `open`, `full`
+- Dates are `YYYY-MM-DD` text and times `HH:MM` text, in Sri Lanka time.
+- Money: whole LKR in `price_amount`, `total_amount` and `*_lkr` columns; whole USD in
+  `visitor_price_usd` and `usd_unit_price`; rates as `numeric(5,2)` percentages.
+- Verification documents: `vendor_documents.contents` is `bytea`, at most 10 MB, never selected
+  outside the admin download. Deletion nulls the contents and keeps who and when (ADR 007).
+- Schema changes: new numbered files in `migrations/` only (ADR 013).
 
 ## Integrations
 
-No payments, email, SMS, maps, external storage service, or analytics. Vendor verification
-documents are stored privately in PostgreSQL and served only by admin-guarded routes.
-Booking is request-only, and the vendor confirms or declines it.
+- Replit App Storage for listing photos. No payment gateway yet (PayHere is planned), and
+  no email, SMS, maps or analytics.
 
 ## Cross-cutting concerns
 
-- Errors: handlers `try/catch` and return `500 { message: error.message }`. A global handler
-  in `index.ts` does the same for anything uncaught.
-- Logging: `console.log` plus a logger that prints every `/api` response body.
-- No rate limiting, CORS config, helmet, or `trust proxy`.
-- Time: the server uses UTC, the client uses the browser's local time, and the market is
-  UTC+05:30.
+- Errors: 4xx responses carry a message; 500 responses return a generic message and the
+  detail goes to the server log.
+- Logging: method, path, status and duration only. Never response bodies or personal data.
+- Time: `server/time.ts` (`colomboToday`, `colomboNowHHMM`) on the server and
+  `client/src/lib/discovery.ts` on the client.
 
 ## Known debt and sharp edges
 
-Confirmed by reading the code on 2026-10-08. Ordered by risk.
+Confirmed by reading the code on 2026-10-27. Ordered by risk.
 
-1. **Cross-vendor writes.** `DELETE /api/vendor/slots/:id` deletes any slot, and
-   `PATCH /api/vendor/bookings/:id` updates any booking. Any vendor can do either,
-   because there is no ownership check on the target.
-2. **Mass assignment.** Vendor and admin handlers pass `req.body` straight to storage:
-   - `PATCH /api/vendor/profile` lets a vendor set its own `verificationStatus` or `ownerProfileId`.
-   - `POST` and `PATCH /api/vendor/experiences` let a vendor set `rating`, `reviewCount`,
-     `vendorId`, or `offerLabel`.
-   - `POST /api/bookings` spreads the body before overriding the known fields.
-3. **No input validation.** The zod `insert*Schema` exports are unused by routes.
-4. **Session secret fallback.** Without `SESSION_SECRET`, sessions are signed with a string
-   committed to the repo. Cookies are also `secure: false`, with no `trust proxy`.
-5. **Personal data in logs.** The `/api` logger prints full response bodies: users' emails
-   and phone numbers, and customer names and emails on vendor and admin booking lists.
-6. **Overbooking.** A booking checks `slot.capacity > 0` but neither compares it to `qty`
-   nor decrements it. Slots never fill from real bookings.
-7. **Timezone.** Search "now" and "tonight", the "past slot" check in bookings, and
-   seed slot dates all use UTC. The "Open Now" badge uses the browser's zone. For Sri Lanka
-   users, the server is 5.5 hours behind.
-8. **Unpublished data is public.** `GET /api/experiences/:id` and `/:id/slots` return
-   drafts.
-9. **Vendor verification does not gate anything.** An unverified vendor can publish
-   listings, and they appear in search.
-10. **N+1 queries.** Booking and favorite lists query once per row.
-    `getBookingsByVendor` loads every booking in the database and filters in JavaScript.
-11. **drizzle-kit push and the `session` table.** The table is not in `shared/schema.ts`,
-    so push may offer to drop it. UNVERIFIED. Read the prompt and answer no.
-12. **Binds to `127.0.0.1`.** Must change before hosting anywhere but Replit.
-13. **No tests, lint, or migrations history.**
-
-## Decisions
-
-No ADRs written yet. Proposed retrospective ADRs, to be confirmed by the owner:
-
-1. Session cookies in Postgres, not JWT. Simple, revocable, and one process.
-2. One Express process serves the API and SPA. Simplest Replit hosting.
-3. Neon DEV/PROD split, chosen by `NODE_ENV` or `REPLIT_DEPLOYMENT`, with `drizzle-kit push`
-   instead of migration files.
-4. Whole-unit LKR prices, and ratings as integer tenths.
-5. Demo seed and upgrades at boot, gated by `ENABLE_SEED`, including the rolling 30-day slot window.
+1. **Demo accounts with public passwords exist in production** (`@freespirit.com`, passwords in
+   `product.md`). Kept on purpose for sales demos. The demo admin can see vendor documents,
+   so change its password before real vendors apply in volume.
+2. **Anonymous vendor application uploads are not rate-limited.** Each request can buffer up to
+   30 MB in memory and store it in Postgres.
+3. **In-memory rate limiters** (login, waiting list) reset on restart and are per instance under
+   autoscale.
+4. **`SESSION_SECRET` fallback** to a hard-coded string if the secret is missing.
+5. **Prototype shortcuts in `vendors.description`**: decline reasons and approval dates are
+   appended to the description text instead of their own columns.
+6. **Photo uploads are not atomic across storage and database.** Failures clean up best effort.
+7. **Binds to `127.0.0.1`.** Must change before hosting anywhere but Replit.
+8. **No automated tests in CI.** The test scripts need a database, so they run in Replit only.
+9. **Large client bundle** (about 600 kB, Vite warning) and 1.5 to 2.4 MB curated PNGs without
+   responsive variants.
