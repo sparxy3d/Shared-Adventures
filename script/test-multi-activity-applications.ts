@@ -4,6 +4,7 @@ import { createServer } from "node:http";
 import { scryptSync } from "node:crypto";
 import express from "express";
 import path from "node:path";
+import { readFile } from "node:fs/promises";
 import { isolatePricingPool } from "./isolated-pricing-db";
 
 if (process.env.REPLIT_DEPLOYMENT || process.env.NODE_ENV === "production" || process.env.DB_TARGET === "prod") throw Error("Development only");
@@ -18,6 +19,8 @@ let listening = false;
 try {
   await pool.query(`CREATE SCHEMA ${quoted}`);
   isolatePricingPool(pool, schema);
+  // Sessions are migration-managed now; keep auth sessions inside the disposable schema.
+  await pool.query(await readFile(path.resolve("migrations/013_session_table.sql"), "utf8"));
   for (const table of ["users", "countries", "vendors", "vendor_documents", "experiences", "experience_images", "availability_slots", "bookings", "pricing_settings", "site_settings", "waiting_list", "favorites", "reviews"]) {
     await pool.query(`CREATE TABLE ${quoted}.${table} (LIKE public.${table} INCLUDING ALL)`);
     await pool.query(`CREATE SEQUENCE ${quoted}.${table}_fixture_seq START 1000`);
@@ -64,6 +67,11 @@ try {
   const response = await submit(application); assert.equal(response.status, 200);
   const vendor = await response.json();
   assert.deepEqual(vendor.applicationActivities, activities);
+  const acceptance = await pool.query("SELECT description FROM vendors WHERE id=$1", [vendor.id]);
+  assert.match(acceptance.rows[0].description, /^Vendor terms \(1\.0\) accepted: \d{4}-\d{2}-\d{2}T[\d:.]+Z$/m);
+  const priorAcceptance = "Legacy application\n\nApplication\nVendor terms (0.9) accepted: 2026-10-01T12:34:56.000Z";
+  await pool.query("UPDATE vendors SET description=$1 WHERE id=$2", [priorAcceptance, vendor.id]);
+  assert.equal((await pool.query("SELECT description FROM vendors WHERE id=$1", [vendor.id])).rows[0].description, priorAcceptance);
   assert.equal((await pool.query("SELECT count(*)::int AS n FROM experiences WHERE vendor_id=$1", [vendor.id])).rows[0].n, 0);
   const approve = () => fetch(`${base}/api/admin/vendors/${vendor.id}/approve`, { method: "POST", headers: { Cookie: cookie, "Content-Type": "application/json" }, body: "{}" });
   assert.equal((await approve()).status, 200);
@@ -81,6 +89,7 @@ try {
     assert.equal(draft.is_demo, false);
   });
   assert.equal((await approve()).status, 409);
+  assert.equal((await pool.query("SELECT description FROM vendors WHERE id=$1", [vendor.id])).rows[0].description.match(/^Vendor terms .*$/m)?.[0], "Vendor terms (0.9) accepted: 2026-10-01T12:34:56.000Z");
   assert.equal((await pool.query("SELECT count(*)::int AS n FROM experiences WHERE vendor_id=$1", [vendor.id])).rows[0].n, 2);
   console.log("PASS: Two activities saved; approval creates exactly two correctly priced drafts, repeated approval refused");
   const { activities: _activities, ...common } = application;
@@ -89,6 +98,8 @@ try {
   const oldVendor = await legacy.json(); assert.equal(oldVendor.applicationActivities, null);
   assert.ok(oldVendor.description.includes("Typical price: LKR 2200"));
   assert.equal((await fetch(`${base}/api/admin/vendors/${oldVendor.id}/approve`, { method: "POST", headers: { Cookie: cookie, "Content-Type": "application/json" }, body: "{}" })).status, 200);
+  assert.equal((await pool.query("SELECT description FROM vendors WHERE id=$1", [vendor.id])).rows[0].description.match(/^Vendor terms .*$/m)?.[0], "Vendor terms (0.9) accepted: 2026-10-01T12:34:56.000Z");
+  console.log("PASS: New applications record vendor terms 1.0 with a timestamp; historical 0.9 acceptance survives approval and subsequent applications unchanged");
   assert.equal((await pool.query("SELECT count(*)::int AS n FROM experiences WHERE vendor_id=$1", [oldVendor.id])).rows[0].n, 0);
   console.log("PASS: Legacy single-price/category application remains readable and approvable without invented listings");
   if (process.argv.includes("--screenshots")) {

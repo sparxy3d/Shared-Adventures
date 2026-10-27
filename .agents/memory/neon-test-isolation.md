@@ -16,3 +16,12 @@ checked separately and were unchanged; the test schema was removed.
 **How to apply:** use the test-only transaction-scoped adapter, avoid executing
 server boot to start fixture apps, remove temporary schemas in finally, and
 verify the main app reads public data after cleanup.
+
+Authenticated fixtures must own their session table inside the disposable schema;
+do not rely on search-path fallback to the application's public session table.
+
+**Why:** that fallback can mix fixture sessions with real application sessions.
+Session tables are migration-managed, so route registration does not create one.
+
+**How to apply:** install the tracked session migration in the isolated schema
+before registering routes.

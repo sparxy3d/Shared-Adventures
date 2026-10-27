@@ -611,3 +611,87 @@ mtime_ms = 1793116886117
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/5c004db2-80d5-470b-bc7f-cba850b240b3/dece1652-f990-460f-a10b-2aa9975c6d98"
 storage_version_token = "1793117025307453"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "ZeJ_iXBnqXHpPjNR9nnRD"
+uri = "file://generated-artifacts/vendor-terms-final/top-1440.jpg"
+type = "image"
+title = "Vendor Terms: top at 1440px"
+description = "Verified against an isolated development test server. Not published."
+logical_id = "7241585b-a86d-42bd-bd91-41ba20fcdf0a"
+content_hash = "sha256:be2f7786345461786d47089fc72851427773e46e85b0bd20814fbb66b4492820"
+size = 132363
+mtime_ms = 1793119428708
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/7241585b-a86d-42bd-bd91-41ba20fcdf0a/40b6f08a-86ec-4ef6-aea7-a99208e39161"
+storage_version_token = "1793119569626742"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "tOl2m8CQSem_RfPjpBFbe"
+uri = "file://generated-artifacts/vendor-terms-final/top-375.jpg"
+type = "image"
+title = "Vendor Terms: top at 375px"
+description = "Verified against an isolated development test server. Not published."
+logical_id = "1f62f8b6-3409-4f2d-aabd-8c037318719b"
+content_hash = "sha256:dc7fe50e49934a07d9d729a3a1237303ebbf462bafbbecaade3f1e1e5dab0ac5"
+size = 81376
+mtime_ms = 1793119460165
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/1f62f8b6-3409-4f2d-aabd-8c037318719b/157361cb-ec9e-4a11-a29c-bef9266dbafe"
+storage_version_token = "1793119571442098"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "ydLQoCKpmF3OWCDUuobQ7"
+uri = "file://generated-artifacts/vendor-terms-final/section-5-1440.jpg"
+type = "image"
+title = "Vendor Terms: section 5 at 1440px"
+description = "Verified against an isolated development test server. Not published."
+logical_id = "00f47428-931e-4db0-96a7-f09df87f54ca"
+content_hash = "sha256:7570ccfe2ed76cbae7d9c2960e18de706b98fe1a231b7418f65c8313b4ed8302"
+size = 180483
+mtime_ms = 1793119430700
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/00f47428-931e-4db0-96a7-f09df87f54ca/12740f0f-2815-465a-a086-744b9d62ece3"
+storage_version_token = "1793119573336125"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "D4_8aFSJICtJLgKTcYLMY"
+uri = "file://generated-artifacts/vendor-terms-final/section-5-375.jpg"
+type = "image"
+title = "Vendor Terms: section 5 at 375px"
+description = "Verified against an isolated development test server. Not published."
+logical_id = "74d7c227-ef81-4992-8403-d4ed7cc83d74"
+content_hash = "sha256:72948109a5b3fab2c772d34076e6375752ad7cf3e8de2701e78a26299213593d"
+size = 165737
+mtime_ms = 1793119461975
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/74d7c227-ef81-4992-8403-d4ed7cc83d74/d847d2a7-0c30-4dd7-99b2-4916f24023fa"
+storage_version_token = "1793119575195900"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "GzbDhWZDNPkNugoalJ7Nm"
+uri = "file://generated-artifacts/vendor-terms-final/checkbox-1440.jpg"
+type = "image"
+title = "Application checkbox at 1440px"
+description = "Verified against an isolated development test server. Not published."
+logical_id = "4afceb8e-5839-4446-875a-40b02f86213b"
+content_hash = "sha256:d905c28ef430e45a8e954b91aafdd5fc7db177b59dc50b08c917a1dc0bbcf1ca"
+size = 3602
+mtime_ms = 1793119434068
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/4afceb8e-5839-4446-875a-40b02f86213b/80c3e800-f534-427b-afb5-baf7713c3bde"
+storage_version_token = "1793119576389142"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "P0BnXyYOEQi5HhVnSZEn_"
+uri = "file://generated-artifacts/vendor-terms-final/checkbox-375.jpg"
+type = "image"
+title = "Application checkbox at 375px"
+description = "Verified against an isolated development test server. Not published."
+logical_id = "af63e8e3-362e-4ca8-89b6-655fe492ad1f"
+content_hash = "sha256:bd71c13550e8940cbceaa0b0d8ce38655c4cfd4b853ed561a2cb0cde84cc2c89"
+size = 3013
+mtime_ms = 1793119465093
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/af63e8e3-362e-4ca8-89b6-655fe492ad1f/df483190-9545-4cae-98d1-90458626017f"
+storage_version_token = "1793119577694594"
+content_type = "image/jpeg"

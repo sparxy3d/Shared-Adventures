@@ -6,6 +6,7 @@ import type { Experience, Vendor } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { applicationDetails, profilePayload } from "@/lib/vendor-listings";
+import { formatAdminDate } from "@/lib/admin";
 import ListingEditor from "@/pages/vendor/listing-editor";
 import VendorSchedule from "@/pages/vendor/schedule";
 import VendorStats from "@/pages/vendor/stats";
@@ -202,7 +203,7 @@ export default function VendorDetail() {
           <button className="av-button" type="submit" disabled={commissionMutation.isPending||commissionFieldsInvalid}>{commissionMutation.isPending?"Saving…":"Save fee plan"}</button>
         </form>}
       </section>
-      <section className="av-metadata"><h3>Application record · preserved</h3><div className="av-meta-grid"><div><small>Terms version</small><strong>{metadata.termsVersion}</strong></div><div><small>Accepted</small><strong>{metadata.termsDate}</strong></div><div><small>Approval date</small><strong>{vendor.approvedAt ? new Date(vendor.approvedAt).toLocaleDateString("en-LK",{dateStyle:"medium",timeZone:"Asia/Colombo"}) : "Not recorded"}</strong></div><div><small>Original application</small><p>{metadata.metadata}</p></div></div></section>
+      <section className="av-metadata"><h3>Application record · preserved</h3><div className="av-meta-grid"><div><small>Terms version</small><strong>{metadata.termsVersion}</strong></div><div><small>Accepted (Sri Lanka time)</small><strong>{metadata.termsAcceptedAt ? formatAdminDate(metadata.termsAcceptedAt, true) : metadata.termsDate}</strong></div><div><small>Approval date</small><strong>{vendor.approvedAt ? new Date(vendor.approvedAt).toLocaleDateString("en-LK",{dateStyle:"medium",timeZone:"Asia/Colombo"}) : "Not recorded"}</strong></div><div><small>Original application</small><p>{metadata.metadata}</p></div></div></section>
     </section>}
 
     {activeTab === "listings" && <section className="av-section">

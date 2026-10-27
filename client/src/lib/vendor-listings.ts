@@ -63,6 +63,7 @@ export function applicationDetails(description?: string | null) {
   return {
     about, block,
     termsVersion: terms?.[1] || "Not recorded (onboarded by Free Spirit)",
+    termsAcceptedAt: dateText && !Number.isNaN(dateText.getTime()) ? dateText.toISOString() : null,
     termsDate: acceptedDate || "Not recorded (onboarded by Free Spirit)",
     metadata: block || "Not recorded (onboarded by Free Spirit)",
   };

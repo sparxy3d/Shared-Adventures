@@ -125,3 +125,74 @@ We may agree different rates with you when we approve your account. The rates th
 6.4 **Weather and safety.** If you cancel because it is unsafe to run the activity (for example, weather or river conditions), the customer gets a full refund or may move to another session if you offer one. These cancellations do not count against you under 6.3, provided you tell us the reason.
 
 6.5 **Activity not as described.** If a customer complains that a session did not take place, or was materially different from your listing, we will ask for your side before deciding. If we find the complaint justified, we may refund the customer in full or in part, and deduct that amount from what we owe you.
+
+## 7. Safety, insurance and liability
+
+7.1 **You run the activity.** Free Spirit is a marketplace. You, not Free Spirit, provide the activity and are responsible for how it is run. You are not our employee, agent or partner.
+
+7.2 **Safety.** You must:
+
+- run every session safely, with suitable equipment, trained staff and supervision;
+- give customers the safety information they need before and during the session;
+- follow all laws, licences and permits that apply to your activity;
+- refuse or stop participation where it is unsafe, for example because of weather, a participant's condition, or intoxication.
+
+7.3 **Insurance.** If you run Adventure activities, you must hold public liability insurance suitable for your activity. We strongly recommend it for all other activities. Show us proof on request.
+
+7.4 **Incidents.** Tell us within 24 hours at hello@freespirit.club about any accident, injury, serious complaint or emergency during a session booked through Free Spirit.
+
+7.5 **Your responsibility to us.** You agree to cover Free Spirit's losses, costs and reasonable legal fees arising from claims by customers or others about your activity, your listings, your content, or your breach of these terms, except to the extent the loss was caused by Free Spirit.
+
+7.6 **Our responsibility to you.** We work hard to keep Free Spirit available and accurate, but we cannot promise it will always be uninterrupted or error-free, or that you will receive any particular number of bookings. To the extent the law allows, our total liability to you for anything arising under these terms is limited to the fees we earned from your bookings in the 3 months before the claim. Nothing in these terms limits liability that cannot legally be limited.
+
+## 8. Your data and documents
+
+8.1 **What we collect.** Your name, business name, contact details, address, city, activity details, bank details for payouts, an optional Google Maps link, and the verification documents in clause 2.2.
+
+8.2 **Why.** To verify you, run your account, show your listings, process bookings and pay you, meet our legal and tax obligations, and keep customers safe. We do not sell your data.
+
+8.3 **Your verification documents.**
+
+- They are stored privately and can only be viewed by authorised Free Spirit administrators.
+- They are never shown to customers or published.
+- We use them only to verify you.
+- We delete them from our live systems within 30 days after we complete verification, keeping only a record that verification was done, by whom and when. Copies may remain in our secure backups until those backups expire, within 7 days.
+
+8.4 **What customers see.** Customers see your business name, listings, photos and city. Your phone number and email are shared only with a customer whose booking you have accepted, so you can coordinate the session. Your address is shared the same way, unless it is already in your listing as the meeting point.
+
+8.5 **Your rights.** Under Sri Lanka's Personal Data Protection Act No. 9 of 2022 you may ask to see, correct or delete your personal data, subject to records we must keep by law. Email hello@freespirit.club.
+
+8.6 **Customer data.** When we share a customer's details with you for a booking, use them only to deliver that booking. Do not add them to marketing lists or contact them for anything else unless they agree. Keep them secure.
+
+## 9. Pausing, suspension and leaving
+
+9.1 **Pausing.** You can pause at any time with the Taking bookings switch (clause 4.5). Pausing does not end this agreement.
+
+9.2 **Leaving.** You can close your vendor account at any time by emailing hello@freespirit.club. You must still run, or properly cancel under clause 6.3, any bookings you have already accepted. We pay you what you are owed for completed sessions in the next payout cycle.
+
+9.3 **When we may suspend or remove you.** We may pause your listings, suspend or close your account if you:
+
+- break these terms, including asking customers to book outside Free Spirit;
+- give us false information;
+- put customers at risk, or we receive serious or repeated complaints;
+- repeatedly cancel accepted bookings or fail to respond to requests.
+
+Where it is safe and reasonable, we will warn you first and give you a chance to fix the problem. For serious safety concerns we may act immediately.
+
+9.4 **What continues after you leave.** Clauses on payments owed, refunds, liability and data, and the rule in clause 3.4, continue to apply after your account closes.
+
+## 10. General
+
+10.1 **Changes to these terms.** We may update these terms. We will give you at least 30 days' notice of any change that affects you materially, by email and in your dashboard, and show the new version and date. Fee changes follow clause 5.4. If you keep using Free Spirit after a change takes effect, you accept the new terms; if you do not agree, you may close your account before then.
+
+10.2 **Notices.** We contact you at the email address in your dashboard. You contact us at hello@freespirit.club.
+
+10.3 **The whole agreement.** These terms, and any policies they refer to, are the full agreement between you and Free Spirit about offering activities on Free Spirit.
+
+10.4 **If part is invalid.** If any part of these terms is found unenforceable, the rest still applies.
+
+10.5 **Transfer.** You may not transfer this agreement to someone else without our written agreement. We may transfer it to a company that takes over the Free Spirit business, and will tell you if we do.
+
+10.6 **Disputes.** If something goes wrong, contact us first and we will try to resolve it within 30 days.
+
+10.7 **Governing law.** These terms are governed by the laws of Sri Lanka, and the courts of Colombo have jurisdiction.

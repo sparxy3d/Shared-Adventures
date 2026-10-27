@@ -89,7 +89,7 @@ export const GUEST_BOOKING_ENABLED = false;
 export const VENDOR_APPLICATION_THANK_YOU = "Thanks. We'll call you within 2 working days to talk it through.";
 
 // Placeholder copy. Labelled as drafts wherever it appears.
-export const VENDOR_TERMS_VERSION = "0.9";
+export const VENDOR_TERMS_VERSION = "1.0";
 
 // Reasons a vendor can pick when declining a request.
 export const DECLINE_REASONS = [

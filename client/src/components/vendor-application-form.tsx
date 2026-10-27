@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "wouter";
 import { ArrowLeft, ArrowRight, FileText, Plus, Trash2 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
-import { CATEGORIES, SUPPORTED_CITIES, VENDOR_APPLICATION_THANK_YOU, VENDOR_TERMS_VERSION } from "@shared/catalog";
+import { CATEGORIES, SUPPORTED_CITIES, VENDOR_APPLICATION_THANK_YOU } from "@shared/catalog";
 import { applicationActivitySchema, GROUP_SIZE_VALUES, type ApplicationActivity } from "@shared/application-activities";
 import { GOOGLE_MAPS_MESSAGE, isGoogleBusinessUrl } from "@shared/contact-policy";
 
@@ -54,7 +54,7 @@ function validateField(field: FieldName, value: ApplicationFields[FieldName]): s
   };
   const limit = limits[field];
   if (limit && text.length > limit) return `Keep this field to ${limit} characters.`;
-  if (field === "acceptTerms") return value ? "" : "Please review and accept the draft vendor terms to continue.";
+  if (field === "acceptTerms") return value ? "" : "Please review and accept the vendor terms to continue.";
   if (field === "contactEmail") {
     if (!text) return "Enter an email address.";
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text) ? "" : "Enter a valid email address.";
@@ -433,7 +433,7 @@ export default function VendorApplicationForm({ onBack }: { onBack?: () => void 
         <div className="v4-field v4-field--full">
           <div className="v4-check-wrap">
             <input id="vendor-accept-terms" name="acceptTerms" type="checkbox" checked={fields.acceptTerms} onChange={(event) => updateField("acceptTerms", event.target.checked)} onBlur={() => setErrors((current) => ({ ...current, acceptTerms: validateField("acceptTerms", fields.acceptTerms) }))} aria-invalid={!!errors.acceptTerms} aria-describedby={errors.acceptTerms ? "vendor-error-acceptTerms" : undefined} required />
-            <div><label htmlFor="vendor-accept-terms">I agree to the <Link href="/vendor-terms">vendor terms (version {VENDOR_TERMS_VERSION}, pending legal review)</Link>. We'll ask you to accept the final version before your first paid booking.</label></div>
+            <div><label htmlFor="vendor-accept-terms">I agree to the <a href="/vendor-terms" target="_blank" rel="noopener noreferrer">vendor terms</a></label></div>
           </div>
           {fieldError("acceptTerms")}
         </div>
