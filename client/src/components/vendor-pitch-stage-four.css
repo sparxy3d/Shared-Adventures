@@ -236,6 +236,9 @@
 .v4-uploaded-list span { display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid #d9e6d7; border-radius: 999px; color: #35583a; background: #fff; font-size: 12px; font-weight: 700; }
 .v4-check-wrap { display: flex; align-items: flex-start; gap: 11px; }
 .v4-check-wrap input { width: 20px; height: 20px; flex: none; margin: 1px 0 0; accent-color: var(--v4-orange); }
+.v4-check-wrap input[aria-invalid="true"],
+.v4-activity-option[aria-invalid="true"] { outline: 2px solid #b42318; outline-offset: 3px; }
+.v4-document-upload--invalid { border-color: #b42318; background: #fff6f4; }
 .v4-check-wrap label { margin: 0; color: #4f5a65; font-size: 13px; font-weight: 500; line-height: 1.7; }
 .v4-check-wrap a { color: #9b481f; font-weight: 700; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .v4-submit-row { display: flex; flex-wrap: wrap; align-items: center; gap: 13px 18px; margin-top: 24px; }
@@ -294,4 +297,46 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .v4 *, .v4 *::before, .v4 *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+
+/* Multi-activity application controls */
+.v4-activities { min-width: 0; padding: 25px; border: 1px solid #e8d8ca; border-radius: 17px; background: #fbf5ef; }
+.v4-activities-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
+.v4-activities-heading .v4-eyebrow { margin-bottom: 7px; }
+.v4-activities-heading h2 { margin: 0 0 7px; font-size: 25px; letter-spacing: -.04em; }
+.v4-activities-heading p:not(.v4-eyebrow) { max-width: 510px; margin: 0; color: #64706b; font-size: 13px; line-height: 1.6; }
+.v4-activity-count { flex: none; padding: 7px 10px; border: 1px solid #e2cbb9; border-radius: 999px; color: #8d481f; background: #fffaf5; font: 12px "DM Mono", monospace; }
+.v4-activity-list { display: grid; gap: 13px; }
+.v4-activity-card { min-width: 0; padding: 20px; border: 1px solid #eee1d7; border-radius: 14px; background: #fff; }
+.v4-activity-card-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 19px; padding-bottom: 13px; border-bottom: 1px solid #f0e6df; }
+.v4-activity-card-head > div { display: flex; align-items: center; gap: 10px; }
+.v4-activity-card-head h3 { margin: 0; font-size: 16px; }
+.v4-activity-number { color: #b14d1c; font: 12px "DM Mono", monospace; }
+.v4-activity-fields { gap: 16px; }
+.v4-activity-option { min-width: 0; border: 0; padding: 0; margin: 0; }
+.v4-toggle { display: inline-flex !important; align-items: center; gap: 9px; min-height: 40px; margin: 0 !important; cursor: pointer; }
+.v4-toggle input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.v4-toggle > span { position: relative; width: 40px; height: 23px; border-radius: 999px; background: #d8d2cc; transition: background-color .16s ease; }
+.v4-toggle > span::after { position: absolute; top: 3px; left: 3px; width: 17px; height: 17px; border-radius: 50%; background: #fff; content: ""; transition: transform .16s ease; }
+.v4-toggle input:checked + span { background: #b64e1d; }
+.v4-toggle input:checked + span::after { transform: translateX(17px); }
+.v4-toggle input:focus-visible + span { outline: 3px solid #f3b28c; outline-offset: 2px; }
+.v4-toggle b { color: #4b5650; font-size: 13px; }
+.v4-activity-description { min-height: 92px; }
+.v4-add-activity, .v4-remove-activity { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 42px; border: 1px solid #d9c4b4; border-radius: 999px; background: #fffaf5; color: #8d431e; font-size: 13px; font-weight: 700; cursor: pointer; }
+.v4-add-activity { margin-top: 14px; padding: 0 16px; }
+.v4-remove-activity { padding: 0 12px; min-height: 36px; border-color: #eadfd7; background: #fff; color: #765f51; font-size: 12px; }
+.v4-add-activity:hover, .v4-remove-activity:hover { background: #fff0e6; }
+.v4-error-summary { margin-top: 22px; padding: 16px 18px; border: 1px solid #e5a59b; border-radius: 12px; background: #fff2ef; color: #872d22; }
+.v4-error-summary strong { font-size: 14px; }
+.v4-error-summary ul { display: grid; gap: 4px; margin: 9px 0 0; padding-left: 19px; font-size: 13px; line-height: 1.45; }
+.v4-activity-option[aria-invalid="true"] .v4-field-legend { color: #b42318; }
+.v4-fieldset-spacer { min-width: 0; }
+
+@media (max-width: 600px) {
+  .v4-activities { padding: 17px 13px; }
+  .v4-activities-heading { gap: 8px; }
+  .v4-activities-heading h2 { font-size: 22px; }
+  .v4-activity-card { padding: 15px 12px; }
+  .v4-activity-card-head { align-items: flex-start; }
 }

@@ -1,0 +1,3 @@
+- [x] Shared validation, development migration and transactional draft creation.
+- [x] Application cards, error feedback, admin list and login presentation.
+- [x] Integration tests, responsive screenshots and production handoff.

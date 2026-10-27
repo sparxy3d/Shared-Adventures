@@ -18,6 +18,7 @@ import { withApprovalDate } from "./admin-insights";
 import { applicationUpload, validateDocuments } from "./vendor-documents";
 import { CONTACT_DETAILS_MESSAGE, GOOGLE_MAPS_MESSAGE, containsContactDetails, isGoogleBusinessUrl } from "@shared/contact-policy";
 import { commissionForVendor } from "@shared/pricing";
+import { applicationActivitiesSchema, GROUP_SIZE_VALUES } from "@shared/application-activities";
 import { registerOnboardingRoutes } from "./onboarding-routes";
 import { registerPhotoRoutes, type PhotoObjects } from "./listing-photos";
 
@@ -156,7 +157,7 @@ const vendorProfileSchema = z.object({
   contactPhone: optionalText(40),
 });
 
-const applicationSchema = z.object({
+const applicationBaseSchema = z.object({
   businessName: z.string().trim().min(1).max(120),
   contactName: z.string().trim().min(1).max(120),
   contactEmail: z.string().trim().toLowerCase().email().max(200),
@@ -173,9 +174,15 @@ const applicationSchema = z.object({
   mapsLink: z.string().trim().max(500).optional().nullable().refine(v =>
     isGoogleBusinessUrl(v), GOOGLE_MAPS_MESSAGE),
   acceptTerms: z.literal(true, { errorMap: () => ({ message: "Please accept the vendor terms" }) }),
-}).refine(data => !data.differentVisitorPrice || data.typicalVisitorPriceUsd != null, {
+});
+const legacyApplicationSchema = applicationBaseSchema.strict().refine(data => !data.differentVisitorPrice || data.typicalVisitorPriceUsd != null, {
   message: "Enter the typical visitor price in whole US dollars", path: ["typicalVisitorPriceUsd"],
 });
+const multiActivityApplicationSchema = applicationBaseSchema.omit({
+  activityTypes: true, groupSizes: true, typicalPrice: true,
+  differentVisitorPrice: true, typicalVisitorPriceUsd: true,
+}).extend({ activities: applicationActivitiesSchema }).strict();
+const applicationSchema = z.union([multiActivityApplicationSchema, legacyApplicationSchema]);
 
 const experienceSchema = z.object({
   title: z.string().trim().min(1).max(160).refine(value => !containsContactDetails(value), CONTACT_DETAILS_MESSAGE),
@@ -191,6 +198,7 @@ const experienceSchema = z.object({
   ageMin: z.coerce.number().int().min(0).max(120).optional().nullable(),
   safetyNotes: publicListingText(2000),
   idealForTags: z.array(z.enum(IDEAL_FOR_TAGS)).optional().nullable(),
+  typicalGroupSizes: z.array(z.enum(GROUP_SIZE_VALUES)).max(4).optional().nullable(),
   openTime: hhmm.optional().nullable(),
   closeTime: hhmm.optional().nullable(),
   nextSessionText: optionalText(120),
@@ -576,6 +584,10 @@ export async function registerRoutes(httpServer: Server, app: Express, options: 
       return res.status(400).json({ message: "You have already applied" });
     }
     const lk = await storage.getCountryByCode("LK");
+    const activities = "activities" in data ? data.activities : null;
+    const activityTypes = "activities" in data
+      ? Array.from(new Set(data.activities.map(activity => activity.category)))
+      : data.activityTypes;
     // Prototype shortcut: no applications table yet, so the application details and
     // the dated terms acceptance are recorded in the description.
     const details = [
@@ -583,10 +595,12 @@ export async function registerRoutes(httpServer: Server, app: Express, options: 
       "",
       "Application",
       `Contact: ${data.contactName}`,
-      `Activity types: ${data.activityTypes.join(", ")}`,
-      `Typical group sizes: ${data.groupSizes.join(", ")}`,
-      `Typical price: LKR ${data.typicalPrice}`,
-      ...(data.differentVisitorPrice ? [`Typical visitor price: USD ${data.typicalVisitorPriceUsd}`] : []),
+      `Activity types: ${activityTypes.join(", ")}`,
+      ...("activities" in data ? [] : [
+        `Typical group sizes: ${data.groupSizes.join(", ")}`,
+        `Typical price: LKR ${data.typicalPrice}`,
+        ...(data.differentVisitorPrice ? [`Typical visitor price: USD ${data.typicalVisitorPriceUsd}`] : []),
+      ]),
       data.mapsLink ? `Google Maps: ${data.mapsLink}` : "",
       `Vendor terms (${VENDOR_TERMS_VERSION}) accepted: ${new Date().toISOString()}`,
     ].filter((l, i) => i > 0 || l).join("\n").trim();
@@ -599,6 +613,7 @@ export async function registerRoutes(httpServer: Server, app: Express, options: 
       contactEmail: data.contactEmail,
       contactPhone: data.contactPhone,
       verificationStatus: "pending",
+      applicationActivities: activities,
     };
     try {
       const result = await storage.submitVendorApplication(user ? { id: user.id } : {

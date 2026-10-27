@@ -1,4 +1,6 @@
-import { pgTable, text, serial, integer, boolean, timestamp, customType, numeric, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, customType, numeric, uniqueIndex, jsonb } from "drizzle-orm/pg-core";
+import type { ApplicationActivity } from "./application-activities";
+import { applicationActivitiesSchema } from "./application-activities";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -47,10 +49,13 @@ export const vendors = pgTable("vendors", {
   isDemo: boolean("is_demo").notNull().default(false),
   firstListingPublishedAt: timestamp("first_listing_published_at", { withTimezone: true }),
   commissionOverrideRate: numeric("commission_override_rate", { precision: 5, scale: 2 }),
+  applicationActivities: jsonb("application_activities").$type<ApplicationActivity[]>(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertVendorSchema = createInsertSchema(vendors).omit({ id: true, createdAt: true });
+export const insertVendorSchema = createInsertSchema(vendors, {
+  applicationActivities: applicationActivitiesSchema.nullable().optional(),
+}).omit({ id: true, createdAt: true });
 export type InsertVendor = z.infer<typeof insertVendorSchema>;
 export type Vendor = typeof vendors.$inferSelect;
 
@@ -90,6 +95,7 @@ export const experiences = pgTable("experiences", {
   ageMin: integer("age_min"),
   safetyNotes: text("safety_notes"),
   idealForTags: text("ideal_for_tags").array(),
+  typicalGroupSizes: text("typical_group_sizes").array(),
   openTime: text("open_time"),
   closeTime: text("close_time"),
   nextSessionText: text("next_session_text"),

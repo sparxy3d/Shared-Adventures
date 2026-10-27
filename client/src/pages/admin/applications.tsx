@@ -12,8 +12,10 @@ import { CredentialDialog, type LoginCredentials } from "@/components/admin/cred
 import { AdminError, AdminLoading } from "@/components/admin/states";
 import VendorDocuments from "@/components/admin/vendor-documents";
 import { useToast } from "@/hooks/use-toast";
+import { categoryLabel } from "@shared/catalog";
+import type { ApplicationActivity } from "@shared/application-activities";
 
-type Application = { id: number; businessName?: string; ownerName?: string; ownerEmail?: string; ownerPhone?: string; contactEmail?: string; contactPhone?: string; address?: string; city?: string; category?: string; description?: string; verificationStatus: string; createdAt?: string; approvedAt?: string; applicationDescription?: string; };
+type Application = { id: number; businessName?: string; ownerName?: string; ownerEmail?: string; ownerPhone?: string; contactEmail?: string; contactPhone?: string; address?: string; city?: string; category?: string; description?: string; verificationStatus: string; createdAt?: string; approvedAt?: string; applicationDescription?: string; applicationActivities?: ApplicationActivity[] | null; };
 export default function Applications() {
   const { toast } = useToast();
   const [declining, setDeclining] = useState<Application | null>(null);
@@ -80,6 +82,22 @@ export default function Applications() {
       const email = details.contactEmail ?? details.ownerEmail ?? fields.ownerEmail;
       const phone = details.contactPhone ?? details.ownerPhone ?? fields.ownerPhone;
       const mapHref = fields.mapsLink ? (/^https?:\/\//i.test(fields.mapsLink) ? fields.mapsLink : `https://${fields.mapsLink}`) : "";
+      const activitiesDetail = details.applicationActivities
+        ? <div className="ad-application-activities" style={{ display: "grid", gap: 8 }}>
+            {details.applicationActivities.map((activity, index) => <section key={`${activity.name}-${index}`} className="ad-application-activity" style={{ display: "grid", gap: 4, padding: "9px 0", borderBottom: "1px solid #e8e5e2" }}>
+              <strong>{index + 1}. {activity.name}</strong>
+              <span>{categoryLabel(activity.category)}</span>
+              <span>Local price: {formatPrice(activity.priceAmount, "LKR")}</span>
+              <span>Visitor price: {activity.differentVisitorPrice && activity.visitorPriceUsd != null ? formatPrice(activity.visitorPriceUsd, "USD") : "Same as local price"}</span>
+              <span>Group sizes: {activity.groupSizes.join(", ")}</span>
+              {activity.description && <p>{activity.description}</p>}
+            </section>)}
+          </div>
+        : <div>
+            <span>{fields.category || details.category || "Not provided"}</span>
+            <span className="ad-cell-sub" style={{ display: "block" }}>Typical group sizes: {fields.groupSizes.join(", ") || "Not provided"}</span>
+            <span className="ad-cell-sub" style={{ display: "block" }}>Typical price: {/^LKR \d+$/i.test(fields.typicalPrice) ? formatPrice(Number(fields.typicalPrice.slice(4)), "LKR") : fields.typicalPrice || "Not provided"}</span>
+          </div>;
       const detailRows: Array<{ label: string; value: ReactNode }> = [
         { label: "Business", value: details.businessName ?? "Not provided" },
         { label: "Contact name", value: details.ownerName ?? fields.contactName ?? "Not provided" },
@@ -87,9 +105,7 @@ export default function Applications() {
         { label: "Mobile", value: phone || "Not provided" },
         { label: "City", value: details.city ?? "Not provided" },
         { label: "Address", value: details.address || "Not provided" },
-        { label: "Activity types", value: fields.category || details.category || "Not provided" },
-        { label: "Typical group sizes", value: fields.groupSizes.join(", ") || "Not provided" },
-        { label: "Typical price", value: /^LKR \d+$/i.test(fields.typicalPrice) ? formatPrice(Number(fields.typicalPrice.slice(4)), "LKR") : fields.typicalPrice || "Not provided" },
+        { label: "Activities", value: activitiesDetail },
         { label: "Google Maps", value: mapHref ? <a href={mapHref} target="_blank" rel="noreferrer">Open map <ExternalLink size={13} /></a> : "Not provided" },
         { label: "Application description", value: fields.description || "Not provided" },
         { label: "Vendor terms", value: fields.termsVersion || "Not provided" },

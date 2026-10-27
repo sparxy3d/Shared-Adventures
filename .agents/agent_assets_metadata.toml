@@ -560,3 +560,11 @@ mtime_ms = 1793095011830
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/52ca032f-1ac3-4dd1-8420-d10d9f42451c/2df68b7b-6e3b-4268-a3ba-b14f35fed6f4"
 storage_version_token = "1793095078006185"
 content_type = "text/html"
+
+[[outputs]]
+id = "VByC3wU3ZpeXBIk8fE6hN"
+uri = "file://generated-artifacts/application-fixes/application-login-verification.html"
+type = "html"
+title = "Application and login: screenshots and verification"
+description = "All eight screenshots at 1440px and 375px, the complete changed-file list, test results, assumptions and production migration instructions."
+content_type = "text/html"

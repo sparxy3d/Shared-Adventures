@@ -228,6 +228,7 @@ export default function ListingEditor({ adminVendorId, adminListingId, backHref 
         <section id="section-group" className="v5-panel v5-section">
           <button type="button" className="v5-section-toggle" onClick={()=>toggle("group")} aria-expanded={expanded.group}><h2>02 · Group and price</h2><ChevronDown size={18}/></button>
           {expanded.group&&<div className="v5-fields">
+             {!!listingQuery.data?.typicalGroupSizes?.length&&<div className="v5-field full"><span className="v5-label">Typical group sizes from your application</span><p>{listingQuery.data.typicalGroupSizes.join(" · ")} people</p><small>Set the maximum group capacity below before publishing.</small></div>}
              <div className="v5-field"><label htmlFor="listing-price">Price for Sri Lankans and residents (LKR)</label><input id="listing-price" inputMode="numeric" type="number" min="0" max="10000000" step="1" value={form.priceAmount} onBlur={()=>setTouched(old=>({...old,price:true}))} onChange={e=>change("priceAmount",e.target.value)} aria-invalid={(touched.price||submitted)&&integerErrors.price}/>{(touched.price||submitted)&&integerErrors.price&&<span className="v5-error-text">Use a whole LKR amount up to 10,000,000.</span>}</div>
              <div className="v5-field full">
                <label className="v5-price-toggle"><input type="checkbox" checked={form.differentVisitorPrice} onChange={e=>change("differentVisitorPrice",e.target.checked)}/> Different price for foreign visitors</label>

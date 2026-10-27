@@ -16,3 +16,12 @@ cannot be republished by its vendor.
 
 **How to apply:** Do not introduce review delays for ordinary published-listing
 edits; preserve the separate admin-unpublished restriction.
+
+One vendor business may offer multiple activities, with independent categories,
+resident and visitor prices, group-size preferences and descriptions.
+
+**Why:** The user approved collecting multiple activities in one application;
+business-wide prices and categories cannot represent those activities correctly.
+
+**How to apply:** Keep per-activity data separate from the general business
+description. Do not collapse an application's activities into one listing.

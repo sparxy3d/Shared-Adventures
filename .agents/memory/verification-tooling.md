@@ -109,3 +109,21 @@ checkboxes jammed against labels and an orphaned group-size pill.
 **How to apply:** Verify checkbox centring, the visible label gap, matching field
 and category edges, and pill wrapping at desktop and phone widths. Wait for checked
 state transitions before measuring colours.
+
+## Custom controls and validation timing
+
+Click the visible label of a custom switch when its hidden input is covered by
+the visual track. Verify the checked state rather than forcing an invisible click.
+Validation scrolling must run after React commits the error attributes.
+
+Do not insert blur-error content that moves the submit button while focus is
+moving into that button. Let submit validate that transition instead.
+
+**Why:** Blur errors moved Send between pointerdown and pointerup, cancelling its
+click. The summary appeared, but no submit event occurred. Merely moving focus
+logic to an effect did not fix the cancelled click.
+
+**How to apply:** Test missing ID and missing terms as separate submissions on the
+same form, correcting one before testing the other. Wait for the actual invalid
+control's focus and confirm it is in the viewport. Assert each single click
+actually dispatches submit, not just that blur made a summary appear.

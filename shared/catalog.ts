@@ -86,7 +86,7 @@ export const SUPPORT_EMAIL = "hello@freespirit.club";
 // Guest UI is a pending product decision. Enabling it does not enable server booking.
 export const GUEST_BOOKING_ENABLED = false;
 
-export const VENDOR_APPLICATION_THANK_YOU = "Thanks — we'll call you to talk it through.";
+export const VENDOR_APPLICATION_THANK_YOU = "Thanks. We'll call you within 2 working days to talk it through.";
 
 // Placeholder copy. Labelled as drafts wherever it appears.
 export const VENDOR_TERMS_VERSION = "0.9";

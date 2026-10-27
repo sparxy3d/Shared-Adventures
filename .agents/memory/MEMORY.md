@@ -4,3 +4,4 @@
 - [Vendor approval age](vendor-approval-age.md) — base stale-not-live alerts on explicit approval time, not application submission time.
 - [Verification privacy and rollout](verification-privacy.md) — verification documents remain private and auditable; external production schema changes are owner-applied.
 - [Neon test isolation](neon-test-isolation.md) — pooled Neon requires transaction-local schema scoping; session-level search_path can leak test state across requests.
+- [Typed JSON validation](json-column-validation.md) — drizzle-zod typed JSON arrays need explicit shared schema overrides, not casts around insert errors.

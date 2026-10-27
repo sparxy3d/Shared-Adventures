@@ -686,6 +686,23 @@ export class DatabaseStorage {
         return { error: "This account cannot be approved as a vendor" };
       }
       const placeholder = owner.password.startsWith("!");
+      if (vendor.applicationActivities?.length) {
+        await tx.insert(experiences).values(vendor.applicationActivities.map(activity => ({
+          vendorId: vendor.id,
+          title: activity.name,
+          category: activity.category,
+          description: activity.description || null,
+          priceAmount: activity.priceAmount,
+          currencyCode: "LKR",
+          visitorPriceUsd: activity.differentVisitorPrice ? activity.visitorPriceUsd : null,
+          typicalGroupSizes: activity.groupSizes,
+          city: vendor.city,
+          countryId: vendor.countryId,
+          locationText: vendor.address,
+          status: "draft",
+          isDemo: false,
+        })));
+      }
       await tx.update(users).set({
         role: "vendor", ...(placeholder ? { password: credentials.hash, mustChangePassword: true } : {}),
       }).where(eq(users.id, owner.id));

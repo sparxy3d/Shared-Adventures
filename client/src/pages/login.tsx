@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
 
 function authError(error: Error): string {
-  if (error.message.startsWith("429")) return "Too many attempts — try again in 15 minutes";
+  if (error.message.startsWith("429")) return "Too many attempts. Try again in 15 minutes.";
   if (error.message.startsWith("401")) return "Email or password is incorrect";
   return "We couldn’t log you in. Please try again.";
 }
@@ -45,7 +45,7 @@ export default function Login() {
     },
   });
   return (
-    <AuthLayout eyebrow="Your next day out starts here" title="Good to have you back." titleTestId="text-login-title" description="Log in and pick up where the plans left off.">
+    <AuthLayout variant="login" eyebrow="Your next day out starts here" title="Good to have you back." titleTestId="text-login-title" description="Log in and pick up where the plans left off.">
       <form onSubmit={(event) => { event.preventDefault(); loginMutation.mutate(); }}>
         <div className="stage-field"><Label htmlFor="login-email">Email address</Label><Input id="login-email" data-testid="input-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" required /></div>
         <div className="stage-field">
@@ -63,9 +63,10 @@ export default function Login() {
       </form>
       <div className="stage-social-divider">Or continue with</div>
       <div className="stage-social-actions">
-        <div className="stage-social-wrap"><Button type="button" variant="outline" disabled className="stage-social" aria-disabled="true">Continue with Google</Button><span>Coming soon</span></div>
-        <div className="stage-social-wrap"><Button type="button" variant="outline" disabled className="stage-social" aria-disabled="true">Continue with Facebook</Button><span>Coming soon</span></div>
+        <Button type="button" variant="outline" disabled className="stage-social" aria-disabled="true">Google</Button>
+        <Button type="button" variant="outline" disabled className="stage-social" aria-disabled="true">Facebook</Button>
       </div>
+      <p className="stage-social-coming-soon">Coming soon</p>
       <p className="stage-auth-bottom">New here? <Link href={safeNextUrl(new URLSearchParams(window.location.search).get("next")) ? `/signup?next=${encodeURIComponent(safeNextUrl(new URLSearchParams(window.location.search).get("next"))!)}` : "/signup"} data-testid="link-signup">Sign up</Link></p>
       <p className="stage-auth-footnote">Have a business? <Link href="/for-vendors">List your experience</Link></p>
     </AuthLayout>

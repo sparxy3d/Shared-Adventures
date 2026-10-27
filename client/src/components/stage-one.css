@@ -293,6 +293,12 @@
 .stage-auth-bottom { margin: 18px 0 0; padding-top: 15px; border-top: 1px solid #e8e5e2; color: #64748b; font-size: 14px; }
 .stage-auth-bottom a { margin-left: 4px; }
 .stage-auth-footnote a { color: #80330c; font-weight: 700; text-underline-offset: 4px; }
+.stage-login .stage-submit,
+.stage-login .stage-submit:hover { color: #fff !important; }
+.stage-login .stage-social-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.stage-login .stage-social { min-width: 0; min-height: 44px; border-color: #ded9d4 !important; background: #fff !important; color: #5d625f !important; font-size: 13px; }
+.stage-login .stage-social:disabled { color: #5d625f !important; }
+.stage-login .stage-social-coming-soon { margin: 5px 0 0; color: #64748b; text-align: center; font-size: 13px; line-height: 1.4; }
 .stage-phone-input { min-height: 48px; display: flex; align-items: center; overflow: hidden; border: 1px solid #d8d5d2; border-radius: 9px; background: white; }
 .stage-phone-input:focus-within { border-color: #a84311; box-shadow: 0 0 0 3px #ff6b2433; }
 .stage-phone-input > span { padding: 0 13px; border-right: 1px solid #e8e5e2; color: #171717; font-size: 14px; font-weight: 700; }
@@ -371,4 +377,8 @@
     transition-duration: .01ms !important;
     animation-duration: .01ms !important;
   }
+}
+@media (max-width: 390px) {
+  .stage-login .stage-social-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stage-login .stage-social { padding-inline: 5px; }
 }
