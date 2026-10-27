@@ -3,7 +3,7 @@ import { EXPERIENCE_IMAGES, IDEAL_FOR_TAGS, SUPPORTED_CITIES } from "@shared/cat
 import { apiRequest } from "@/lib/queryClient";
 
 export type ListingStatus = "draft" | "published" | "unpublished";
-export type ListingInput = Pick<Experience, "title" | "category" | "description" | "locationText" | "region" | "city" | "durationMinutes" | "priceAmount" | "capacity" | "ageMin" | "safetyNotes" | "idealForTags" | "status" | "imageUrl">;
+export type ListingInput = Pick<Experience, "title" | "category" | "description" | "locationText" | "region" | "city" | "durationMinutes" | "priceAmount" | "visitorPriceUsd" | "capacity" | "ageMin" | "safetyNotes" | "idealForTags" | "status" | "imageUrl">;
 export const EXPERIENCE_IMAGE_CHOICES = EXPERIENCE_IMAGES;
 export const IDEAL_FOR = IDEAL_FOR_TAGS;
 export const CITY_CHOICES = SUPPORTED_CITIES.map(city => city.name);
@@ -17,7 +17,7 @@ export function listingPayload(input: ListingInput): ListingInput {
     title: input.title.trim(), category: input.category, description: input.description || "",
     locationText: input.locationText || "",
     region: input.region || "", city: input.city || "", durationMinutes: input.durationMinutes ?? null,
-    priceAmount: input.priceAmount ?? null, capacity: input.capacity ?? null,
+    priceAmount: input.priceAmount ?? null, visitorPriceUsd: input.visitorPriceUsd ?? null, capacity: input.capacity ?? null,
     ageMin: input.ageMin ?? null, safetyNotes: input.safetyNotes || "",
     idealForTags: [...(input.idealForTags || [])], status: input.status, imageUrl: input.imageUrl || null,
   };
@@ -29,7 +29,7 @@ export async function createListing(input: ListingInput, adminVendorId?: number)
 }
 export async function updateListing(id: number, input: Partial<ListingInput>, admin = false): Promise<Experience> {
   const allowed: Partial<ListingInput> = {};
-  const keys: (keyof ListingInput)[] = ["title","category","description","locationText","region","city","durationMinutes","priceAmount","capacity","ageMin","safetyNotes","idealForTags","status","imageUrl"];
+  const keys: (keyof ListingInput)[] = ["title","category","description","locationText","region","city","durationMinutes","priceAmount","visitorPriceUsd","capacity","ageMin","safetyNotes","idealForTags","status","imageUrl"];
   keys.forEach((key) => { if (key in input) (allowed as Record<string, unknown>)[key] = input[key]; });
   const response = await apiRequest("PATCH", `${admin ? "/api/admin" : "/api/vendor"}/experiences/${id}`, allowed);
   return response.json();
@@ -46,7 +46,7 @@ export async function duplicateListing(exp: Experience): Promise<Experience> {
   const allow: ListingInput = {
     title: `${exp.title.slice(0, 53)} (copy)`, category: exp.category, description: exp.description || "",
     locationText: exp.locationText || "", region: exp.region || "", city: exp.city || "",
-    durationMinutes: exp.durationMinutes, priceAmount: exp.priceAmount, capacity: exp.capacity,
+    durationMinutes: exp.durationMinutes, priceAmount: exp.priceAmount, visitorPriceUsd: exp.visitorPriceUsd, capacity: exp.capacity,
     ageMin: exp.ageMin, safetyNotes: exp.safetyNotes || "", idealForTags: exp.idealForTags || [],
     status: "draft", imageUrl: exp.imageUrl || "",
   };

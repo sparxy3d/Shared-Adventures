@@ -11,6 +11,7 @@ import { formatPrice } from "@/lib/currency";
 import { memberBookingDate } from "@/lib/member-dates";
 import { queryClient } from "@/lib/queryClient";
 import { sessionBookable } from "@/lib/activity-sessions";
+import { formatLkr, formatUsd, validExchangeRate } from "@/lib/pricing";
 import "./booking-request-stage-three.css";
 
 class RequestError extends Error {
@@ -24,7 +25,9 @@ export default function BookingRequestDialog({ flow }: { flow: ActivityBooking }
   const [guestDetails, setGuestDetails] = useState({ name: "", phone: "", email: "" });
   const activity = flow.activity.data;
   const user = flow.auth.user;
-  const detailsComplete = activity?.priceAmount != null && flow.capacity !== null;
+  const needsExchangeRate = activity?.visitorPriceUsd != null && flow.visitorCount > 0 &&
+    !validExchangeRate(flow.pricingConfig.usdToLkrRate);
+  const detailsComplete = activity?.priceAmount != null && flow.capacity !== null && !!flow.pricing && !needsExchangeRate;
   const request = useMutation({
     mutationFn: async () => {
       if (!activity || !flow.selectedSlot || !user || user.role !== "customer") throw new RequestError(401);
@@ -32,7 +35,14 @@ export default function BookingRequestDialog({ flow }: { flow: ActivityBooking }
       if (!sessionBookable(flow.selectedSlot, flow.qty)) throw new RequestError(409);
       const response = await fetch("/api/bookings", {
         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ experienceId: activity.id, slotId: flow.selectedSlot.id, qty: flow.qty, customerNote: note.trim() || null }),
+         body: JSON.stringify({
+           experienceId: activity.id,
+           slotId: flow.selectedSlot.id,
+           qty: flow.qty,
+           customerNote: note.trim() || null,
+           residentCount: flow.residentCount,
+           visitorCount: flow.visitorCount,
+         }),
       });
       if (!response.ok) throw new RequestError(response.status);
       return response.json();
@@ -44,6 +54,10 @@ export default function BookingRequestDialog({ flow }: { flow: ActivityBooking }
     },
     onError: (failure) => {
       if (failure instanceof RequestError && failure.status === 409) { setError(""); flow.conflict(); return; }
+      if (failure instanceof RequestError && failure.status === 400) {
+        setError("Pricing is unavailable or the group breakdown could not be validated. Please review the counts and try again.");
+        return;
+      }
       if (failure instanceof RequestError && failure.status === 401) {
         setStep(1); setError("Please log in to send your request.");
         void queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
@@ -70,7 +84,7 @@ export default function BookingRequestDialog({ flow }: { flow: ActivityBooking }
     <DialogContent className="booking-request-stage-three" onEscapeKeyDown={event => { if (request.isPending) event.preventDefault(); }} onInteractOutside={event => { if (request.isPending) event.preventDefault(); }}>
       <DialogHeader><DialogTitle>{title}</DialogTitle><DialogDescription>Step {step} of 3 · Request only, no payment</DialogDescription></DialogHeader>
       {flow.auth.isLoading ? <Skeleton className="h-40 bg-slate-200" /> : flow.auth.error ? <div role="alert"><p>We couldn’t load your account.</p><button className="br-secondary" onClick={() => flow.auth.retry()}>Retry</button></div> : user && user.role !== "customer" ? <RequireRole role="customer"><span /></RequireRole> : <>
-        {!detailsComplete && step !== 3 && <div className="br-error"><p>The price or group capacity hasn’t been listed yet.</p><Link className="br-secondary" href="/search">Explore other activities</Link></div>}
+        {!detailsComplete && step !== 3 && <div className="br-error"><p>{needsExchangeRate ? "Visitor pricing is temporarily unavailable because the exchange rate has not been published." : "The price or group capacity hasn’t been listed yet."}</p><Link className="br-secondary" href="/search">Explore other activities</Link></div>}
         {error && <div role="alert" className="br-error"><p>{error}</p>{step === 2 && <button className="br-secondary" disabled={request.isPending} onClick={() => request.mutate()}>Retry</button>}</div>}
         {step === 1 && (user ? <div className="br-stack">
           <label>Full name<input readOnly value={user.fullName} /></label>
@@ -92,7 +106,33 @@ export default function BookingRequestDialog({ flow }: { flow: ActivityBooking }
           <h3>{activity.title}</h3>
           {flow.selectedSlot && <p>{memberBookingDate(flow.selectedSlot.date, flow.selectedSlot.startTime.slice(0, 5))}</p>}
           <p>{flow.qty} {flow.qty === 1 ? "person" : "people"}</p>
-          <p className="br-total">{activity.priceAmount == null ? "Price not listed" : formatPrice(activity.priceAmount * flow.qty, "LKR")}</p>
+          <fieldset className="br-counts">
+            <legend>Who is in your group?</legend>
+            <label>
+              <span>Sri Lankans and residents</span>
+              <input type="number" min="0" max={flow.qty} step="1" value={flow.residentCount}
+                aria-label="Number of Sri Lankan citizens and residents"
+                onChange={event => flow.setResidentCount(Number(event.target.value))} />
+            </label>
+            <label>
+              <span>Visitors</span>
+              <input type="number" min="0" max={flow.qty} step="1" value={flow.visitorCount}
+                aria-label="Number of visitors"
+                onChange={event => flow.setVisitorCount(Number(event.target.value))} />
+            </label>
+            <small>Counts always add up to your group of {flow.qty}.</small>
+          </fieldset>
+          <div className="br-price-breakdown">
+            {activity.priceAmount == null || !flow.pricing ? <p className="br-total">Pricing unavailable</p> : <>
+              <p>{flow.residentCount} resident{flow.residentCount === 1 ? "" : "s"} × {formatLkr(activity.priceAmount)}{` = ${formatLkr(flow.pricing.residentSubtotal)}`}</p>
+              {flow.visitorCount > 0 && <p>{flow.visitorCount} visitor{flow.visitorCount === 1 ? "" : "s"} × {activity.visitorPriceUsd == null ? formatLkr(activity.priceAmount) : formatUsd(activity.visitorPriceUsd)}
+                {activity.visitorPriceUsd != null && validExchangeRate(flow.pricingConfig.usdToLkrRate) && ` at ${flow.pricingConfig.usdToLkrRate.toLocaleString("en-US", { maximumFractionDigits: 6 })} LKR per USD`}
+                {` = ${formatLkr(flow.pricing.visitorSubtotal)}`}
+              </p>}
+              <p className="br-total">{formatLkr(flow.pricing.totalAmount)}</p>
+            </>}
+          </div>
+          {flow.residentCount > 0 && <p className="br-residency-note">Sri Lankans and residents: bring your NIC, Sri Lankan passport or resident visa. The vendor will check it when you arrive.</p>}
           <p>No payment now. The vendor usually confirms your request within a few hours.</p>
           <label>Note to the vendor (optional)<textarea maxLength={1000} value={note} onChange={event => setNote(event.target.value)} /></label>
           {!user && <div className="br-error">Guest requests aren’t available to send yet. <Link href={authUrl("/login")}>Log in to send your request</Link></div>}

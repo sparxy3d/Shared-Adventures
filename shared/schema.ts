@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, customType } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, customType, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -8,6 +8,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   fullName: text("full_name").notNull(),
   phone: text("phone"),
+  isSriLankanResident: boolean("is_sri_lankan_resident").notNull().default(true),
   role: text("role").notNull().default("customer"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -42,6 +43,8 @@ export const vendors = pgTable("vendors", {
   contactPhone: text("contact_phone"),
   verificationStatus: text("verification_status").notNull().default("pending"),
   takingBookings: boolean("taking_bookings").notNull().default(true),
+  firstListingPublishedAt: timestamp("first_listing_published_at", { withTimezone: true }),
+  commissionOverrideRate: numeric("commission_override_rate", { precision: 5, scale: 2 }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -78,7 +81,8 @@ export const experiences = pgTable("experiences", {
   city: text("city"),
   durationMinutes: integer("duration_minutes"),
   priceAmount: integer("price_amount"),
-  currencyCode: text("currency_code").default("USD"),
+  currencyCode: text("currency_code").default("LKR"),
+  visitorPriceUsd: integer("visitor_price_usd"),
   capacity: integer("capacity"),
   ageMin: integer("age_min"),
   safetyNotes: text("safety_notes"),
@@ -132,7 +136,15 @@ export const bookings = pgTable("bookings", {
   startTime: text("start_time"),
   qty: integer("qty").notNull().default(1),
   totalAmount: integer("total_amount"),
-  currencyCode: text("currency_code").default("USD"),
+  currencyCode: text("currency_code").default("LKR"),
+  residentCount: integer("resident_count"),
+  visitorCount: integer("visitor_count"),
+  lkrUnitPrice: integer("lkr_unit_price"),
+  usdUnitPrice: integer("usd_unit_price"),
+  exchangeRateUsed: numeric("exchange_rate_used", { precision: 14, scale: 6 }),
+  commissionRateApplied: numeric("commission_rate_applied", { precision: 5, scale: 2 }),
+  commissionAmountLkr: integer("commission_amount_lkr"),
+  vendorNetAmountLkr: integer("vendor_net_amount_lkr"),
   status: text("status").notNull().default("requested"),
   customerNote: text("customer_note"),
   vendorNote: text("vendor_note"),
@@ -142,6 +154,20 @@ export const bookings = pgTable("bookings", {
 export const insertBookingSchema = createInsertSchema(bookings).omit({ id: true, createdAt: true });
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
 export type Booking = typeof bookings.$inferSelect;
+
+export const pricingSettings = pgTable("pricing_settings", {
+  id: serial("id").primaryKey(),
+  introductoryRate: numeric("introductory_rate", { precision: 5, scale: 2 }).notNull().default("10"),
+  standardRate: numeric("standard_rate", { precision: 5, scale: 2 }).notNull().default("15"),
+  introductoryMonths: integer("introductory_months").notNull().default(3),
+  usdToLkrRate: numeric("usd_to_lkr_rate", { precision: 14, scale: 6 }),
+  exchangeRateUpdatedAt: timestamp("exchange_rate_updated_at", { withTimezone: true }),
+  exchangeRateUpdatedBy: integer("exchange_rate_updated_by").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+export const insertPricingSettingsSchema = createInsertSchema(pricingSettings).omit({ id: true, createdAt: true });
+export type InsertPricingSettings = z.infer<typeof insertPricingSettingsSchema>;
+export type PricingSettings = typeof pricingSettings.$inferSelect;
 
 export const favorites = pgTable("favorites", {
   id: serial("id").primaryKey(),

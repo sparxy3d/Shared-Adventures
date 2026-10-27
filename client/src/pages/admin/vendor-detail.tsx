@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "wouter";
 import { ArrowLeft, Building2, CalendarDays, KeyRound, ListChecks, Save, ShieldCheck, Users } from "lucide-react";
@@ -42,6 +42,7 @@ export default function VendorDetail() {
   const vendor = vendorQuery.data;
   const experiencesQuery = useQuery<Experience[]>({ queryKey: ["/api/admin/vendors", vendorId, "experiences"], enabled: activeTab === "listings" && !listingParam });
   const [profile, setProfile] = useState({ businessName: "", about: "", city: "", region: "", address: "", contactEmail: "", contactPhone: "" });
+  const [commissionOverride, setCommissionOverride] = useState("");
   const [initialized, setInitialized] = useState<number | null>(null);
   const [confirmation, setConfirmation] = useState<"pause" | "reset" | null>(null);
   const [credential, setCredential] = useState<{ email: string; temporaryPassword: string } | null>(null);
@@ -53,6 +54,7 @@ export default function VendorDetail() {
       city: vendor.city || "", region: vendor.region || "", address: vendor.address || "",
       contactEmail: vendor.contactEmail || "", contactPhone: vendor.contactPhone || "",
     });
+    setCommissionOverride(vendor.commissionOverrideRate == null ? "" : String(vendor.commissionOverrideRate));
     setInitialized(vendor.id);
   }, [vendor, initialized]);
 
@@ -73,6 +75,26 @@ export default function VendorDetail() {
     },
     onError: () => toast({ title: "Couldn’t save vendor profile", description: "Your edits are still here. Retry when ready.", variant: "destructive" }),
   });
+  const commissionMutation = useMutation({
+    mutationFn: async (commissionOverrideRate: number | null) => { await apiRequest("PATCH", `/api/admin/vendors/${vendorId}/commission`, { commissionOverrideRate }); },
+    onSuccess: async (_updated, commissionOverrideRate) => {
+      client.setQueryData<DetailVendor>(["/api/admin/vendors", vendorId], (current) => current ? {
+        ...current, commissionOverrideRate: commissionOverrideRate === null ? null : String(commissionOverrideRate),
+      } : current);
+      await client.invalidateQueries({ queryKey: ["/api/admin/vendors"] });
+      toast({ title: "Commission override saved", description: "The vendor’s future bookings will use the updated rate." });
+    },
+    onError: () => toast({ title: "Could not save commission override", description: "Your entry is still here. Please retry.", variant: "destructive" }),
+  });
+  const saveCommission = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmed = commissionOverride.trim();
+    if (trimmed && (!/^\d+(?:\.\d{1,2})?$/.test(trimmed) || Number(trimmed) > 100)) {
+      commissionMutation.reset();
+      return;
+    }
+    commissionMutation.mutate(trimmed ? Number(trimmed) : null);
+  };
   const statusMutation = useMutation({
     mutationFn: (status: "paused" | "approved") => apiRequest("POST", `/api/admin/vendors/${vendorId}/${status === "paused" ? "pause" : "resume"}`),
     onSuccess: async (_data, status) => {
@@ -125,6 +147,15 @@ export default function VendorDetail() {
         <label className="av-field av-field-full"><span>About the business</span><textarea rows={5} maxLength={4000} value={profile.about} onChange={(e)=>setProfile((value)=>({...value,about:e.target.value}))}/><small>Application and accepted-terms metadata is preserved when saving.</small></label>
         <div className="av-form-actions"><button className="av-button" type="submit" disabled={saveProfile.isPending||!profile.businessName.trim()}><Save size={16}/>{saveProfile.isPending?"Saving…":"Save profile"}</button></div>
       </form>
+      <section className="av-commission-box" aria-labelledby="av-commission-heading">
+        <div><p className="av-kicker">Commission</p><h3 id="av-commission-heading">Vendor rate override</h3><p>Leave blank to use the global introductory and standard commission settings.</p></div>
+        <form className="av-commission-form" onSubmit={saveCommission}>
+          <label className="av-field"><span>Override commission (%)</span><input type="number" inputMode="decimal" min="0" max="100" step="0.01" placeholder="Use global rate" value={commissionOverride} onChange={(event)=>setCommissionOverride(event.target.value)} aria-invalid={!!commissionOverride.trim()&&(!/^\d+(?:\.\d{1,2})?$/.test(commissionOverride.trim())||Number(commissionOverride)>100)} /><small>Enter 0 to 100, with up to 2 decimal places. Current saved value: {vendor.commissionOverrideRate == null ? "Global rate" : `${vendor.commissionOverrideRate}%`}.</small></label>
+          {!!commissionOverride.trim()&&(!/^\d+(?:\.\d{1,2})?$/.test(commissionOverride.trim())||Number(commissionOverride)>100)&&<div className="av-commission-error" role="alert">Enter a commission from 0 to 100 with up to 2 decimal places.</div>}
+          {commissionMutation.isError&&<div className="av-commission-error" role="alert">The override was not saved. Your entry remains here. <button type="submit">Retry</button></div>}
+          <button className="av-button" type="submit" disabled={commissionMutation.isPending|| (!!commissionOverride.trim()&&(!/^\d+(?:\.\d{1,2})?$/.test(commissionOverride.trim())||Number(commissionOverride)>100))}>{commissionMutation.isPending?"Saving…":"Save commission"}</button>
+        </form>
+      </section>
       <section className="av-metadata"><h3>Application record · preserved</h3><div className="av-meta-grid"><div><small>Terms version</small><strong>{metadata.termsVersion}</strong></div><div><small>Accepted</small><strong>{metadata.termsDate}</strong></div><div><small>Approval date</small><strong>{vendor.approvedAt ? new Date(vendor.approvedAt).toLocaleDateString("en-LK",{dateStyle:"medium",timeZone:"Asia/Colombo"}) : "Not recorded"}</strong></div><div><small>Original application</small><p>{metadata.metadata}</p></div></div></section>
     </section>}
 

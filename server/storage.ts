@@ -1,7 +1,7 @@
 import { db } from "./db";
 import { eq, and, ilike, desc, sql, inArray, gte, lte, ne, getTableColumns } from "drizzle-orm";
 import {
-  users, countries, vendors, experiences, vendorDocuments,
+  users, countries, vendors, experiences, vendorDocuments, pricingSettings,
   availabilitySlots, bookings, favorites,
   type InsertUser, type User, type InsertCountry, type Country,
   type InsertVendor, type Vendor, type InsertExperience, type Experience,
@@ -12,6 +12,7 @@ import { GROUP_MIN_SPOTS } from "@shared/catalog";
 import { colomboToday, colomboNowHHMM, colomboDayOfWeek, addDays, addMinutesHHMM, normaliseHHMM } from "./time";
 import { adminInsights, approvalDate, withApprovalDate } from "./admin-insights";
 import type { DocumentUpload } from "./vendor-documents";
+import { calculatePricing, commissionForVendor } from "@shared/pricing";
 
 export type SafeUser = Omit<User, "password">;
 
@@ -320,13 +321,59 @@ export class DatabaseStorage {
   }
 
   async createExperience(data: InsertExperience): Promise<Experience> {
-    const [exp] = await db.insert(experiences).values(data).returning();
-    return exp;
+    return db.transaction(async tx => {
+      const [exp] = await tx.insert(experiences).values(data).returning();
+      if (exp.status === "published") await tx.update(vendors).set({
+        firstListingPublishedAt: sql`coalesce(${vendors.firstListingPublishedAt}, now())`,
+      }).where(eq(vendors.id, exp.vendorId));
+      return exp;
+    });
   }
 
   async updateExperience(id: number, data: Partial<InsertExperience>): Promise<Experience | undefined> {
-    const [exp] = await db.update(experiences).set(data).where(eq(experiences.id, id)).returning();
-    return exp;
+    return db.transaction(async tx => {
+      const [exp] = await tx.update(experiences).set(data).where(eq(experiences.id, id)).returning();
+      if (exp && exp.status === "published") await tx.update(vendors).set({
+        firstListingPublishedAt: sql`coalesce(${vendors.firstListingPublishedAt}, now())`,
+      }).where(eq(vendors.id, exp.vendorId));
+      return exp;
+    });
+  }
+
+  async getPricingSettings() {
+    const [row] = await db.select().from(pricingSettings).where(eq(pricingSettings.id, 1));
+    if (!row) throw new Error("Pricing settings migration is required");
+    const [admin] = row.exchangeRateUpdatedBy === null ? [] :
+      await db.select({ fullName: users.fullName }).from(users).where(eq(users.id, row.exchangeRateUpdatedBy));
+    return {
+      introductoryRate: Number(row.introductoryRate), standardRate: Number(row.standardRate),
+      introductoryMonths: row.introductoryMonths,
+      usdToLkrRate: row.usdToLkrRate === null ? null : Number(row.usdToLkrRate),
+      exchangeRateUpdatedAt: row.exchangeRateUpdatedAt,
+      exchangeRateUpdatedBy: row.exchangeRateUpdatedBy,
+      exchangeRateUpdatedByName: admin?.fullName ?? null,
+    };
+  }
+
+  async updatePricingSettings(data: {
+    introductoryRate?: number; standardRate?: number; introductoryMonths?: number; usdToLkrRate?: number | null;
+  }, adminId: number) {
+    await db.update(pricingSettings).set({
+      ...(data.introductoryRate === undefined ? {} : { introductoryRate: String(data.introductoryRate) }),
+      ...(data.standardRate === undefined ? {} : { standardRate: String(data.standardRate) }),
+      ...(data.introductoryMonths === undefined ? {} : { introductoryMonths: data.introductoryMonths }),
+      ...(data.usdToLkrRate === undefined ? {} : {
+        usdToLkrRate: data.usdToLkrRate === null ? null : String(data.usdToLkrRate),
+        exchangeRateUpdatedAt: new Date(), exchangeRateUpdatedBy: adminId,
+      }),
+    }).where(eq(pricingSettings.id, 1));
+    return this.getPricingSettings();
+  }
+
+  async setVendorCommission(id: number, rate: number | null) {
+    const [vendor] = await db.update(vendors).set({ commissionOverrideRate: rate === null ? null : String(rate) })
+      .where(eq(vendors.id, id)).returning();
+    return vendor;
   }
 
   // ---------- slots ----------
@@ -576,13 +623,33 @@ export class DatabaseStorage {
     return booking;
   }
 
-  async createBookingRequest(experienceId: number, slotId: number, qty: number, customerId: number, customerNote: string | null) {
+  async createBookingRequest(experienceId: number, slotId: number, qty: number, customerId: number, customerNote: string | null,
+    counts?: { residentCount: number; visitorCount: number }) {
     return db.transaction(async tx => {
       const [exp] = await tx.select().from(experiences).where(eq(experiences.id, experienceId)).for("share");
       if (!exp || exp.status !== "published") return { error: "This activity is not available", status: 400 } as const;
       const [vendor] = await tx.select().from(vendors).where(eq(vendors.id, exp.vendorId)).for("update");
       if (!vendor || vendor.verificationStatus !== "approved") return { error: "This activity is not available", status: 400 } as const;
       if (!vendor.takingBookings) return { error: "Not taking bookings right now", status: 409 } as const;
+      const [member] = await tx.select({ isSriLankanResident: users.isSriLankanResident }).from(users).where(eq(users.id, customerId));
+      const residentCount = counts?.residentCount ?? (member?.isSriLankanResident ? qty : 0);
+      const visitorCount = counts?.visitorCount ?? (member?.isSriLankanResident ? 0 : qty);
+      if (!Number.isInteger(residentCount) || !Number.isInteger(visitorCount) || residentCount < 0 || visitorCount < 0
+        || residentCount + visitorCount !== qty) return { error: "The price groups must add up to your group size", status: 400 } as const;
+      const [settings] = await tx.select().from(pricingSettings).where(eq(pricingSettings.id, 1)).for("share");
+      if (!settings) throw new Error("Pricing settings migration is required");
+      if (exp.priceAmount === null) return { error: "This activity has no price set", status: 400 } as const;
+      let pricing;
+      try {
+        pricing = calculatePricing({
+          residentCount, visitorCount, priceAmount: exp.priceAmount, visitorPriceUsd: exp.visitorPriceUsd,
+          usdToLkrRate: settings.usdToLkrRate === null ? null : Number(settings.usdToLkrRate),
+        });
+      } catch (error) {
+        return { error: error instanceof Error ? error.message : "This booking price is unavailable", status: 400 } as const;
+      }
+      const commission = commissionForVendor(vendor, settings);
+      const commissionAmountLkr = Math.round(pricing.totalAmount * Math.round(commission.rate * 100) / 10_000);
       if (exp.capacity && qty > exp.capacity) return { error: "Your group exceeds this activity's capacity", status: 400 } as const;
       const [slot] = await tx.select().from(availabilitySlots).where(eq(availabilitySlots.id, slotId)).for("update");
       if (!slot || slot.experienceId !== exp.id) return { error: "Invalid session", status: 400 } as const;
@@ -593,7 +660,11 @@ export class DatabaseStorage {
       await tx.update(availabilitySlots).set({ capacity: slot.capacity - qty }).where(eq(availabilitySlots.id, slot.id));
       const [booking] = await tx.insert(bookings).values({
         experienceId: exp.id, slotId: slot.id, bookingDate: slot.date, startTime: normaliseHHMM(slot.startTime),
-        qty, totalAmount: (exp.priceAmount || 0) * qty, currencyCode: "LKR",
+        qty, totalAmount: pricing.totalAmount, currencyCode: "LKR",
+        residentCount, visitorCount, lkrUnitPrice: exp.priceAmount, usdUnitPrice: exp.visitorPriceUsd,
+        exchangeRateUsed: visitorCount > 0 && exp.visitorPriceUsd !== null ? settings.usdToLkrRate : null,
+        commissionRateApplied: String(commission.rate), commissionAmountLkr,
+        vendorNetAmountLkr: pricing.totalAmount - commissionAmountLkr,
         customerProfileId: customerId, customerNote, status: "requested",
       }).returning();
       return { booking };

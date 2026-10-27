@@ -15,6 +15,7 @@
 .activity-card-bottom p { font-size: 15px; margin: 0; }
 .activity-card-bottom strong { font-size: 17px; color: #171717; }
 .activity-card-bottom p span { color: #64748B; font-size: 13px; }
+.activity-card-bottom small { display: block; margin-top: 4px; font-size: 13px; color: #64748B; }
 .activity-card-view { min-height: 44px; min-width: 44px; display: inline-flex; gap: 4px; align-items: center; font-size: 14px; font-weight: 600; color: #171717; text-decoration: underline; text-decoration-color: #FF6B24; text-underline-offset: 4px; }
 .activity-card :focus-visible { outline: 2px solid #171717; outline-offset: 3px; }
 .activity-card-error { font-size: 14px; border-top: 1px solid #e2e8f0; margin-top: 8px; padding-top: 8px; }

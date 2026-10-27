@@ -9,6 +9,9 @@ import { CATEGORIES, SUPPORTED_CITIES } from "@shared/catalog";
 import type { Activity } from "@/lib/discovery";
 import { sessionInstant, sriLankaToday } from "@/lib/discovery";
 import "@/components/search-stage-three.css";
+import { useAuth } from "@/hooks/use-auth";
+import { usePricingConfig } from "@/hooks/use-pricing-config";
+import { effectiveVisitorPriceLkr } from "@/lib/pricing";
 
 type SearchFilters = {
   city: string;
@@ -229,11 +232,11 @@ function FilterControls({
   );
 }
 
-function sortActivities(activities: Activity[], sort: SearchFilters["sort"]) {
+function sortActivities(activities: Activity[], sort: SearchFilters["sort"], visitor: boolean, rate: number | null) {
   return [...activities].sort((a, b) => {
     if (sort === "price") {
-      const aPrice = a.priceAmount ?? Number.POSITIVE_INFINITY;
-      const bPrice = b.priceAmount ?? Number.POSITIVE_INFINITY;
+      const aPrice = visitor ? effectiveVisitorPriceLkr(a.priceAmount, a.visitorPriceUsd, rate) ?? Number.POSITIVE_INFINITY : a.priceAmount ?? Number.POSITIVE_INFINITY;
+      const bPrice = visitor ? effectiveVisitorPriceLkr(b.priceAmount, b.visitorPriceUsd, rate) ?? Number.POSITIVE_INFINITY : b.priceAmount ?? Number.POSITIVE_INFINITY;
       return aPrice - bPrice || a.title.localeCompare(b.title);
     }
     const rawA = a.nextSession ? sessionInstant(a.nextSession) : Number.POSITIVE_INFINITY;
@@ -245,6 +248,8 @@ function sortActivities(activities: Activity[], sort: SearchFilters["sort"]) {
 }
 
 export default function SearchPage() {
+  const auth = useAuth();
+  const pricingConfig = usePricingConfig();
   const search = useSearch();
   const [, navigate] = useLocation();
   const filters = useMemo(() => filtersFromSearch(search), [search]);
@@ -324,14 +329,22 @@ export default function SearchPage() {
     if (!experiencesQuery.data) return [];
     const min = filters.minPrice ? Number(filters.minPrice) : null;
     const max = filters.maxPrice ? Number(filters.maxPrice) : null;
+    const visitor = !!auth.user && !auth.user.isSriLankanResident;
     return sortActivities(
       experiencesQuery.data.filter((activity) =>
-        (min === null || (activity.priceAmount !== null && activity.priceAmount >= min)) &&
-        (max === null || (activity.priceAmount !== null && activity.priceAmount <= max))
+        (() => {
+          const price = visitor
+            ? effectiveVisitorPriceLkr(activity.priceAmount, activity.visitorPriceUsd, pricingConfig.usdToLkrRate)
+            : activity.priceAmount;
+          return (min === null || (price !== null && price >= min)) &&
+            (max === null || (price !== null && price <= max));
+        })()
       ),
       filters.sort,
+      visitor,
+      pricingConfig.usdToLkrRate,
     );
-  }, [experiencesQuery.data, filters.minPrice, filters.maxPrice, filters.sort]);
+  }, [experiencesQuery.data, filters.minPrice, filters.maxPrice, filters.sort, auth.user?.isSriLankanResident, pricingConfig.usdToLkrRate]);
 
   const updateUrl = (next: SearchFilters) => {
     navigate(`/search?${toSearchParams(next).toString()}`);

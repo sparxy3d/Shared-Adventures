@@ -9,6 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatPrice } from "@/lib/currency";
 import { durationLabel, sessionChip, type Activity } from "@/lib/discovery";
+import { usePricingConfig } from "@/hooks/use-pricing-config";
+import { formatLkr, formatUsd, validExchangeRate } from "@/lib/pricing";
 import "./activity-card.css";
 
 interface SavedActivity { experienceId: number }
@@ -17,6 +19,7 @@ export default function ExperienceCard({ experience, saved, onRemove, removePend
   experience: Activity; saved?: boolean; onRemove?: () => void; removePending?: boolean; memberView?: boolean;
 }) {
   const { user, isLoading: authLoading, error: authError, retry: retryAuth } = useAuth();
+  const pricingConfig = usePricingConfig();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [error, setError] = useState("");
@@ -39,6 +42,11 @@ export default function ExperienceCard({ experience, saved, onRemove, removePend
     onError: () => setError("Your bucket list couldn’t be updated. Please try again."),
   });
   const chip = sessionChip(experience.nextSession, clock);
+  const visitorPrice = experience.visitorPriceUsd ?? null;
+  const visitorLkr = visitorPrice !== null && validExchangeRate(pricingConfig.usdToLkrRate)
+    ? visitorPrice * pricingConfig.usdToLkrRate : null;
+  const showingVisitorPrice = !!user && !user.isSriLankanResident && visitorLkr !== null;
+  const mainPrice = showingVisitorPrice ? formatUsd(visitorPrice as number) : formatPrice(experience.priceAmount, "LKR");
   const href = `/activity/${experience.id}`;
   function onHeart() {
     if (authError) { retryAuth(); return; }
@@ -72,7 +80,12 @@ export default function ExperienceCard({ experience, saved, onRemove, removePend
       <h3><Link href={href}>{experience.title}</Link></h3>
       <p className="activity-card-meta">{[experience.city, durationLabel(experience.durationMinutes)].filter(Boolean).join(" · ")}</p>
       <div className="activity-card-bottom">
-        <p><strong>{formatPrice(experience.priceAmount, "LKR")}</strong><span> / person</span></p>
+        <div>
+          <p><strong>{mainPrice}</strong><span>{showingVisitorPrice ? " per person" : " / person"}</span></p>
+          {showingVisitorPrice && <small>(about {formatLkr(visitorLkr as number)})</small>}
+          {!user && visitorPrice !== null && validExchangeRate(pricingConfig.usdToLkrRate) && <small>Visitors: {formatUsd(visitorPrice)}</small>}
+          {user && !user.isSriLankanResident && visitorPrice !== null && visitorLkr === null && <small>Resident price shown. Visitor pricing is unavailable right now.</small>}
+        </div>
         <Link href={href} className="activity-card-view" aria-label={`View ${experience.title}`}>View <ArrowUpRight size={16} aria-hidden="true" /></Link>
       </div>
       {(error || authError || favorites.isError) && <div role="alert" className="activity-card-error">

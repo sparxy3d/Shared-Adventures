@@ -5,21 +5,23 @@ import { ArrowLeft, CalendarDays, Check, ChevronDown, Save } from "lucide-react"
 import { CATEGORIES } from "@shared/catalog";
 import { CONTACT_DETAILS_MESSAGE, containsContactDetails } from "@shared/contact-policy";
 import type { AvailabilitySlot, Experience } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 import ExperienceCard from "@/components/experience-card";
 import type { Activity } from "@/lib/discovery";
 import { useToast } from "@/hooks/use-toast";
-import { CITY_CHOICES, EXPERIENCE_IMAGE_CHOICES, IDEAL_FOR, createListing, imageAlt, loadListing, loadListingSlots, updateListing, type ListingInput } from "@/lib/vendor-listings";
+import { CITY_CHOICES, EXPERIENCE_IMAGE_CHOICES, IDEAL_FOR, imageAlt, loadListing, loadListingSlots, updateListing, type ListingInput } from "@/lib/vendor-listings";
 import "@/components/vendor-editor-stage-five.css";
 
-type FormState = { title:string;category:string;description:string;locationText:string;city:string;region:string;durationMinutes:string;priceAmount:string;capacity:string;ageMin:string;safetyNotes:string;idealForTags:string[];imageUrl:string };
-const blank: FormState = { title:"",category:"sports",description:"",locationText:"",city:"",region:"",durationMinutes:"",priceAmount:"",capacity:"",ageMin:"",safetyNotes:"",idealForTags:[],imageUrl:"" };
-const toForm = (exp: Experience): FormState => ({ title:exp.title,category:exp.category,description:exp.description||"",locationText:exp.locationText||"",city:exp.city||"",region:exp.region||"",durationMinutes:exp.durationMinutes == null ? "" : String(exp.durationMinutes),priceAmount:exp.priceAmount == null ? "" : String(exp.priceAmount),capacity:exp.capacity == null ? "" : String(exp.capacity),ageMin:exp.ageMin == null ? "" : String(exp.ageMin),safetyNotes:exp.safetyNotes||"",idealForTags:exp.idealForTags||[],imageUrl:exp.imageUrl||"" });
+type FormState = { title:string;category:string;description:string;locationText:string;city:string;region:string;durationMinutes:string;priceAmount:string;differentVisitorPrice:boolean;visitorPriceUsd:string;capacity:string;ageMin:string;safetyNotes:string;idealForTags:string[];imageUrl:string };
+const blank: FormState = { title:"",category:"sports",description:"",locationText:"",city:"",region:"",durationMinutes:"",priceAmount:"",differentVisitorPrice:false,visitorPriceUsd:"",capacity:"",ageMin:"",safetyNotes:"",idealForTags:[],imageUrl:"" };
+const toForm = (exp: Experience): FormState => ({ title:exp.title,category:exp.category,description:exp.description||"",locationText:exp.locationText||"",city:exp.city||"",region:exp.region||"",durationMinutes:exp.durationMinutes == null ? "" : String(exp.durationMinutes),priceAmount:exp.priceAmount == null ? "" : String(exp.priceAmount),differentVisitorPrice:exp.visitorPriceUsd != null,visitorPriceUsd:exp.visitorPriceUsd == null ? "" : String(exp.visitorPriceUsd),capacity:exp.capacity == null ? "" : String(exp.capacity),ageMin:exp.ageMin == null ? "" : String(exp.ageMin),safetyNotes:exp.safetyNotes||"",idealForTags:exp.idealForTags||[],imageUrl:exp.imageUrl||"" });
 const num = (value: string) => value.trim() ? Number(value) : undefined;
-function listingFormData(form: FormState, status: string): ListingInput {
+type ListingPayload = ListingInput & { visitorPriceUsd: number | null };
+function listingFormData(form: FormState, status: string): ListingPayload {
   return {
     title: form.title.trim(), category: form.category, description: form.description, locationText: form.locationText,
     region: form.region || form.city, city: form.city, durationMinutes: num(form.durationMinutes) ?? null,
-    priceAmount: num(form.priceAmount) ?? null, capacity:num(form.capacity) ?? null, ageMin:num(form.ageMin) ?? null,
+    priceAmount: num(form.priceAmount) ?? null, visitorPriceUsd: form.differentVisitorPrice ? num(form.visitorPriceUsd) ?? null : null, capacity:num(form.capacity) ?? null, ageMin:num(form.ageMin) ?? null,
     safetyNotes:form.safetyNotes,idealForTags:form.idealForTags,status,imageUrl:form.imageUrl || null,
   };
 }
@@ -77,7 +79,7 @@ export default function ListingEditor({ adminVendorId, adminListingId, backHref 
     return false;
   };
   const integerErrors=useMemo(()=>({
-    price:!isValidInteger(form.priceAmount,0,10_000_000), capacity:!isValidInteger(form.capacity,1,10_000), duration:!isValidInteger(form.durationMinutes,0,1440), age:!isValidInteger(form.ageMin,0,120),
+    price:!isValidInteger(form.priceAmount,0,10_000_000)||form.priceAmount==="", visitorPrice:form.differentVisitorPrice&&(!/^\d+$/.test(form.visitorPriceUsd)||Number(form.visitorPriceUsd)<0||Number(form.visitorPriceUsd)>1_000_000), capacity:!isValidInteger(form.capacity,1,10_000), duration:!isValidInteger(form.durationMinutes,0,1440), age:!isValidInteger(form.ageMin,0,120),
   }),[form]);
   useEffect(()=>{if(listingQuery.data && !initialized){setForm(toForm(listingQuery.data));setInitialized(true);setDirty(false);}},[listingQuery.data,initialized]);
   useEffect(()=>{dirtyRef.current=dirty;},[dirty]);
@@ -124,11 +126,10 @@ export default function ListingEditor({ adminVendorId, adminListingId, backHref 
   const saveMutation=useMutation({
     mutationFn:async({status}:{status?:"draft"|"published"})=>{
       const data=listingFormData(form,status || listingQuery.data?.status || "draft");
-      if(editing) {
-        if(status===undefined || status===listingQuery.data?.status) delete (data as Partial<ListingInput>).status;
-        return updateListing(listingId,data,adminMode);
-      }
-      return createListing(data,adminVendorId);
+      if(editing && (status===undefined || status===listingQuery.data?.status)) delete (data as Partial<ListingInput>).status;
+      const endpoint=adminMode?(editing?`/api/admin/experiences/${listingId}`:"/api/admin/experiences"):(editing?`/api/vendor/experiences/${listingId}`:"/api/vendor/experiences");
+      const response=await apiRequest(editing?"PATCH":"POST",endpoint,adminMode&&!editing?{...data,vendorId:adminVendorId}:data);
+      return response.json() as Promise<Experience>;
     },
     onSuccess:async result=>{
       await client.invalidateQueries({queryKey:adminMode?["/api/admin/vendors",adminVendorId,"experiences"]:["/api/vendor/experiences"]});
@@ -156,7 +157,7 @@ export default function ListingEditor({ adminVendorId, adminListingId, backHref 
     setSubmitted(true);
     if(!checkContactPolicy())return;
     if(!minimalValid){document.getElementById(!validTitle?"listing-title":!validCategory?"listing-category":"listing-city")?.focus();return;}
-    if(Object.values(integerErrors).some(Boolean)){document.getElementById(integerErrors.price?"listing-price":integerErrors.capacity?"listing-capacity":integerErrors.duration?"listing-duration":"listing-age")?.focus();return;}
+     if(Object.values(integerErrors).some(Boolean)){document.getElementById(integerErrors.price?"listing-price":integerErrors.visitorPrice?"listing-visitor-price":integerErrors.capacity?"listing-capacity":integerErrors.duration?"listing-duration":"listing-age")?.focus();return;}
     if(status==="published" && !form.imageUrl){document.getElementById("section-photo")?.scrollIntoView({behavior:"smooth"});toast({title:"Choose a listing photo before publishing"});return;}
     lastSaveStatus.current=status;
     setActionError(null);
@@ -165,7 +166,7 @@ export default function ListingEditor({ adminVendorId, adminListingId, backHref 
   const publish=()=>{
     if(checkContactPolicy())publishMutation.mutate();
   };
-  const change=(key:keyof FormState,value:string|string[])=>{setForm(prev=>({...prev,[key]:value}));setDirty(true);setSaved("");setActionError(null);};
+  const change=<K extends keyof FormState>(key:K,value:FormState[K])=>{setForm(prev=>({...prev,[key]:value}));setDirty(true);setSaved("");setActionError(null);};
   const status=listingQuery.data?.status || "draft";
   const upcoming=slotsQuery.data?.some(slot=>slot.status==="open" && Date.parse(`${slot.date}T${slot.startTime}:00+05:30`)>=Date.now());
   const publishReady=editing && !!form.imageUrl && !!upcoming && (adminMode || vendor?.verificationStatus==="approved") && (adminMode || status!=="unpublished");
@@ -182,6 +183,7 @@ export default function ListingEditor({ adminVendorId, adminListingId, backHref 
     city: form.city || null,
     durationMinutes: num(form.durationMinutes) ?? null,
     priceAmount: num(form.priceAmount) ?? null,
+    visitorPriceUsd: form.differentVisitorPrice ? num(form.visitorPriceUsd) ?? null : null,
     currencyCode: "LKR",
     capacity: num(form.capacity) ?? null,
     ageMin: num(form.ageMin) ?? null,
@@ -224,7 +226,11 @@ export default function ListingEditor({ adminVendorId, adminListingId, backHref 
         <section id="section-group" className="v5-panel v5-section">
           <button type="button" className="v5-section-toggle" onClick={()=>toggle("group")} aria-expanded={expanded.group}><h2>02 · Group and price</h2><ChevronDown size={18}/></button>
           {expanded.group&&<div className="v5-fields">
-            <div className="v5-field"><label htmlFor="listing-price">Price per person (LKR)</label><input id="listing-price" inputMode="numeric" type="number" min="0" max="10000000" step="1" value={form.priceAmount} onBlur={()=>setTouched(old=>({...old,price:true}))} onChange={e=>change("priceAmount",e.target.value)} aria-invalid={(touched.price||submitted)&&integerErrors.price}/>{(touched.price||submitted)&&integerErrors.price&&<span className="v5-error-text">Use a whole LKR amount up to 10,000,000.</span>}</div>
+             <div className="v5-field"><label htmlFor="listing-price">Price for Sri Lankans and residents (LKR)</label><input id="listing-price" inputMode="numeric" type="number" min="0" max="10000000" step="1" value={form.priceAmount} onBlur={()=>setTouched(old=>({...old,price:true}))} onChange={e=>change("priceAmount",e.target.value)} aria-invalid={(touched.price||submitted)&&integerErrors.price}/>{(touched.price||submitted)&&integerErrors.price&&<span className="v5-error-text">Use a whole LKR amount up to 10,000,000.</span>}</div>
+             <div className="v5-field full">
+               <label className="v5-price-toggle"><input type="checkbox" checked={form.differentVisitorPrice} onChange={e=>change("differentVisitorPrice",e.target.checked)}/> Different price for foreign visitors</label>
+               {form.differentVisitorPrice&&<div className="v5-visitor-price-field"><label htmlFor="listing-visitor-price">Price for foreign visitors (USD)</label><input id="listing-visitor-price" inputMode="numeric" type="number" min="0" max="1000000" step="1" value={form.visitorPriceUsd} onBlur={()=>setTouched(old=>({...old,visitorPrice:true}))} onChange={e=>change("visitorPriceUsd",e.target.value)} aria-invalid={(touched.visitorPrice||submitted)&&integerErrors.visitorPrice} required/>{(touched.visitorPrice||submitted)&&integerErrors.visitorPrice&&<span className="v5-error-text">Enter a whole USD amount from 0 to 1,000,000.</span>}</div>}
+             </div>
             <div className="v5-field"><label htmlFor="listing-capacity">Group capacity</label><input id="listing-capacity" type="number" inputMode="numeric" min="1" max="10000" step="1" value={form.capacity} onBlur={()=>setTouched(old=>({...old,capacity:true}))} onChange={e=>change("capacity",e.target.value)} aria-invalid={(touched.capacity||submitted)&&integerErrors.capacity}/>{(touched.capacity||submitted)&&integerErrors.capacity&&<span className="v5-error-text">Enter a whole capacity from 1 to 10,000.</span>}</div>
             <div className="v5-field"><label htmlFor="listing-duration">Duration (minutes)</label><input id="listing-duration" type="number" inputMode="numeric" min="0" max="1440" step="1" value={form.durationMinutes} onBlur={()=>setTouched(old=>({...old,duration:true}))} onChange={e=>change("durationMinutes",e.target.value)} aria-invalid={(touched.duration||submitted)&&integerErrors.duration}/><span className="v5-hint">{form.durationMinutes && !integerErrors.duration ? `${Number(form.durationMinutes)/60} hours` : "Enter minutes; hours are shown for guests."}</span>{(touched.duration||submitted)&&integerErrors.duration&&<span className="v5-error-text">Use whole minutes from 0 to 1,440.</span>}</div>
           </div>}
@@ -247,7 +253,7 @@ export default function ListingEditor({ adminVendorId, adminListingId, backHref 
         <section id="section-preview" className="v5-panel v5-section">
           <button type="button" className="v5-section-toggle" onClick={()=>toggle("preview")} aria-expanded={expanded.preview}><h2>05 · Preview and publish</h2><ChevronDown size={18}/></button>
           {expanded.preview&&<><p className="v5-hint">A private view of the guest card. Save a photo and real open session before publishing.</p>
-            {form.priceAmount===""&&<p className="v5-price-placeholder">Enter a price to preview its place on the guest card.</p>}
+             {form.priceAmount===""&&<p className="v5-price-placeholder">Enter a price to preview its place on the guest card.</p>}
             <div className={`v5-card-inert${form.priceAmount===""?" no-price":""}`} aria-hidden="true" ref={previewCardRef}><ExperienceCard experience={previewExperience} saved/></div>
             <p className="v5-hint" aria-live="polite">{status==="published"?"Published · edits save directly to the live listing.":status==="unpublished"?"Unpublished by Free Spirit. Contact us.":publishReady?"Ready to publish once your draft changes are saved.":"Publishing requires business approval, a photo and an upcoming open session."}</p>
              {editing&&canChangeStatus&&status!=="published"&&<button className="v5-btn v5-primary" disabled={!publishReady||publishMutation.isPending||dirty} onClick={publish} title={dirty?"Save your details before publishing":!publishReady?(adminMode?"A photo and an upcoming open session are required":"Approval, a photo and an upcoming open session are required"):undefined}>Publish listing</button>}

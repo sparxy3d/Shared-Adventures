@@ -1,0 +1,40 @@
+.ad-pricing-page .ad-pricing-card { border-color:#ead8ca; }
+.ad-pricing-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+.ad-pricing-field { display:grid; align-content:start; gap:7px; color:#25352e; font-size:13px; font-weight:800; }
+.ad-pricing-field input { width:100%; min-height:46px; padding:10px 12px; border:1px solid #e2d4c7; border-radius:9px; background:#fffdfa; color:#24342d; font:inherit; font-size:14px; }
+.ad-pricing-field input:focus-visible { outline:3px solid #e79768; outline-offset:2px; }
+.ad-pricing-field input[aria-invalid="true"] { border-color:#bd5144; background:#fff9f7; }
+.ad-pricing-field small { color:#77827b; font-size:12px; font-weight:500; line-height:1.5; }
+.ad-pricing-audit { grid-column:1/-1; display:flex; gap:9px; align-items:center; padding:12px 14px; border-radius:9px; background:#f7f2eb; color:#68756d; font-size:12px; }
+.ad-pricing-audit svg { flex:none; color:#ba5a26; }.ad-pricing-audit strong { color:#293b32; }
+.ad-pricing-inline-error { grid-column:1/-1; margin:0; padding:11px 13px; border:1px solid #e7b8aa; border-radius:8px; background:#fff6f2; color:#9e392c; font-size:12px; line-height:1.5; }
+.ad-pricing-inline-error button { margin-left:5px; padding:0; border:0; background:transparent; color:inherit; font:inherit; font-weight:800; text-decoration:underline; cursor:pointer; }
+.ad-pricing-actions { grid-column:1/-1; display:flex; justify-content:flex-end; }
+.ad-pricing-actions .ad-button { min-height:45px; }
+.ad-pricing-error p { margin:7px 0 13px; }
+.ad-pricing-skeleton { height:235px; margin:0 0 16px; border:1px solid #eadfd4; border-radius:13px; background:linear-gradient(100deg,#f3ebe3,#fffaf5); animation:ad-price-pulse 1.4s ease-in-out infinite alternate; }
+.ad-pricing-skeleton:first-of-type { height:110px; }
+@keyframes ad-price-pulse { to { opacity:.58; } }
+.ad-ops-card { margin-top:16px; }
+.ad-setting-row { display:flex; gap:13px; align-items:flex-start; padding:16px 0; border-bottom:1px solid #edf0e9; }
+.ad-setting-row .ad-state-mark { margin:0; width:36px; height:36px; flex:0 0 36px; }
+.ad-setting-copy { flex:1; }
+.ad-setting-title { display:flex; justify-content:space-between; gap:8px; align-items:center; }
+.ad-setting-title strong { font-size:13px; }
+.ad-setting-note { margin-top:5px; color:#819087; font-size:11px; line-height:1.5; }
+.ad-service-footprint { padding-top:18px; }
+.ad-city-list { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:19px; }
+.ad-city-list .ad-chip { display:flex; align-items:center; gap:5px; cursor:default; }
+.ad-support-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding-top:14px; border-top:1px solid #edf0e9; }
+.ad-support-row .ad-cell-title { display:flex; align-items:center; gap:7px; }
+.ad-pricing-back { margin-top:14px; text-align:right; }
+.ad-exchange-warning { margin-bottom:15px; border-color:#e8b987; background:#fff6e9; color:#764a20; }
+.ad-exchange-warning strong { margin-right:4px; color:#733b17; }
+.ad-exchange-warning a { margin-left:5px; color:#8f451d; font-weight:800; text-decoration:underline; }
+@media(max-width:640px) {
+  .ad-pricing-form { grid-template-columns:1fr; }
+  .ad-pricing-audit,.ad-pricing-inline-error,.ad-pricing-actions { grid-column:1; }
+  .ad-pricing-actions .ad-button { width:100%; }
+  .ad-setting-title { align-items:flex-start; }
+}
+@media(prefers-reduced-motion:reduce) { .ad-pricing-skeleton { animation:none; } }

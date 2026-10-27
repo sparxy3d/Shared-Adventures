@@ -218,6 +218,9 @@
 .v4-group-pill span { display: flex; width: 100%; align-items: center; justify-content: center; min-height: 42px; padding: 0 10px; border: 1px solid #e5ddd6; border-radius: 999px; background: #fffdfa; color: #424943; font-size: 13px; font-weight: 700; text-align: center; transition: background .16s ease, border-color .16s ease, color .16s ease; }
 .v4-group-pill input:checked + span { border-color: var(--v4-orange); background: var(--v4-orange); color: #fff; }
 .v4-group-pill input:focus-visible + span { outline: 3px solid #f3b28c; outline-offset: 2px; }
+.v4 .v4-field .v4-visitor-price-choice { display: flex; gap: 24px; }
+.v4 .v4-field .v4-visitor-price-choice label { display: flex; align-items: center; gap: 12px; min-height: 44px; margin: 0; cursor: pointer; }
+.v4-visitor-price-choice input { width: 18px; height: 18px; accent-color: var(--v4-orange); }
 .v4-document-fieldset { min-width: 0; border: 0; padding: 0; margin: 0; }
 .v4-privacy-copy { margin: 0 0 14px; max-width: 760px; color: #58645d; font-size: 13px; line-height: 1.65; }
 .v4-document-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }

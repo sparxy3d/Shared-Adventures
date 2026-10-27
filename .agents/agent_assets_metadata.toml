@@ -378,3 +378,171 @@ mtime_ms = 1793028185954
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/9aec2ff8-132e-4576-84e5-eb8f1d7fe253/54b597ac-c568-4d9a-84b8-99b7f0ca50c2"
 storage_version_token = "1793028233862451"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "HZ6oPNPC5IIlpwm0GiTRu"
+uri = "file://screenshots/pricing-editor-1440.jpg"
+type = "image"
+title = "Listing editor prices, 1440px"
+description = "Close-up captured at this viewport width using temporary development fixtures. All fixture data has been removed."
+logical_id = "409d6bc8-c3b4-409b-a3c4-e1f4ac77b327"
+content_hash = "sha256:9fe7f34596889428f7ec1465afed9c3cce95678dd67b869022e31b27c9ccde7a"
+size = 30095
+mtime_ms = 1793089658099
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/409d6bc8-c3b4-409b-a3c4-e1f4ac77b327/46332116-e16b-4a52-87a6-4c2787a78d76"
+storage_version_token = "1793090077179471"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "v58LV3LzYcPrbEhRBLpra"
+uri = "file://screenshots/pricing-editor-375.jpg"
+type = "image"
+title = "Listing editor prices, 375px"
+description = "Close-up captured at this viewport width using temporary development fixtures. All fixture data has been removed."
+logical_id = "1b5e237c-f51c-4aec-9d7a-4d3e72a8a6ba"
+content_hash = "sha256:a8a859bc7ebd1d909b98247dcab12f004939769c90246af6a59ca3609159e353"
+size = 28286
+mtime_ms = 1793089730959
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/1b5e237c-f51c-4aec-9d7a-4d3e72a8a6ba/ef702f9a-aea4-473e-ad51-80fc3639eb91"
+storage_version_token = "1793090078424229"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "3_XMQJzv9fFRFK2uUVTPp"
+uri = "file://screenshots/pricing-card-resident-1440.jpg"
+type = "image"
+title = "Listing card, Sri Lankan member, 1440px"
+description = "Close-up captured at this viewport width using temporary development fixtures. All fixture data has been removed."
+logical_id = "ce1464e0-3029-48c3-8d4c-7c2e73811c88"
+content_hash = "sha256:36a938fe32627232e4a4f72141ca38e3bb85e0ebc27c5da15a7c80610c1252b0"
+size = 32215
+mtime_ms = 1793089668219
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/ce1464e0-3029-48c3-8d4c-7c2e73811c88/3a514c6d-1368-4cfd-9d3f-529c40f0437d"
+storage_version_token = "1793090079755532"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "1LdgcD00JK-smcmPqPIC8"
+uri = "file://screenshots/pricing-card-resident-375.jpg"
+type = "image"
+title = "Listing card, Sri Lankan member, 375px"
+description = "Close-up captured at this viewport width using temporary development fixtures. All fixture data has been removed."
+logical_id = "7053c38f-43c9-4d22-9058-f611b4eee7bb"
+content_hash = "sha256:0eb5c231d2ea04afeafae83e44a6f8f41c55ac2be00eeda59fc765206efca51f"
+size = 40247
+mtime_ms = 1793089741027
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/7053c38f-43c9-4d22-9058-f611b4eee7bb/7dfaa9a8-654f-412a-b755-b7cb1af10d46"
+storage_version_token = "1793090081477169"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "xJmKsWpaHrOWuqgAgsyko"
+uri = "file://screenshots/pricing-card-visitor-1440.jpg"
+type = "image"
+title = "Listing card, visitor member, 1440px"
+description = "Close-up captured at this viewport width using temporary development fixtures. All fixture data has been removed."
+logical_id = "5ab07806-0cb2-4931-b312-c884ca76378b"
+content_hash = "sha256:aa102801d79bd645b69669b620400d9c898ad7d1e75955c1807acb1d380555c0"
+size = 33519
+mtime_ms = 1793089678295
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/5ab07806-0cb2-4931-b312-c884ca76378b/f359b09b-f5e0-4ec1-9d66-75f80ae3b89a"
+storage_version_token = "1793090082801059"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "61z6OI9Ieq_pqAZBds-LX"
+uri = "file://screenshots/pricing-card-visitor-375.jpg"
+type = "image"
+title = "Listing card, visitor member, 375px"
+description = "Close-up captured at this viewport width using temporary development fixtures. All fixture data has been removed."
+logical_id = "d9296397-026b-462f-9f26-b1071f3dcaae"
+content_hash = "sha256:263f847effeb750c5727bf41927488a72bccbe8d27fb492492c91ac0566cc479"
+size = 41208
+mtime_ms = 1793089751127
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/d9296397-026b-462f-9f26-b1071f3dcaae/c7d36d38-157b-4433-82b4-4c2406350740"
+storage_version_token = "1793090084053558"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "dVLMAnb3zl4S-FYquU9JF"
+uri = "file://screenshots/pricing-booking-breakdown-1440.jpg"
+type = "image"
+title = "Mixed booking breakdown, 1440px"
+description = "Close-up captured at this viewport width using temporary development fixtures. All fixture data has been removed."
+logical_id = "24836ceb-13d0-4646-8441-f6f4ca164eab"
+content_hash = "sha256:da0bd8cb30b5abb6d98e5d0f91958fdfd038b9f18fef7e7aa066e3c55c7b129a"
+size = 66942
+mtime_ms = 1793089642954
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/24836ceb-13d0-4646-8441-f6f4ca164eab/c0490711-583c-44ee-8cbf-2423bad53d94"
+storage_version_token = "1793090085626923"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "s1-WszouSZImhgJvQsSEe"
+uri = "file://screenshots/pricing-booking-breakdown-375.jpg"
+type = "image"
+title = "Mixed booking breakdown, 375px"
+description = "Close-up captured at this viewport width using temporary development fixtures. All fixture data has been removed."
+logical_id = "569aaa0a-974e-4e01-9e25-45a2fdcd774a"
+content_hash = "sha256:4ac1e86237add53b4eb217beaa9fd7dffd43f29b74d98837cfb8a7617fd1cde3"
+size = 61266
+mtime_ms = 1793089712127
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/569aaa0a-974e-4e01-9e25-45a2fdcd774a/d95204ce-b6fb-465e-b492-4ad6d59b89a3"
+storage_version_token = "1793090087099276"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "rPz9qOpI2YtYYM0y-Rajw"
+uri = "file://screenshots/pricing-admin-settings-1440.jpg"
+type = "image"
+title = "Admin commission and exchange settings, 1440px"
+description = "Close-up captured at this viewport width using temporary development fixtures. All fixture data has been removed."
+logical_id = "bde336e6-aa75-4a98-aaa9-f76370486f2d"
+content_hash = "sha256:1d665832aea04fd3b0893a8c2d378db46a667886224464979c38bc202a29b4cc"
+size = 78831
+mtime_ms = 1793089631734
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/bde336e6-aa75-4a98-aaa9-f76370486f2d/e52ee3f2-b99f-414f-8c8f-0f16b00929b6"
+storage_version_token = "1793090088592856"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "lu4cRdwNMJzAkYlsnBp0L"
+uri = "file://screenshots/pricing-admin-settings-375.jpg"
+type = "image"
+title = "Admin commission and exchange settings, 375px"
+description = "Close-up captured at this viewport width using temporary development fixtures. All fixture data has been removed."
+logical_id = "1ceddb02-4c18-4b1d-a570-2ec6569ac3f1"
+content_hash = "sha256:37f5a3012b8f55ff6abf31258c89d89d87e4e010a14069594ad239d4d785bda8"
+size = 68742
+mtime_ms = 1793089700999
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/1ceddb02-4c18-4b1d-a570-2ec6569ac3f1/01e40eae-e0da-43e4-bd98-ca803ff20fb3"
+storage_version_token = "1793090090113169"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "EVpQwzhIjAaDm6Zt4I6Vk"
+uri = "file://screenshots/pricing-vendor-commission-1440.jpg"
+type = "image"
+title = "Vendor dashboard commission, 1440px"
+description = "Close-up captured at this viewport width using temporary development fixtures. All fixture data has been removed."
+logical_id = "2ccf1386-7f79-4748-8a06-2835b70436a1"
+content_hash = "sha256:bbd5701be2a3e41cd82a1d6e82b74664ffe887619d879e7783844c9bfe5427f8"
+size = 11517
+mtime_ms = 1793089621750
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/2ccf1386-7f79-4748-8a06-2835b70436a1/96febb74-5c9b-47db-a48d-99f65266dc57"
+storage_version_token = "1793090091279172"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "F3awn0J_Mr6Ish7q-8poW"
+uri = "file://screenshots/pricing-vendor-commission-375.jpg"
+type = "image"
+title = "Vendor dashboard commission, 375px"
+description = "Close-up captured at this viewport width using temporary development fixtures. All fixture data has been removed."
+logical_id = "d48fa294-cd12-4817-94a9-c72d12a0499c"
+content_hash = "sha256:e57d3153ab146cebd908773cca41d218a04452bfe9c3208f40d2dca62e0d499c"
+size = 9551
+mtime_ms = 1793089690707
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/d48fa294-cd12-4817-94a9-c72d12a0499c/71f49a0c-e0f1-4094-bb5d-e370a994bb2d"
+storage_version_token = "1793090092608991"
+content_type = "image/jpeg"

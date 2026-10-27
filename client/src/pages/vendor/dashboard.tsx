@@ -9,6 +9,7 @@ import { apiRequest } from "@/lib/queryClient";
 
 interface DashboardData {
   vendor: { businessName: string; verificationStatus: string; takingBookings: boolean };
+  commission?: { rate: number; introductory: boolean; introductoryEndsAt: string | null; overridden: boolean };
   accountStatus: string;
   listings: { total: number; published: number };
   pendingRequests: VendorBooking[];
@@ -66,12 +67,21 @@ export default function VendorDashboard() {
   const hour = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Colombo", hour: "2-digit", hourCycle: "h23" }).format(new Date()));
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const takingBookings = data?.vendor.takingBookings !== false;
+  const commissionEndDate = data?.commission?.introductoryEndsAt
+    ? new Intl.DateTimeFormat("en-LK", { dateStyle: "long", timeZone: "Asia/Colombo" }).format(new Date(data.commission.introductoryEndsAt))
+    : null;
 
   if (query.isLoading) return <div className="v-page"><div className="v-skeleton v-skel-hero" /><div className="v-skeleton v-skel-panel" /><div className="v-skeleton v-skel-panel" /></div>;
   if (query.isError || !data) return <div className="v-page"><div className="v-error" role="alert"><h1>We couldn’t load your dashboard</h1><p>{query.error instanceof Error ? query.error.message : "Please try again."}</p><button className="v-button v-button-primary" onClick={() => query.refetch()}>Retry</button></div></div>;
 
   return <div className="v-page">
     <header className="v-dashboard-head"><div><p className="v-eyebrow">{greeting}{user?.fullName ? `, ${shortName(user.fullName)}` : ""}</p><h1>{data.vendor.businessName}</h1><p className="v-head-sub">A clear view of what’s happening with your sessions.</p></div><span className={`v-status v-status-${data.accountStatus}`}><i />{statusText[data.accountStatus] ?? data.accountStatus}</span></header>
+    {data.commission && <section className="v-panel v-commission-summary" aria-label="Commission rate">
+      <div className="v-commission-mark" aria-hidden="true">%</div>
+      <div><p className="v-eyebrow">Your commission</p><h2>{data.commission.rate}% <span>{data.commission.introductory ? "introductory rate" : data.commission.overridden ? "vendor rate" : "standard rate"}</span></h2>
+        <p className="v-muted">{data.commission.introductory ? `Your introductory rate ends ${commissionEndDate ?? "on a date not recorded"}.` : data.commission.overridden ? "A custom rate has been set for your account." : "Applied when a new booking is requested."}</p>
+      </div>
+    </section>}
     <section className={`v-panel v-taking-bookings ${takingBookings ? "is-taking-bookings" : "is-not-taking-bookings"}`} aria-labelledby="taking-bookings-title">
       <div><p className="v-eyebrow">Availability</p><h2 id="taking-bookings-title">{takingBookings ? "Taking bookings" : "Not taking bookings"}</h2>
         <p className="v-muted">{takingBookings ? "Your published experiences can receive new booking requests." : "Your experiences stay visible, but guests cannot send new requests."}</p></div>

@@ -149,7 +149,7 @@ export default function ExperienceDetail() {
             </div>
           </section>}
         </article>
-        <ActivitySessionPanel flow={flow} title={activity.title} priceAmount={priceAmount} />
+        <ActivitySessionPanel flow={flow} title={activity.title} priceAmount={priceAmount} visitorPriceUsd={activity.visitorPriceUsd ?? null} />
       </div>
 
       <section className="activity-detail-related" aria-labelledby="related-activities-title">

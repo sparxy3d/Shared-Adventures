@@ -70,6 +70,12 @@
 .v-taking-bookings h2 { margin: 0; color: #202722; font-size: 18px; font-weight: 800; letter-spacing: -.03em; }
 .v-taking-bookings .v-eyebrow { margin-bottom: 4px; }
 .v-taking-bookings .v-muted { margin: 6px 0 0; line-height: 1.5; }
+.v-commission-summary { display:flex; align-items:center; gap:15px; margin:-7px 0 22px; padding:17px 20px; background:#fffaf5; border-color:#ecddcf; }
+.v-commission-mark { display:grid; flex:none; width:43px; height:43px; place-items:center; border-radius:13px; background:#fff0e5; color:#b94a17; font-size:23px; font-weight:800; }
+.v-commission-summary .v-eyebrow { margin-bottom:4px; }
+.v-commission-summary h2 { margin:0; color:#272d28; font-size:20px; letter-spacing:-.035em; }
+.v-commission-summary h2 span { color:#7b817d; font-size:13px; font-weight:600; letter-spacing:0; }
+.v-commission-summary .v-muted { margin:4px 0 0; line-height:1.45; }
 .v-booking-switch { display: flex; align-items: center; width: 54px; height: 32px; padding: 3px; border: 1px solid #c9d1cb; border-radius: 999px; background: #e7ebe8; cursor: pointer; transition: background .18s ease, border-color .18s ease; }
 .v-booking-switch[aria-checked="true"] { justify-content: flex-end; border-color: #4e8465; background: #4e8465; }
 .v-booking-switch:focus-visible { outline: 3px solid #edb48d; outline-offset: 3px; }
@@ -128,6 +134,7 @@
 }
 @media(max-width: 767px) {
   .v-taking-bookings { margin: -2px 0 19px; padding: 16px; }
+  .v-commission-summary { margin:-1px 0 18px; padding:15px; }
   .v-dashboard-head { display: grid; gap: 15px; margin: 4px 0 22px; }.v-status { justify-self: start; }
   .v-panel { padding: 17px; border-radius: 14px; }.v-requests { padding: 17px 0 0; }.v-requests > .v-panel-heading { padding: 0 17px; }.v-request { padding: 16px 17px; }
   .v-panel-heading h2 { font-size: 17px; }.v-dashboard-columns { grid-template-columns: 1fr; gap: 15px; }.v-checklist-grid { grid-template-columns: 1fr 1fr; gap: 8px; }.v-check-step { min-height: 66px; padding: 9px; gap: 7px; font-size: 11px; }.v-check-icon { flex-basis: 30px; height: 30px; }.v-step-arrow { width: 14px; }

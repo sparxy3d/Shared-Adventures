@@ -15,6 +15,15 @@
 .br-error { border: 1px solid #fecaca; border-radius: 12px; background: #fef2f2; color: #991b1b; padding: 12px; }
 .br-error a { display: flex; align-items: center; min-height: 44px; text-decoration: underline; }
 .br-total { font-size: 22px; font-weight: 700; }
+.br-counts { display:grid; gap:10px; border:1px solid #e9dfd7; border-radius:12px; padding:12px; }
+.br-counts legend { padding:0 5px; font-weight:700; }
+.br-counts label { display:grid; grid-template-columns:1fr 84px; align-items:center; gap:10px; }
+.br-counts input { width:84px; min-height:44px; }
+.br-counts small { color:#716b66; font-weight:400; }
+.br-price-breakdown { padding:12px; border-radius:12px; background:#fff8f1; }
+.br-price-breakdown p { margin:5px 0; color:#51443b; font-size:14px; }
+.br-price-breakdown .br-total { margin-top:12px; padding-top:10px; border-top:1px solid #e9dfd7; color:#171717; font-size:22px; }
+.br-residency-note { margin:0; border-left:3px solid #ff6b24; padding:10px 12px; color:#56301d; background:#fff2e9; font-size:13px; line-height:1.55; }
 .br-sent { text-align: center; align-items: center; }
 .br-sent a { width: 100%; }
 .br-success { color: #166534; }

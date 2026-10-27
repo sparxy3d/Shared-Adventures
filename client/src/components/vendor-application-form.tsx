@@ -16,6 +16,8 @@ type ApplicationFields = {
   description: string;
   groupSizes: string[];
   typicalPrice: string;
+  differentVisitorPrice: boolean;
+  typicalVisitorPriceUsd: string;
   mapsLink: string;
   acceptTerms: boolean;
 };
@@ -24,7 +26,7 @@ type FieldErrors = Partial<Record<FieldName, string>>;
 
 const initialFields: ApplicationFields = {
   businessName: "", contactName: "", contactEmail: "", contactPhone: "", city: "", address: "",
-  activityTypes: [], description: "", groupSizes: [], typicalPrice: "", mapsLink: "", acceptTerms: false,
+  activityTypes: [], description: "", groupSizes: [], typicalPrice: "", differentVisitorPrice: false, typicalVisitorPriceUsd: "", mapsLink: "", acceptTerms: false,
 };
 
 const DOCUMENT_TYPES = ["application/pdf", "image/jpeg", "image/png"];
@@ -36,7 +38,7 @@ const DOCUMENTS = [
 ] as const;
 type DocumentKey = (typeof DOCUMENTS)[number]["key"];
 
-function validateField(field: FieldName, value: ApplicationFields[FieldName]): string {
+function validateField(field: FieldName, value: ApplicationFields[FieldName], visitorPriceEnabled = false): string {
   const text = typeof value === "string" ? value.trim() : "";
   if (field === "activityTypes") return (value as string[]).length ? "" : "Choose at least one activity category.";
   if (field === "groupSizes") return (value as string[]).length ? "" : "Choose at least one typical group size.";
@@ -53,6 +55,11 @@ function validateField(field: FieldName, value: ApplicationFields[FieldName]): s
   if (field === "typicalPrice") {
     if (!text) return "Enter your typical price.";
     return Number.isInteger(Number(text)) && Number(text) >= 0 && Number(text) <= 10000000 ? "" : "Enter a whole LKR amount between 0 and 10,000,000.";
+  }
+  if (field === "typicalVisitorPriceUsd") {
+    if (!visitorPriceEnabled) return "";
+    if (!text) return "Enter your typical visitor price.";
+    return Number.isInteger(Number(text)) && Number(text) >= 0 && Number(text) <= 1000000 ? "" : "Enter a whole USD amount between 0 and 1,000,000.";
   }
   if (field === "mapsLink") {
     return isGoogleBusinessUrl(text) ? "" : GOOGLE_MAPS_MESSAGE;
@@ -106,12 +113,12 @@ export default function VendorApplicationForm({ onBack }: { onBack?: () => void 
 
   const updateField = <K extends FieldName>(field: K, value: ApplicationFields[K]) => {
     setFields((current) => ({ ...current, [field]: value }));
-    if (errors[field]) setErrors((current) => ({ ...current, [field]: validateField(field, value) }));
+    if (errors[field]) setErrors((current) => ({ ...current, [field]: validateField(field, value, field === "typicalVisitorPriceUsd" ? fields.differentVisitorPrice : false) }));
     if (serverError) { setServerError(""); setDuplicateEmail(false); }
   };
 
   const blurField = (field: FieldName) => {
-    setErrors((current) => ({ ...current, [field]: validateField(field, fields[field]) }));
+    setErrors((current) => ({ ...current, [field]: validateField(field, fields[field], fields.differentVisitorPrice) }));
   };
 
   const handleBlur = (field: FieldName) => () => blurField(field);
@@ -129,7 +136,7 @@ export default function VendorApplicationForm({ onBack }: { onBack?: () => void 
     event.preventDefault();
     const nextErrors: FieldErrors = {};
     (Object.keys(fields) as FieldName[]).forEach((field) => {
-      const error = validateField(field, fields[field]);
+      const error = validateField(field, fields[field], fields.differentVisitorPrice);
       if (error) nextErrors[field] = error;
     });
     setErrors(nextErrors);
@@ -159,6 +166,8 @@ export default function VendorApplicationForm({ onBack }: { onBack?: () => void 
         activityTypes: fields.activityTypes,
         groupSizes: fields.groupSizes,
         typicalPrice: Number(fields.typicalPrice),
+        differentVisitorPrice: fields.differentVisitorPrice,
+        typicalVisitorPriceUsd: fields.differentVisitorPrice ? Number(fields.typicalVisitorPriceUsd) : null,
         description: fields.description.trim(),
         mapsLink: fields.mapsLink.trim(),
         acceptTerms: fields.acceptTerms,
@@ -271,11 +280,28 @@ export default function VendorApplicationForm({ onBack }: { onBack?: () => void 
           </div>
           {fieldError("groupSizes")}
         </fieldset>
+        <fieldset className="v4-field v4-field--full" style={{ border: 0, padding: 0, margin: 0 }}>
+          <legend className="v4-field-legend">Do you charge foreign visitors a different price?</legend>
+          <div className="v4-visitor-price-choice">
+            {[true, false].map(enabled => <label key={String(enabled)}>
+              <input name="differentVisitorPrice" type="radio" checked={fields.differentVisitorPrice === enabled} onChange={() => {
+                setFields(current => ({ ...current, differentVisitorPrice: enabled }));
+                setErrors(current => ({ ...current, typicalVisitorPriceUsd: "" }));
+              }} />
+              <span>{enabled ? "Yes" : "No"}</span>
+            </label>)}
+          </div>
+        </fieldset>
         <div className="v4-field v4-field--full">
-          <label htmlFor="vendor-price">Typical price per person (LKR)</label>
+          <label htmlFor="vendor-price">{fields.differentVisitorPrice ? "Typical price for Sri Lankans and residents (LKR)" : "Typical price per person (LKR)"}</label>
           <input className="v4-input" id="vendor-price" name="typicalPrice" type="number" min="0" max="10000000" step="1" inputMode="numeric" placeholder="e.g. 3500" value={fields.typicalPrice} onChange={(event) => updateField("typicalPrice", event.target.value)} onBlur={handleBlur("typicalPrice")} aria-invalid={!!errors.typicalPrice} aria-describedby={errors.typicalPrice ? "vendor-error-typicalPrice" : undefined} required />
           {fieldError("typicalPrice")}
         </div>
+        {fields.differentVisitorPrice && <div className="v4-field v4-field--full">
+          <label htmlFor="vendor-visitor-price">Typical price for foreign visitors (USD)</label>
+          <input className="v4-input" id="vendor-visitor-price" name="typicalVisitorPriceUsd" type="number" min="0" max="1000000" step="1" inputMode="numeric" placeholder="e.g. 25" value={fields.typicalVisitorPriceUsd} onChange={(event) => updateField("typicalVisitorPriceUsd", event.target.value)} onBlur={handleBlur("typicalVisitorPriceUsd")} aria-invalid={!!errors.typicalVisitorPriceUsd} aria-describedby={errors.typicalVisitorPriceUsd ? "vendor-error-typicalVisitorPriceUsd" : undefined} required />
+          {fieldError("typicalVisitorPriceUsd")}
+        </div>}
         <div className="v4-field v4-field--full">
           <label htmlFor="vendor-description">Tell us about your experience</label>
           <textarea className="v4-textarea" id="vendor-description" name="description" maxLength={600} placeholder="What do guests do, and what makes it a good experience for a group?" value={fields.description} onChange={(event) => updateField("description", event.target.value)} onBlur={handleBlur("description")} aria-invalid={!!errors.description} aria-describedby={errors.description ? "vendor-error-description" : "vendor-description-hint"} required />

@@ -7,6 +7,8 @@ import { useToast } from "./use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { sessionBookable, sessionDays } from "@/lib/activity-sessions";
 import type { Activity } from "@/lib/discovery";
+import { calculatePricing } from "@/lib/pricing";
+import { usePricingConfig } from "@/hooks/use-pricing-config";
 
 class PublicActivityError extends Error {
   constructor(public status: number) { super("Activity could not be loaded"); }
@@ -15,6 +17,7 @@ const positiveInteger = (value: string | null) => value && /^\d+$/.test(value) &
 
 export function useActivityBooking(id: string) {
   const auth = useAuth();
+  const pricingConfig = usePricingConfig();
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const search = useSearch();
@@ -24,6 +27,8 @@ export function useActivityBooking(id: string) {
   const [sessionSheetOpen, setSessionSheetOpen] = useState(false);
   const [panelError, setPanelError] = useState("");
   const [saveError, setSaveError] = useState("");
+  const [residentCount, setResidentCount] = useState(1);
+  const [visitorCount, setVisitorCount] = useState(0);
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 30000); return () => window.clearInterval(timer); }, []);
   const activity = useQuery<Activity>({
     queryKey: [`/api/experiences/${id}`],
@@ -42,12 +47,29 @@ export function useActivityBooking(id: string) {
   const favorites = useQuery<{ experienceId: number }[]>({ queryKey: ["/api/favorites"], enabled: !!auth.user });
   const capacity = activity.data?.capacity && activity.data.capacity > 0 ? activity.data.capacity : null;
   const qty = Math.min(positiveInteger(params.get("group")) || 1, capacity || Number.MAX_SAFE_INTEGER);
+  useEffect(() => {
+    if (auth.isLoading) return;
+    const residents = auth.user?.isSriLankanResident ? qty : 0;
+    setResidentCount(residents);
+    setVisitorCount(qty - residents);
+  }, [qty, auth.isLoading, auth.user?.id, auth.user?.isSriLankanResident]);
   const selectedSlotId = positiveInteger(params.get("slot"));
   const selectedSlot = slots.data?.find(slot => slot.id === selectedSlotId && sessionBookable(slot, qty, now)) || null;
   const days = sessionDays(slots.data || [], now);
   const nextSessionId = days.flatMap(([, day]) => day).find(slot => sessionBookable(slot, qty, now))?.id ?? null;
   const hasOpenSessions = days.some(([, day]) => day.some(slot => slot.status === "open" && slot.capacity > 0));
   const requestOpen = params.get("booking") === "1";
+  const pricing = activity.data?.priceAmount == null ? null : (() => {
+    try {
+      return calculatePricing({
+        residentCount,
+        visitorCount,
+        priceAmount: activity.data.priceAmount,
+        visitorPriceUsd: activity.data.visitorPriceUsd ?? null,
+        usdToLkrRate: pricingConfig.usdToLkrRate,
+      });
+    } catch { return null; }
+  })();
   const takingBookings = activity.data?.takingBookings !== false;
   useEffect(() => {
     if (activity.data?.takingBookings !== false || params.get("booking") !== "1") return;
@@ -84,6 +106,19 @@ export function useActivityBooking(id: string) {
   }
   return {
     activity, slots, related, auth, qty, capacity, days, selectedSlotId, selectedSlot, nextSessionId, hasOpenSessions,
+    residentCount, visitorCount, pricing, pricingConfig,
+    setResidentCount: (value: number) => {
+      if (Number.isInteger(value) && value >= 0 && value <= qty) {
+        setResidentCount(value);
+        setVisitorCount(qty - value);
+      }
+    },
+    setVisitorCount: (value: number) => {
+      if (Number.isInteger(value) && value >= 0 && value <= qty) {
+        setVisitorCount(value);
+        setResidentCount(qty - value);
+      }
+    },
     takingBookings, requestOpen: requestOpen && takingBookings, openRequest, closeRequest, conflict, sessionSheetOpen, setSessionSheetOpen, panelError,
     setQty: (value: number) => {
       if (capacity && value >= 1 && value <= capacity) {

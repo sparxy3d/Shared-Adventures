@@ -17,6 +17,7 @@ import { sessionPlan } from "./vendor-session-plan";
 import { withApprovalDate } from "./admin-insights";
 import { applicationUpload, validateDocuments } from "./vendor-documents";
 import { CONTACT_DETAILS_MESSAGE, GOOGLE_MAPS_MESSAGE, containsContactDetails, isGoogleBusinessUrl } from "@shared/contact-policy";
+import { commissionForVendor } from "@shared/pricing";
 
 const scryptAsync = promisify(scrypt);
 
@@ -128,6 +129,7 @@ const signupSchema = z.object({
   password: z.string().min(8, "Use at least 8 characters").max(200),
   fullName: z.string().trim().min(1).max(120),
   phone: optionalText(40),
+  isSriLankanResident: z.boolean(),
 });
 
 const loginSchema = z.object({
@@ -138,6 +140,7 @@ const loginSchema = z.object({
 const profileSchema = z.object({
   fullName: z.string().trim().min(1).max(120).optional(),
   phone: optionalText(40),
+  isSriLankanResident: z.boolean().optional(),
 });
 
 const vendorProfileSchema = z.object({
@@ -162,10 +165,14 @@ const applicationSchema = z.object({
   activityTypes: z.array(z.enum(CATEGORY_VALUES)).min(1),
   groupSizes: z.array(z.enum(["1", "2", "3-5", "6+"])).min(1).max(4),
   typicalPrice: z.coerce.number().int().min(0).max(10_000_000),
+  differentVisitorPrice: z.boolean().default(false),
+  typicalVisitorPriceUsd: z.number().int().min(0).max(1_000_000).optional().nullable(),
   description: z.string().trim().min(1).max(2000),
   mapsLink: z.string().trim().max(500).optional().nullable().refine(v =>
     isGoogleBusinessUrl(v), GOOGLE_MAPS_MESSAGE),
   acceptTerms: z.literal(true, { errorMap: () => ({ message: "Please accept the vendor terms" }) }),
+}).refine(data => !data.differentVisitorPrice || data.typicalVisitorPriceUsd != null, {
+  message: "Enter the typical visitor price in whole US dollars", path: ["typicalVisitorPriceUsd"],
 });
 
 const experienceSchema = z.object({
@@ -176,7 +183,8 @@ const experienceSchema = z.object({
   region: optionalText(120),
   city: optionalText(120),
   durationMinutes: z.coerce.number().int().min(0).max(24 * 60).optional().nullable(),
-  priceAmount: z.coerce.number().int().min(0).max(10_000_000).optional().nullable(),
+  priceAmount: z.number().int().min(0).max(10_000_000),
+  visitorPriceUsd: z.number().int().min(0).max(1_000_000).optional().nullable(),
   capacity: z.coerce.number().int().min(0).max(10000).optional().nullable(),
   ageMin: z.coerce.number().int().min(0).max(120).optional().nullable(),
   safetyNotes: publicListingText(2000),
@@ -215,7 +223,22 @@ const bookingSchema = z.object({
   slotId: z.coerce.number().int().positive(),
   qty: z.coerce.number().int().min(1).max(500).default(1),
   customerNote: optionalText(1000),
+  residentCount: z.number().int().min(0).max(500).optional(),
+  visitorCount: z.number().int().min(0).max(500).optional(),
+}).refine(data => (data.residentCount === undefined && data.visitorCount === undefined)
+  || (data.residentCount !== undefined && data.visitorCount !== undefined && data.residentCount + data.visitorCount === data.qty), {
+  message: "The price groups must add up to your group size",
 });
+
+const commissionRate = z.number().min(0).max(100).refine(n => Math.abs(n * 100 - Math.round(n * 100)) < 0.000001,
+  "Use at most two decimal places");
+const pricingSettingsSchema = z.object({
+  introductoryRate: commissionRate.optional(),
+  standardRate: commissionRate.optional(),
+  introductoryMonths: z.number().int().min(0).max(120).optional(),
+  usdToLkrRate: z.number().positive().max(1_000_000)
+    .refine(n => Math.abs(n * 1_000_000 - Math.round(n * 1_000_000)) < 0.0001, "Use at most six decimal places").nullable().optional(),
+}).strict().refine(data => Object.keys(data).length > 0, "Choose a setting to update");
 
 const vendorBookingUpdateSchema = z.object({
   status: z.enum(["confirmed", "declined", "cancelled"]),
@@ -306,6 +329,30 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
   app.use("/api/vendor", requireVendor);
 
+  // Public clients receive the conversion rate only, never commission or audit data.
+  app.get("/api/pricing-config", h(async (_req, res) => {
+    const settings = await storage.getPricingSettings();
+    res.json({ usdToLkrRate: settings.usdToLkrRate });
+  }));
+
+  app.get("/api/admin/pricing-settings", h(async (_req, res) => {
+    res.json(await storage.getPricingSettings());
+  }));
+
+  app.patch("/api/admin/pricing-settings", h(async (req, res) => {
+    const data = parse(pricingSettingsSchema, req.body, res);
+    if (!data) return;
+    res.json(await storage.updatePricingSettings(data, res.locals.user!.id));
+  }));
+
+  app.patch("/api/admin/vendors/:id/commission", h(async (req, res) => {
+    const data = parse(z.object({ commissionOverrideRate: commissionRate.nullable() }).strict(), req.body, res);
+    if (!data) return;
+    const vendor = await storage.setVendorCommission(id(req.params.id), data.commissionOverrideRate);
+    if (!vendor) return res.status(404).json({ message: "Vendor not found" });
+    res.json(vendor);
+  }));
+
   // ---------------- auth ----------------
 
   app.post("/api/auth/signup", h(async (req, res) => {
@@ -319,6 +366,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       password: await hashPassword(data.password),
       fullName: data.fullName,
       phone: data.phone ?? null,
+      isSriLankanResident: data.isSriLankanResident,
       role: "customer", // never taken from the request
     });
     req.session.userId = user.id;
@@ -437,7 +485,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.post("/api/bookings", requireAuth, h(async (req, res) => {
     const data = parse(bookingSchema, req.body, res);
     if (!data) return;
-    const result = await storage.createBookingRequest(data.experienceId, data.slotId, data.qty, res.locals.user!.id, data.customerNote ?? null);
+    const result = await storage.createBookingRequest(data.experienceId, data.slotId, data.qty, res.locals.user!.id, data.customerNote ?? null,
+      data.residentCount === undefined || data.visitorCount === undefined ? undefined :
+        { residentCount: data.residentCount, visitorCount: data.visitorCount });
     if ("error" in result) return res.status(result.status ?? 409).json({ message: result.error });
     res.json(result.booking);
   }));
@@ -515,6 +565,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       `Activity types: ${data.activityTypes.join(", ")}`,
       `Typical group sizes: ${data.groupSizes.join(", ")}`,
       `Typical price: LKR ${data.typicalPrice}`,
+      ...(data.differentVisitorPrice ? [`Typical visitor price: USD ${data.typicalVisitorPriceUsd}`] : []),
       data.mapsLink ? `Google Maps: ${data.mapsLink}` : "",
       `Vendor terms (${VENDOR_TERMS_VERSION}) accepted: ${new Date().toISOString()}`,
     ].filter((l, i) => i > 0 || l).join("\n").trim();
@@ -611,6 +662,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       vendor.verificationStatus === "approved" ? (published > 0 ? "live" : "approved") : vendor.verificationStatus;
     res.json({
       vendor,
+      commission: commissionForVendor(vendor, await storage.getPricingSettings()),
       accountStatus, // applied(pending) | approved | live | paused | rejected
       listings: { total: listings.length, published },
       checklist: {

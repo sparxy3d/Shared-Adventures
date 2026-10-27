@@ -7,29 +7,42 @@ import { formatPrice } from "@/lib/currency";
 import { sessionAvailability, sessionBookable, sessionDayHeading } from "@/lib/activity-sessions";
 import { formatTime12h } from "@/lib/dates";
 import type { ActivityBooking } from "@/hooks/use-activity-booking";
+import { formatLkr, formatUsd, validExchangeRate } from "@/lib/pricing";
 
 type ActivitySessionPanelProps = {
   flow: ActivityBooking;
   title: string;
   priceAmount: number | null;
+  visitorPriceUsd?: number | null;
 };
 
-function priceText(amount: number | null) {
-  return amount === null ? "Price not listed" : formatPrice(amount, "LKR");
+function priceText(amount: number | null, visitorPriceUsd: number | null | undefined, flow: ActivityBooking) {
+  if (amount === null) return "Price not listed";
+  if (!visitorPriceUsd && visitorPriceUsd !== 0) return formatPrice(amount, "LKR");
+  const rate = flow.pricingConfig.usdToLkrRate;
+  if (!flow.auth.user) {
+    return validExchangeRate(rate)
+      ? `${formatPrice(amount, "LKR")} · Visitors: ${formatUsd(visitorPriceUsd)} (about ${formatLkr(visitorPriceUsd * rate)})`
+      : formatPrice(amount, "LKR");
+  }
+  if (flow.auth.user.isSriLankanResident) return formatPrice(amount, "LKR");
+  if (!validExchangeRate(rate)) return `${formatPrice(amount, "LKR")} · visitor price unavailable`;
+  return `${formatUsd(visitorPriceUsd)} · about ${formatLkr(visitorPriceUsd * rate)}`;
 }
 
-function PanelContent({ flow, title, priceAmount }: ActivitySessionPanelProps) {
+function PanelContent({ flow, title, priceAmount, visitorPriceUsd }: ActivitySessionPanelProps) {
   const [showAllDays, setShowAllDays] = useState(false);
   const { days, qty, capacity, setQty, slots, selectedSlot, selectedSlotId, nextSessionId } = flow;
   const hasPrice = priceAmount !== null;
-  const total = hasPrice ? (priceAmount as number) * qty : null;
-  const canRequest = !!selectedSlot && hasPrice && !!capacity;
+  const total = flow.pricing?.totalAmount ?? null;
+  const needsRate = visitorPriceUsd != null && flow.visitorCount > 0 && !validExchangeRate(flow.pricingConfig.usdToLkrRate);
+  const canRequest = !!selectedSlot && hasPrice && !!capacity && !needsRate;
   const visibleDays = showAllDays ? days : days.slice(0, 7);
   const fitCount = days.flatMap(([, daySlots]) => daySlots).filter(slot => sessionBookable(slot, qty)).length;
   const saveProblem = flow.saveError || (flow.favoritesError ? "Your bucket list couldn’t be loaded." : flow.auth.error ? "Your account couldn’t be checked." : "");
 
   return <>
-    <div className="activity-detail-price" data-testid="text-price">{priceText(priceAmount)}</div>
+    <div className="activity-detail-price" data-testid="text-price">{priceText(priceAmount, visitorPriceUsd, flow)}</div>
     {hasPrice && <div className="activity-detail-per-person">per person</div>}
 
     <section className="activity-detail-group" aria-label="Group size">
@@ -50,8 +63,14 @@ function PanelContent({ flow, title, priceAmount }: ActivitySessionPanelProps) {
 
     {hasPrice && <div className="activity-detail-total">
       <span>Total for {qty} {qty === 1 ? "person" : "people"}</span>
-      <strong data-testid="text-total">{formatPrice(total, "LKR")}</strong>
-      <p data-testid="text-total-calculation">{qty} × {priceText(priceAmount)} = {formatPrice(total, "LKR")}</p>
+      <strong data-testid="text-total">{total === null ? "Visitor rate unavailable" : formatLkr(total)}</strong>
+      <p data-testid="text-total-calculation">
+        {flow.residentCount} resident{flow.residentCount === 1 ? "" : "s"}: {formatLkr(flow.pricing?.residentSubtotal ?? 0)}
+        {" · "}
+        {flow.visitorCount} visitor{flow.visitorCount === 1 ? "" : "s"}: {total === null ? "rate unavailable" : formatLkr(flow.pricing?.visitorSubtotal ?? 0)}
+        {total !== null && ` · ${formatLkr(total)} total`}
+      </p>
+      {needsRate && <p className="activity-detail-notice">Visitor booking is unavailable until the exchange rate is available.</p>}
     </div>}
 
     <div className="activity-detail-sessions-title"><span>Choose a session</span></div>
@@ -110,7 +129,7 @@ function PanelContent({ flow, title, priceAmount }: ActivitySessionPanelProps) {
 export default function ActivitySessionPanel(props: ActivitySessionPanelProps) {
   const isMobile = useIsMobile();
   const { flow, priceAmount } = props;
-  const price = priceText(priceAmount);
+  const price = priceText(priceAmount, props.visitorPriceUsd, flow);
   if (!flow.takingBookings) {
     return <div className="activity-detail-offline" role="status">
       <span className="activity-detail-offline-mark" aria-hidden="true" />

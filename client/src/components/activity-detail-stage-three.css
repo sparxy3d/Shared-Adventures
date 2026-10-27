@@ -206,3 +206,4 @@
 .activity-detail-next { color: #171717; background: #FF6B24; }
 .activity-detail-total { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
 .activity-detail-total > p { grid-column: 1 / -1; color: #64748B; font-size: 14px; }
+.activity-detail-total > p.activity-detail-notice { color: #72401f; }

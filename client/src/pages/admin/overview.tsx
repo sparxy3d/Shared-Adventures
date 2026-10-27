@@ -13,10 +13,12 @@ type AdminStats = {
   bookingsThisWeek?: number; unansweredOver24h?: number; weekStart?: string; weekEnd?: string;
   attention?: { requests?: AttentionItem[]; vendors?: AttentionItem[]; listings?: AttentionItem[] };
 };
+type PricingStatus = { usdToLkrRate: number | null; exchangeRateUpdatedAt: string | null };
 function metric(value: unknown) { return typeof value === "number" ? new Intl.NumberFormat("en-LK").format(value) : "—"; }
 
 export default function Overview() {
   const query = useQuery<AdminStats>({ queryKey: ["/api/admin/stats"], queryFn: () => getJson("/api/admin/stats") });
+  const pricingQuery = useQuery<PricingStatus>({ queryKey: ["/api/admin/pricing-settings"], queryFn: () => getJson("/api/admin/pricing-settings") });
   const [attentionFilter, setAttentionFilter] = useState("all");
   if (query.isLoading) return <main className="ad-content"><div className="ad-page-head"><div><p className="ad-eyebrow">Your operations desk</p><h1>Overview</h1></div></div><AdminLoading rows={4} /></main>;
   if (query.isError || !query.data) return <main className="ad-content"><div className="ad-page-head"><div><p className="ad-eyebrow">Your operations desk</p><h1>Overview</h1></div></div><AdminError retry={() => query.refetch()} /></main>;
@@ -35,6 +37,8 @@ export default function Overview() {
     ...(data.attention?.listings ?? []).map((item) => ({ ...item, kind: "No upcoming sessions" as const, detail: item.listingTitle ?? item.title ?? "Published listing", href: "/admin/listings?filter=no-sessions", date: undefined })),
   ];
   const visibleAttention = attentionItems.filter((item) => attentionFilter === "all" || item.kind === attentionFilter);
+  const exchangeUpdatedAt = pricingQuery.data?.exchangeRateUpdatedAt ? Date.parse(pricingQuery.data.exchangeRateUpdatedAt) : null;
+  const exchangeStale = !!pricingQuery.data && (pricingQuery.data.usdToLkrRate == null || exchangeUpdatedAt == null || Date.now() - exchangeUpdatedAt > 7 * 24 * 60 * 60 * 1000);
   const attentionColumns: AdminColumn<AttentionRow>[] = [
     { key: "detail", label: "Needs attention", sortValue: (row) => row.detail, render: (row) => <><div className="ad-cell-title">{row.detail}</div><div className="ad-cell-sub">{row.vendorName ?? row.vendor?.businessName ?? row.businessName ?? row.memberName ?? row.customer?.fullName ?? "Review details"}</div></> },
     { key: "kind", label: "Follow-up", sortValue: (row) => row.kind, render: (row) => <span className={`ad-badge ${row.kind === "Old request" ? "warm" : "blue"}`}>{row.kind}</span> },
@@ -43,6 +47,7 @@ export default function Overview() {
   ];
   return <main className="ad-content">
     <div className="ad-page-head"><div><p className="ad-eyebrow">Your operations desk</p><h1>Overview</h1><p>A clear view of what needs a hand today.</p></div><Link className="ad-button secondary" href="/admin/settings">Go-live settings <ArrowUpRight size={15} /></Link></div>
+    {exchangeStale && <div className="ad-banner ad-exchange-warning" role="status"><strong>{pricingQuery.data?.usdToLkrRate == null ? "Visitor exchange rate is not set." : "Visitor exchange rate is over 7 days old."}</strong> Visitor prices may be unavailable or out of date. <Link href="/admin/settings">Review pricing settings</Link></div>}
     <section className="ad-stat-grid" aria-label="Admin metrics">{tiles.map(({ label, value, icon: Icon, href, note }) => <Link key={label} className="ad-stat ad-card" href={href}><div className="ad-stat-label"><Icon size={14} />{label}</div><div className="ad-stat-value">{metric(value)}</div><div className="ad-stat-note">{note}</div></Link>)}</section>
     <section className="ad-section ad-card">
       <div className="ad-section-head"><div><p className="ad-eyebrow">Needs attention</p><h2>Follow up before it drifts</h2></div><span className="ad-badge warm"><AlertTriangle size={12} style={{ marginRight: 4 }} />{attentionItems.length} items</span></div>

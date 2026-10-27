@@ -18,6 +18,7 @@ export default function Account() {
   const [, navigate] = useLocation();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [isSriLankanResident, setIsSriLankanResident] = useState(false);
   const [city, setCity] = useState("");
   const [error, setError] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -28,14 +29,14 @@ export default function Account() {
   const storageKey = `free-spirit-home-city-${user?.id}`;
   useEffect(() => {
     if (!user) return;
-    setName(user.fullName); setPhone(user.phone || "");
+    setName(user.fullName); setPhone(user.phone || ""); setIsSriLankanResident(!!user.isSriLankanResident);
     try {
       const saved = localStorage.getItem(`free-spirit-home-city-${user.id}`);
       setCity(SUPPORTED_CITIES.some(c => c.name === saved) ? saved! : "");
     } catch { setError("Your browser can’t save a home city on this device."); }
   }, [user?.id]);
   const update = useMutation({
-    mutationFn: async () => (await apiRequest("PATCH", "/api/auth/profile", { fullName: name.trim(), phone: phone.trim() || null })).json(),
+    mutationFn: async () => (await apiRequest("PATCH", "/api/auth/profile", { fullName: name.trim(), phone: phone.trim() || null, isSriLankanResident })).json(),
     onSuccess: data => {
       queryClient.setQueryData(["/api/auth/me"], data);
       setError("");
@@ -62,6 +63,12 @@ export default function Account() {
         <div><Label htmlFor="fullName">Full name</Label><Input id="fullName" data-testid="input-fullname" value={name} onChange={e => setName(e.target.value)} required maxLength={120} autoComplete="name" /></div>
         <div><Label htmlFor="email">Email (read-only)</Label><Input id="email" type="email" value={user?.email || ""} readOnly autoComplete="email" /></div>
         <div><Label htmlFor="phone">Mobile (+94)</Label><Input id="phone" data-testid="input-phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} maxLength={40} placeholder="+94 77 123 4567" autoComplete="tel" /></div>
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium">Residency status</legend>
+          <label className="flex min-h-11 items-center gap-3"><input type="radio" name="profile-residency" checked={isSriLankanResident} onChange={() => setIsSriLankanResident(true)} />Yes, I’m a Sri Lankan citizen or resident</label>
+          <label className="flex min-h-11 items-center gap-3"><input type="radio" name="profile-residency" checked={!isSriLankanResident} onChange={() => setIsSriLankanResident(false)} />No, I’m visiting</label>
+          <p className="text-[13px] text-slate-600">Vendors may check your NIC, Sri Lankan passport or resident visa when you arrive.</p>
+        </fieldset>
         <div><Label htmlFor="home-city">Home city</Label><select id="home-city" className="mt-1 block min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3" value={city} onChange={e => setCity(e.target.value)}>
           <option value="">Choose your city</option>{SUPPORTED_CITIES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
         </select><p className="mt-2 text-[13px] text-slate-600">Saved on this device</p></div>
