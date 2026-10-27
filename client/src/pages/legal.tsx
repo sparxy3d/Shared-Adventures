@@ -65,7 +65,7 @@ export default function Legal() {
         <span className="stage-content-kicker">{page.eyebrow}</span>
         <h1 className="stage-content-title">{page.title}</h1>
         <p className="stage-content-lede">{page.lede}</p>
-        {isDraft && <div className="stage-draft-note" role="status">Draft — final version coming soon</div>}
+        {isDraft && <div className="stage-draft-note" role="status">{pathname === "/vendor-terms" ? "Version 0.9, pending legal review" : "Draft, final version coming soon"}</div>}
         <div className="stage-legal-body">
           {page.sections.map((section) => <section key={section.heading}><h2>{section.heading}</h2><p>{section.body}</p></section>)}
           <p>Questions? Visit <Link href="/help">Help &amp; support</Link> or email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.</p>

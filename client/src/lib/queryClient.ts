@@ -1,8 +1,17 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+function redirectForPasswordChange(payload: unknown) {
+  const required = !!payload && typeof payload === "object" &&
+    (payload as { code?: string; mustChangePassword?: boolean }).code === "PASSWORD_CHANGE_REQUIRED";
+  if (required && typeof window !== "undefined" && window.location.pathname !== "/set-password") {
+    window.location.assign("/set-password");
+  }
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
+    try { redirectForPasswordChange(JSON.parse(text)); } catch { /* preserve the API error */ }
     throw new Error(`${res.status}: ${text}`);
   }
 }
@@ -19,7 +28,11 @@ export async function apiRequest(
     credentials: "include",
   });
 
-  await throwIfResNotOk(res);
+  if (!res.ok) {
+    const text = (await res.text()) || res.statusText;
+    try { redirectForPasswordChange(JSON.parse(text)); } catch { /* preserve the API error */ }
+    throw new Error(`${res.status}: ${text}`);
+  }
   return res;
 }
 

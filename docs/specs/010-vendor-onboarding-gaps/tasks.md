@@ -1,0 +1,11 @@
+# Implementation checklist
+- [x] Development schema and numbered production migration.
+- [x] Forced-password API guard, all issuance paths and frontend screen.
+- [x] Listing photo handlers, variants, order/delete, independent duplicates and responsive images, tested with an object adapter.
+- [ ] Default App Storage bucket setup and real cloud upload/read/delete verification. Blocked: no bucket configured.
+- [x] Demo visibility and booking controls across public storage and booking path.
+- [x] Deduplicated notifications, admin waiting list and CSV.
+- [x] Terms and application upload copy fixes.
+- [x] Type/build, integration tests and responsive screenshots.
+- [x] Disposable development fixture cleanup.
+- [x] Production handoff and complete file/test/incompleteness report.

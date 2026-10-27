@@ -12,8 +12,8 @@ import { formatVendorDate, formatVendorTime } from "@/lib/vendor-bookings";
 import { shiftDate, sriLankaDateKey } from "@/lib/vendor-schedule";
 import "@/pages/admin/admin-vendor.css";
 
-type AdminExperience = Experience & { vendor?: Vendor & { owner?: { email?: string | null } }; vendorName?: string; ownerEmail?: string };
-type EnrichedVendor = Vendor & { owner?: { email?: string | null }; ownerEmail?: string | null };
+type AdminExperience = Experience & { isDemo?: boolean; vendor?: Vendor & { isDemo?: boolean; owner?: { email?: string | null } }; vendorName?: string; ownerEmail?: string };
+type EnrichedVendor = Vendor & { isDemo?: boolean; owner?: { email?: string | null }; ownerEmail?: string | null };
 type SortKey = "title" | "vendorName" | "category" | "city" | "priceAmount" | "status";
 const PAGE_SIZE = 25;
 
@@ -63,14 +63,13 @@ export default function AdminListings() {
   const visible = useMemo(() => listings.filter((listing) => {
     const vendor = listing.vendor ?? ownerByVendor.get(listing.vendorId);
     const vendorName = listing.vendorName || vendor?.businessName || "";
-    const ownerEmail = listing.ownerEmail || vendor?.owner?.email || "";
-    const text = `${listing.title} ${listing.city ?? ""} ${listing.category} ${vendorName} ${ownerEmail}`.toLowerCase();
+    const text = `${listing.title} ${listing.city ?? ""} ${listing.category} ${vendorName} ${listing.ownerEmail || vendor?.owner?.email || ""}`.toLowerCase();
     return (!search || text.includes(search.toLowerCase())) &&
       (statusFilter === "all" || listing.status === statusFilter) &&
       (!noSessionsOnly || (listing.status === "published" && !hasSessionWithinAttentionWindow(listing))) &&
       (categoryFilter === "all" || listing.category === categoryFilter) &&
       (cityFilter === "all" || listing.city === cityFilter) &&
-      (demoFilter === "all" || (demoFilter === "demo" ? ownerEmail.toLowerCase().endsWith("@freespirit.com") : !ownerEmail.toLowerCase().endsWith("@freespirit.com")));
+      (demoFilter === "all" || (demoFilter === "demo" ? !!(listing.isDemo ?? vendor?.isDemo) : !(listing.isDemo ?? vendor?.isDemo)));
   }), [listings, ownerByVendor, search, statusFilter, noSessionsOnly, categoryFilter, cityFilter, demoFilter, slotsQueries, today, lastAttentionDay]);
 
   const sorted = useMemo(() => [...visible].sort((a, b) => {
@@ -123,7 +122,7 @@ export default function AdminListings() {
   const row = (listing: AdminExperience) => {
     const vendor = listing.vendor ?? ownerByVendor.get(listing.vendorId);
     const next = slotFor(listing);
-    const isDemo = (listing.ownerEmail || vendor?.owner?.email || "").toLowerCase().endsWith("@freespirit.com");
+    const isDemo = listing.isDemo ?? vendor?.isDemo ?? false;
     return <tr key={listing.id}>
       <td><div className="av-listing-cell">{listing.imageUrl ? <img className="av-thumb" src={listing.imageUrl} alt="" loading="lazy"/> : <div className="av-thumb av-thumb-empty"/>}<div><strong>{listing.title}</strong><small>{listing.city || "City not set"}</small></div></div></td>
       <td>{vendor?.businessName || listing.vendorName || `Vendor ${listing.vendorId}`}{isDemo && <span className="av-tag av-demo">Demo</span>}</td>
@@ -144,8 +143,9 @@ export default function AdminListings() {
   const card = (listing: AdminExperience) => {
     const vendor = listing.vendor ?? ownerByVendor.get(listing.vendorId);
     const next = slotFor(listing);
+    const isDemo = listing.isDemo ?? vendor?.isDemo ?? false;
     return <article className="av-phone-card" key={listing.id}>
-      <div className="av-listing-cell">{listing.imageUrl ? <img className="av-thumb" src={listing.imageUrl} alt="" loading="lazy"/> : <div className="av-thumb av-thumb-empty"/>}<div><strong>{listing.title}</strong><small>{vendor?.businessName || listing.vendorName || `Vendor ${listing.vendorId}`}</small></div></div>
+      <div className="av-listing-cell">{listing.imageUrl ? <img className="av-thumb" src={listing.imageUrl} alt="" loading="lazy"/> : <div className="av-thumb av-thumb-empty"/>}<div><strong>{listing.title}</strong><small>{vendor?.businessName || listing.vendorName || `Vendor ${listing.vendorId}`}{isDemo && <span className="av-tag av-demo">Demo</span>}</small></div></div>
       <div className="av-phone-meta"><span>{CATEGORIES.find((c)=>c.value===listing.category)?.label ?? listing.category} · {listing.city || "No city"}</span><b className={`av-status av-status-${listing.status}`}>{statusTitle(listing.status)}</b><span>{listing.priceAmount == null ? "Price unset" : formatPrice(listing.priceAmount, "LKR")}</span><span>{next ? `Next: ${formatVendorDate(next.date)} · ${formatVendorTime(next.startTime)}` : "No upcoming session"}</span></div>
       <div className="av-row-actions">
         {listing.status === "published" ? <button className="av-link-button av-danger-text" onClick={() => { setUnpublish(listing); setReason(""); setConfirmed(false); }}>Unpublish</button> : <button className="av-link-button" disabled={statusMutation.isPending || !listing.imageUrl || !next} onClick={() => statusMutation.mutate({id:listing.id,status:"published"})}>Publish</button>}

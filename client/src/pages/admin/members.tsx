@@ -11,6 +11,8 @@ import { isDisabledRole } from "@shared/catalog";
 import { useToast } from "@/hooks/use-toast";
 
 type Member = { id: number; fullName?: string; name?: string; email: string; mobile?: string; phone?: string; role: string; joinedAt?: string; createdAt?: string; bookingsCount?: number; bookingCount?: number; hasLogin?: boolean; vendorId?: number | null; hasVendor?: boolean };
+type NewAccount = { fullName: string; email: string; role: "admin" | "customer" };
+type CreatedAccount = { user: Member; login: LoginCredentials };
 type Pending = { row: Member; action: "disable" | "enable" | "reset" | "role"; role?: "customer" | "vendor" | "admin" };
 function baseRole(role: string) { return role.replace(/^disabled:/, ""); }
 
@@ -19,6 +21,8 @@ export default function Members() {
   const { user } = useAuth();
   const [pending, setPending] = useState<Pending | null>(null);
   const [credentials, setCredentials] = useState<LoginCredentials | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newAccount, setNewAccount] = useState<NewAccount>({ fullName: "", email: "", role: "customer" });
   const [filter, setFilter] = useState(new URLSearchParams(window.location.search).get("filter") ?? "all");
   const query = useQuery<Member[]>({ queryKey: ["/api/admin/members"], queryFn: async () => {
     const res = await fetch("/api/admin/members", { credentials: "include" });
@@ -40,6 +44,17 @@ export default function Members() {
         toast({ title: variables.action === "role" ? "Member role updated" : variables.action === "disable" ? "Member disabled" : "Member enabled" });
       }
       setPending(null);
+    },
+  });
+  const createAccount = useMutation({
+    mutationFn: async (account: NewAccount) => (await apiRequest("POST", "/api/admin/members", account)).json() as Promise<CreatedAccount>,
+    onSuccess: async (result) => {
+      await refreshAdmin();
+      await query.refetch();
+      setCreateOpen(false);
+      setNewAccount({ fullName: "", email: "", role: "customer" });
+      setCredentials(result.login);
+      toast({ title: "Account created", description: "Share the temporary password securely. The new user must change it at sign-in." });
     },
   });
   const allRows = query.data ?? [];
@@ -66,12 +81,24 @@ export default function Members() {
   ];
   if (query.isLoading) return <main className="ad-content"><div className="ad-page-head"><div><p className="ad-eyebrow">Community accounts</p><h1>Members</h1></div></div><AdminLoading /></main>;
   if (query.isError) return <main className="ad-content"><div className="ad-page-head"><div><p className="ad-eyebrow">Community accounts</p><h1>Members</h1></div></div><AdminError retry={() => query.refetch()} /></main>;
-  return <main className="ad-content"><div className="ad-page-head"><div><p className="ad-eyebrow">Community accounts</p><h1>Members</h1><p>Account access and participation, kept in one place.</p></div></div>
+  return <main className="ad-content"><div className="ad-page-head"><div><p className="ad-eyebrow">Community accounts</p><h1>Members</h1><p>Account access and participation, kept in one place.</p></div><button className="ad-button" onClick={() => { createAccount.reset(); setCreateOpen(true); }}>Create account</button></div>
     <section className="ad-section ad-card"><div className="ad-section-head"><h2>Member directory</h2><span className="ad-badge">{rows.length} accounts</span></div>
       <AdminTable rows={rows} columns={columns} searchText={(row) => Object.values(row).join(" ")} filterControls={<div className="ad-filter-chips">{[["all", `All · ${allRows.length}`], ["real", `Real members · ${allRows.filter(isRealMember).length}`], ["enabled", `Enabled · ${allRows.filter((row) => !isDisabledRole(row.role)).length}`], ["disabled", `Disabled · ${allRows.filter((row) => isDisabledRole(row.role)).length}`], ["placeholders", `Placeholders · ${allRows.filter((row) => !row.hasLogin).length}`]].map(([value, label]) => <button className={`ad-chip ${filter === value ? "selected" : ""}`} key={value} onClick={() => setFilter(value)}>{label}</button>)}</div>} />
       {action.isError && <p className="ad-form-error" role="alert">{errorMessage(action.error)} <button className="ad-button secondary" onClick={() => action.reset()}>Dismiss</button></p>}
       {!rows.length && <div className="ad-state" style={{ padding: "24px 12px" }}><div className="ad-state-mark"><span style={{ fontSize: 18 }}>·</span></div><h2>{allRows.length ? "No members in this view" : "No members yet"}</h2><p>{allRows.length ? "Choose another status to find the account you need." : "Member accounts will appear here after the first sign-up."}</p><button className="ad-button secondary" onClick={() => allRows.length ? setFilter("all") : query.refetch()}>{allRows.length ? "Show all members" : "Refresh members"}</button></div>}
     </section>
+    {createOpen && <AdminDialog title="Create account" onClose={() => { if (!createAccount.isPending) { setCreateOpen(false); createAccount.reset(); } }}>
+      <p style={{ color: "#70817a", fontSize: 13, lineHeight: 1.6 }}>Create a member or admin login. They will receive a temporary password and must change it when they sign in.</p>
+      <form onSubmit={(event) => { event.preventDefault(); createAccount.mutate({ fullName: newAccount.fullName.trim(), email: newAccount.email.trim(), role: newAccount.role }); }}>
+        <div className="ad-form-grid">
+          <div className="ad-field"><label htmlFor="new-account-name">Full name</label><input className="ad-input" id="new-account-name" name="fullName" autoComplete="name" required maxLength={120} value={newAccount.fullName} onChange={(event) => setNewAccount((current) => ({ ...current, fullName: event.target.value }))} /></div>
+          <div className="ad-field"><label htmlFor="new-account-email">Email</label><input className="ad-input" id="new-account-email" name="email" type="email" autoComplete="email" required value={newAccount.email} onChange={(event) => setNewAccount((current) => ({ ...current, email: event.target.value }))} /></div>
+          <div className="ad-field"><label htmlFor="new-account-role">Role</label><select className="ad-select" id="new-account-role" value={newAccount.role} onChange={(event) => setNewAccount((current) => ({ ...current, role: event.target.value as NewAccount["role"] }))}><option value="customer">Member</option><option value="admin">Admin</option></select><small style={{ color: "#78847d", fontSize: 11 }}>Vendor accounts are created from Vendors.</small></div>
+        </div>
+        {createAccount.isError && <p className="ad-form-error" role="alert">Account could not be created. {errorMessage(createAccount.error)} Please correct the details or retry.</p>}
+        <div className="ad-dialog-actions"><button type="button" className="ad-button secondary" disabled={createAccount.isPending} onClick={() => { setCreateOpen(false); createAccount.reset(); }}>Cancel</button><button className="ad-button" disabled={createAccount.isPending}>{createAccount.isPending ? "Creating…" : "Create account"}</button></div>
+      </form>
+    </AdminDialog>}
     {pending && <AdminDialog title={pending.action === "disable" ? "Disable this member?" : pending.action === "enable" ? "Enable this member?" : pending.action === "reset" ? "Reset this member’s password?" : "Change member role?"} onClose={() => { setPending(null); action.reset(); }}>
       <p style={{ color: "#70817a", fontSize: 13, lineHeight: 1.6 }}>
         {pending.action === "disable" ? `${pending.row.fullName ?? pending.row.email} will no longer be able to sign in.` :

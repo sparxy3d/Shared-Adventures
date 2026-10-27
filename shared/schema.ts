@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, customType, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, customType, numeric, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -9,6 +9,7 @@ export const users = pgTable("users", {
   fullName: text("full_name").notNull(),
   phone: text("phone"),
   isSriLankanResident: boolean("is_sri_lankan_resident").notNull().default(true),
+  mustChangePassword: boolean("must_change_password").notNull().default(false),
   role: text("role").notNull().default("customer"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -43,6 +44,7 @@ export const vendors = pgTable("vendors", {
   contactPhone: text("contact_phone"),
   verificationStatus: text("verification_status").notNull().default("pending"),
   takingBookings: boolean("taking_bookings").notNull().default(true),
+  isDemo: boolean("is_demo").notNull().default(false),
   firstListingPublishedAt: timestamp("first_listing_published_at", { withTimezone: true }),
   commissionOverrideRate: numeric("commission_override_rate", { precision: 5, scale: 2 }),
   createdAt: timestamp("created_at").defaultNow(),
@@ -72,6 +74,7 @@ export const vendorDocuments = pgTable("vendor_documents", {
 export const experiences = pgTable("experiences", {
   id: serial("id").primaryKey(),
   vendorId: integer("vendor_id").notNull().references(() => vendors.id),
+  isDemo: boolean("is_demo").notNull().default(false),
   category: text("category").notNull(),
   title: text("title").notNull(),
   description: text("description"),
@@ -107,11 +110,27 @@ export const experienceImages = pgTable("experience_images", {
   experienceId: integer("experience_id").notNull().references(() => experiences.id),
   imageUrl: text("image_url").notNull(),
   sortOrder: integer("sort_order").default(0),
+  storageKey: text("storage_key"),
 });
 
 export const insertExperienceImageSchema = createInsertSchema(experienceImages).omit({ id: true });
 export type InsertExperienceImage = z.infer<typeof insertExperienceImageSchema>;
 export type ExperienceImage = typeof experienceImages.$inferSelect;
+
+export const siteSettings = pgTable("site_settings", {
+  id: integer("id").primaryKey(),
+  showDemoContent: boolean("show_demo_content").notNull().default(false),
+  bookingsOpen: boolean("bookings_open").notNull().default(false),
+  demoTaggedAt: timestamp("demo_tagged_at", { withTimezone: true }),
+});
+
+export const waitingList = pgTable("waiting_list", {
+  id: serial("id").primaryKey(),
+  experienceId: integer("experience_id").notNull().references(() => experiences.id),
+  email: text("email").notNull(),
+  name: text("name"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, table => [uniqueIndex("waiting_list_experience_email_idx").on(table.experienceId, table.email)]);
 
 export const availabilitySlots = pgTable("availability_slots", {
   id: serial("id").primaryKey(),

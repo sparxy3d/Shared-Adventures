@@ -18,6 +18,8 @@ import { withApprovalDate } from "./admin-insights";
 import { applicationUpload, validateDocuments } from "./vendor-documents";
 import { CONTACT_DETAILS_MESSAGE, GOOGLE_MAPS_MESSAGE, containsContactDetails, isGoogleBusinessUrl } from "@shared/contact-policy";
 import { commissionForVendor } from "@shared/pricing";
+import { registerOnboardingRoutes } from "./onboarding-routes";
+import { registerPhotoRoutes, type PhotoObjects } from "./listing-photos";
 
 const scryptAsync = promisify(scrypt);
 
@@ -192,7 +194,7 @@ const experienceSchema = z.object({
   openTime: hhmm.optional().nullable(),
   closeTime: hhmm.optional().nullable(),
   nextSessionText: optionalText(120),
-  imageUrl: z.enum(EXPERIENCE_IMAGES).optional().nullable(),
+  imageUrl: z.union([z.enum(EXPERIENCE_IMAGES), z.string().regex(/^\/api\/listing-images\/\d+\/1600\.webp$/)]).optional().nullable(),
   status: z.enum(LISTING_STATUSES).optional(),
 });
 
@@ -295,7 +297,7 @@ async function changeBookingStatus(
   return { booking: updated };
 }
 
-export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
+export async function registerRoutes(httpServer: Server, app: Express, options: { photoObjects?: PhotoObjects } = {}): Promise<Server> {
   const PgStore = pgSession(session);
   const isProduction = process.env.NODE_ENV === "production";
   if (isProduction) app.set("trust proxy", 1);
@@ -318,6 +320,19 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }),
   );
 
+  // Every API checks the persisted flag, not just browser navigation.
+  app.use("/api", async (req, res, next) => {
+    try {
+      if (req.method === "POST" && ["/auth/logout", "/auth/change-password"].includes(req.path)) return next();
+      const user = await loadUser(req, res);
+      if (user?.mustChangePassword) return res.status(403).json({
+        code: "PASSWORD_CHANGE_REQUIRED", mustChangePassword: true,
+        message: "Set a new password before continuing.",
+      });
+      next();
+    } catch (error) { next(error); }
+  });
+
   // Router-level guards: anything under these prefixes fails closed, including
   // endpoints added later and forgotten.
   app.use("/api/admin", requireAdmin, (req, res, next) => {
@@ -328,6 +343,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     next();
   });
   app.use("/api/vendor", requireVendor);
+  registerOnboardingRoutes(app);
+  registerPhotoRoutes(app, options.photoObjects, data => {
+    const result = vendorExperienceSchema.safeParse(data);
+    if (!result.success) throw Object.assign(new Error(result.error.issues[0]?.message || "Check the listing details before duplicating it"), { status: 400 });
+  });
 
   // Public clients receive the conversion rate only, never commission or audit data.
   app.get("/api/pricing-config", h(async (_req, res) => {
@@ -424,7 +444,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!(await comparePasswords(data.currentPassword, user.password))) {
       return res.status(400).json({ message: "Current password is incorrect" });
     }
-    await storage.updateUser(user.id, { password: await hashPassword(data.newPassword) });
+    if (await comparePasswords(data.newPassword, user.password)) return res.status(400).json({ message: "Choose a different new password" });
+    await storage.updateUser(user.id, { password: await hashPassword(data.newPassword), mustChangePassword: false });
     res.json({ ok: true });
   }));
 
@@ -906,6 +927,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       fullName: data.contactName,
       phone: data.contactPhone ?? null,
       role: "vendor",
+      mustChangePassword: true,
     });
     const lk = await storage.getCountryByCode("LK");
     const vendor = await storage.createVendor({
@@ -1080,6 +1102,19 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json(stripPassword(updated!));
   }));
 
+  app.post("/api/admin/members", h(async (req, res) => {
+    const data = parse(z.object({
+      email: z.string().trim().toLowerCase().email().max(254),
+      fullName: z.string().trim().min(1).max(120),
+      role: z.enum(["customer", "admin"]),
+    }).strict(), req.body, res);
+    if (!data) return;
+    if (await storage.getUserByEmail(data.email)) return res.status(400).json({ message: "An account with this email already exists" });
+    const temporaryPassword = `fs-${randomBytes(16).toString("hex")}`;
+    const user = await storage.createUser({ ...data, password: await hashPassword(temporaryPassword), mustChangePassword: true });
+    res.json({ user: stripPassword(user), login: { email: user.email, temporaryPassword } });
+  }));
+
   app.post("/api/admin/members/:id/disable", h(async (req, res) => {
     if (!parse(adminActionSchema, req.body ?? {}, res)) return;
     const target = await storage.getUser(id(req.params.id));
@@ -1108,7 +1143,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       return res.status(409).json({ message: "Approve their application before creating a login" });
     }
     const temporaryPassword = `fs-${randomBytes(4).toString("hex")}`;
-    await storage.updateUser(target.id, { password: await hashPassword(temporaryPassword) });
+    await storage.updateUser(target.id, { password: await hashPassword(temporaryPassword), mustChangePassword: true });
     res.json({ temporaryPassword });
   }));
 

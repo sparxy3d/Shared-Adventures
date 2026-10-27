@@ -1,7 +1,7 @@
 import { db } from "./db";
 import { eq, and, ilike, desc, sql, inArray, gte, lte, ne, getTableColumns } from "drizzle-orm";
 import {
-  users, countries, vendors, experiences, vendorDocuments, pricingSettings,
+  users, countries, vendors, experiences, vendorDocuments, pricingSettings, siteSettings, waitingList, experienceImages,
   availabilitySlots, bookings, favorites,
   type InsertUser, type User, type InsertCountry, type Country,
   type InsertVendor, type Vendor, type InsertExperience, type Experience,
@@ -17,7 +17,7 @@ import { calculatePricing, commissionForVendor } from "@shared/pricing";
 export type SafeUser = Omit<User, "password">;
 
 export type NextSession = { slotId: number; date: string; startTime: string; endTime: string; spotsLeft: number };
-export type PublicExperience = Experience & { vendorName: string | null; nextSession: NextSession | null; takingBookings: boolean };
+export type PublicExperience = Experience & { vendorName: string | null; nextSession: NextSession | null; takingBookings: boolean; photoSrcSet?: string | null };
 
 export type SearchFilters = {
   category?: string;
@@ -68,6 +68,68 @@ function sessionWindow(filters: SearchFilters): { from: string; to: string; date
 }
 
 export class DatabaseStorage {
+  async getSiteSettings() {
+    const [settings] = await db.select().from(siteSettings).where(eq(siteSettings.id, 1));
+    if (!settings) throw new Error("Site settings migration is required");
+    return { showDemoContent: settings.showDemoContent, bookingsOpen: settings.bookingsOpen };
+  }
+
+  async updateSiteSettings(data: { showDemoContent?: boolean; bookingsOpen?: boolean }) {
+    const [settings] = await db.update(siteSettings).set(data).where(eq(siteSettings.id, 1)).returning();
+    return { showDemoContent: settings.showDemoContent, bookingsOpen: settings.bookingsOpen };
+  }
+
+  async isDemoVendor(vendorId: number) {
+    const [vendor] = await db.select({ isDemo: vendors.isDemo }).from(vendors).where(eq(vendors.id, vendorId));
+    return !!vendor?.isDemo;
+  }
+
+  async getListingPhotos(experienceId: number) {
+    const photos = await db.select().from(experienceImages).where(eq(experienceImages.experienceId, experienceId))
+      .orderBy(experienceImages.sortOrder, experienceImages.id);
+    return photos.map(photo => ({ ...photo, srcSet: photo.storageKey
+      ? [400, 800, 1600].map(width => `/api/listing-images/${photo.id}/${width}.webp ${width}w`).join(", ")
+      : null }));
+  }
+
+  private async withPhotoCovers(rows: PublicExperience[]) {
+    if (!rows.length) return rows;
+    const photos = await db.select().from(experienceImages).where(inArray(experienceImages.experienceId, rows.map(row => row.id)))
+      .orderBy(experienceImages.sortOrder, experienceImages.id);
+    return rows.map(row => {
+      const cover = photos.find(photo => photo.experienceId === row.id);
+      return { ...row, ...(cover ? { imageUrl: cover.imageUrl } : {}), photoSrcSet: cover?.storageKey
+        ? [400, 800, 1600].map(width => `/api/listing-images/${cover.id}/${width}.webp ${width}w`).join(", ") : null };
+    });
+  }
+
+  async joinWaitingList(experienceId: number, email: string, name?: string) {
+    // Re-check visibility under the same locks as the insert, including switch races.
+    return db.transaction(async tx => {
+      const [site] = await tx.select().from(siteSettings).where(eq(siteSettings.id, 1)).for("share");
+      const [exp] = await tx.select().from(experiences).where(eq(experiences.id, experienceId)).for("share");
+      const [vendor] = exp ? await tx.select().from(vendors).where(eq(vendors.id, exp.vendorId)).for("share") : [];
+      if (!site || !exp || !vendor || exp.status !== "published" || vendor.verificationStatus !== "approved"
+        || (!site.showDemoContent && (exp.isDemo || vendor.isDemo))) return false;
+      await tx.insert(waitingList).values({ experienceId, email, name: name || null }).onConflictDoNothing();
+      return true;
+    });
+  }
+
+  async getWaitingList() {
+    const entries = await db.select({
+      id: waitingList.id, experienceId: waitingList.experienceId, title: experiences.title,
+      email: waitingList.email, name: waitingList.name, createdAt: waitingList.createdAt,
+    }).from(waitingList).innerJoin(experiences, eq(experiences.id, waitingList.experienceId)).orderBy(desc(waitingList.createdAt));
+    const counts = new Map<number, { experienceId: number; title: string; count: number }>();
+    for (const entry of entries) {
+      const row = counts.get(entry.experienceId) ?? { experienceId: entry.experienceId, title: entry.title, count: 0 };
+      row.count++;
+      counts.set(entry.experienceId, row);
+    }
+    return { counts: Array.from(counts.values()), entries };
+  }
+
   // ---------- users ----------
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -228,6 +290,8 @@ export class DatabaseStorage {
    */
   async searchExperiences(filters: SearchFilters = {}): Promise<PublicExperience[]> {
     const conditions = [eq(experiences.status, "published"), eq(vendors.verificationStatus, "approved"), eq(vendors.takingBookings, true)];
+    const settings = await this.getSiteSettings();
+    if (!settings.showDemoContent) conditions.push(eq(vendors.isDemo, false), eq(experiences.isDemo, false));
     if (filters.category) conditions.push(eq(experiences.category, filters.category));
     if (filters.countryId) conditions.push(eq(experiences.countryId, filters.countryId));
     if (filters.city) conditions.push(ilike(experiences.city, `%${filters.city}%`));
@@ -274,19 +338,21 @@ export class DatabaseStorage {
     }
 
     const windowed = Boolean(filters.time || filters.date);
-    return rows
+    return this.withPhotoCovers(rows
       .filter((r) => !windowed || nextByExp.has(r.exp.id))
-      .map((r) => toPublic(r.exp, r.vendorName, nextByExp.get(r.exp.id) ?? null));
+      .map((r) => toPublic(r.exp, r.vendorName, nextByExp.get(r.exp.id) ?? null)));
   }
 
   async getPublicExperience(id: number): Promise<PublicExperience | undefined> {
+    const settings = await this.getSiteSettings();
     const [row] = await db
       .select({ exp: experiences, vendorName: vendors.businessName, takingBookings: vendors.takingBookings })
       .from(experiences)
       .innerJoin(vendors, eq(vendors.id, experiences.vendorId))
       .where(and(eq(experiences.id, id), eq(experiences.status, "published"), eq(vendors.verificationStatus, "approved")));
     if (!row) return undefined;
-    return toPublic(row.exp, row.vendorName, null, row.takingBookings);
+    if (!settings.showDemoContent && (row.exp.isDemo || await this.isDemoVendor(row.exp.vendorId))) return undefined;
+    return (await this.withPhotoCovers([toPublic(row.exp, row.vendorName, null, row.takingBookings)]))[0];
   }
 
   /** Future sessions for a public listing (Colombo time), past ones omitted. */
@@ -321,8 +387,10 @@ export class DatabaseStorage {
   }
 
   async createExperience(data: InsertExperience): Promise<Experience> {
+    if (data.imageUrl?.startsWith("/api/listing-images/")) throw Object.assign(new Error("Upload photos after saving the draft"), { status: 400 });
     return db.transaction(async tx => {
       const [exp] = await tx.insert(experiences).values(data).returning();
+      if (exp.imageUrl) await tx.insert(experienceImages).values({ experienceId: exp.id, imageUrl: exp.imageUrl, sortOrder: 0 });
       if (exp.status === "published") await tx.update(vendors).set({
         firstListingPublishedAt: sql`coalesce(${vendors.firstListingPublishedAt}, now())`,
       }).where(eq(vendors.id, exp.vendorId));
@@ -331,7 +399,24 @@ export class DatabaseStorage {
   }
 
   async updateExperience(id: number, data: Partial<InsertExperience>): Promise<Experience | undefined> {
+    if (data.imageUrl?.startsWith("/api/listing-images/") &&
+      !(await this.getListingPhotos(id)).some(photo => photo.imageUrl === data.imageUrl)) {
+      throw Object.assign(new Error("Choose a photo from this listing"), { status: 400 });
+    }
     return db.transaction(async tx => {
+      const [current] = await tx.select().from(experiences).where(eq(experiences.id, id)).for("update");
+      if (!current) return undefined;
+      const photos = await tx.select().from(experienceImages).where(eq(experienceImages.experienceId, id)).orderBy(experienceImages.sortOrder, experienceImages.id);
+      if (data.imageUrl !== undefined) {
+        if (photos.some(photo => photo.storageKey) && data.imageUrl !== photos[0]?.imageUrl) {
+          throw Object.assign(new Error("Reorder your photos to change the cover"), { status: 400 });
+        }
+        if (photos.length === 1 && !photos[0].storageKey && data.imageUrl) {
+          await tx.update(experienceImages).set({ imageUrl: data.imageUrl }).where(eq(experienceImages.id, photos[0].id));
+        } else if (!photos.length && data.imageUrl) {
+          await tx.insert(experienceImages).values({ experienceId: id, imageUrl: data.imageUrl, sortOrder: 0 });
+        }
+      }
       const [exp] = await tx.update(experiences).set(data).where(eq(experiences.id, id)).returning();
       if (exp && exp.status === "published") await tx.update(vendors).set({
         firstListingPublishedAt: sql`coalesce(${vendors.firstListingPublishedAt}, now())`,
@@ -602,7 +687,7 @@ export class DatabaseStorage {
       }
       const placeholder = owner.password.startsWith("!");
       await tx.update(users).set({
-        role: "vendor", ...(placeholder ? { password: credentials.hash } : {}),
+        role: "vendor", ...(placeholder ? { password: credentials.hash, mustChangePassword: true } : {}),
       }).where(eq(users.id, owner.id));
       const [approved] = await tx.update(vendors).set({ verificationStatus: "approved", description: withApprovalDate(vendor.description) })
         .where(eq(vendors.id, vendorId)).returning();
@@ -626,9 +711,13 @@ export class DatabaseStorage {
   async createBookingRequest(experienceId: number, slotId: number, qty: number, customerId: number, customerNote: string | null,
     counts?: { residentCount: number; visitorCount: number }) {
     return db.transaction(async tx => {
+      const [site] = await tx.select().from(siteSettings).where(eq(siteSettings.id, 1)).for("share");
+      if (!site) throw new Error("Site settings migration is required");
+      if (!site.bookingsOpen) return { error: "Bookings open soon. Join the waiting list to be notified.", status: 403 } as const;
       const [exp] = await tx.select().from(experiences).where(eq(experiences.id, experienceId)).for("share");
       if (!exp || exp.status !== "published") return { error: "This activity is not available", status: 400 } as const;
       const [vendor] = await tx.select().from(vendors).where(eq(vendors.id, exp.vendorId)).for("update");
+      if (!site.showDemoContent && (exp.isDemo || vendor?.isDemo)) return { error: "This activity is not available", status: 404 } as const;
       if (!vendor || vendor.verificationStatus !== "approved") return { error: "This activity is not available", status: 400 } as const;
       if (!vendor.takingBookings) return { error: "Not taking bookings right now", status: 409 } as const;
       const [member] = await tx.select({ isSriLankanResident: users.isSriLankanResident }).from(users).where(eq(users.id, customerId));
@@ -707,16 +796,18 @@ export class DatabaseStorage {
 
   // ---------- favorites ----------
   async getFavoritesByCustomer(customerId: number) {
+    const settings = await this.getSiteSettings();
     const rows = await db
-      .select({ fav: favorites, exp: experiences, vendorName: vendors.businessName, vendorStatus: vendors.verificationStatus })
+      .select({ fav: favorites, exp: experiences, vendorName: vendors.businessName, vendorStatus: vendors.verificationStatus, vendorDemo: vendors.isDemo })
       .from(favorites)
       .innerJoin(experiences, eq(experiences.id, favorites.experienceId))
       .leftJoin(vendors, eq(vendors.id, experiences.vendorId))
       .where(eq(favorites.customerProfileId, customerId))
       .orderBy(desc(favorites.createdAt));
-    return rows
-      .filter((r) => r.exp.status === "published" && r.vendorStatus === "approved")
-      .map((r) => ({ ...r.fav, experience: toPublic(r.exp, r.vendorName, null) }));
+    const visible = rows.filter(r => r.exp.status === "published" && r.vendorStatus === "approved"
+      && (settings.showDemoContent || (!r.exp.isDemo && !r.vendorDemo)));
+    const cards = await this.withPhotoCovers(visible.map(r => toPublic(r.exp, r.vendorName, null)));
+    return visible.map((r, index) => ({ ...r.fav, experience: cards[index] }));
   }
 
   async createFavorite(data: InsertFavorite): Promise<Favorite> {

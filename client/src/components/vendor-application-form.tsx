@@ -90,7 +90,7 @@ function fileValidation(file: File | null, required: boolean) {
   const extension = file.name.split(".").pop()?.toLowerCase();
   const supported = DOCUMENT_TYPES.includes(file.type) || ["pdf", "jpg", "jpeg", "png"].includes(extension ?? "");
   if (!supported) return "Choose a PDF, JPG or PNG file.";
-  if (file.size > DOCUMENT_MAX_BYTES) return "Each document must be 10 MiB or smaller.";
+  if (file.size > DOCUMENT_MAX_BYTES) return "Each document must be 10MB or smaller.";
   return "";
 }
 
@@ -319,7 +319,8 @@ export default function VendorApplicationForm({ onBack }: { onBack?: () => void 
           <p className="v4-privacy-copy">Your documents are private. Only authorized Free Spirit administrators can review them for verification. They are not shown publicly or shared with customers. We store document details securely and only use them to assess your application.</p>
           <div className="v4-document-grid">
             {DOCUMENTS.map(({ key, label, required }) => <div className="v4-document-upload" key={key}>
-              <label htmlFor={`vendor-document-${key}`}>{label}{required ? " *" : " (optional)"}</label>
+              <label htmlFor={`vendor-document-${key}`}>{label}</label>
+              <small className="v4-document-requirement">{required ? "Required" : "Optional"}</small>
               <input id={`vendor-document-${key}`} type="file" required={required} accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
                 aria-describedby={`vendor-document-hint-${key}${documentErrors[key] ? ` vendor-document-error-${key}` : ""}`}
                 aria-invalid={!!documentErrors[key]} onChange={(event) => {
@@ -329,7 +330,7 @@ export default function VendorApplicationForm({ onBack }: { onBack?: () => void 
                   setDocumentErrors((current) => ({ ...current, [key]: issue }));
                   if (issue) event.target.value = "";
                 }} />
-              <small id={`vendor-document-hint-${key}`}>PDF, JPG or PNG. Maximum 10 MiB.</small>
+              <small id={`vendor-document-hint-${key}`}>PDF, JPG or PNG. Maximum 10MB.</small>
               {documents[key] && <small className="v4-document-selected">{documents[key]?.name} selected</small>}
               {documentErrors[key] && <p className="v4-error" id={`vendor-document-error-${key}`} role="alert">{documentErrors[key]}</p>}
             </div>)}
@@ -338,7 +339,7 @@ export default function VendorApplicationForm({ onBack }: { onBack?: () => void 
         <div className="v4-field v4-field--full">
           <div className="v4-check-wrap">
             <input id="vendor-accept-terms" name="acceptTerms" type="checkbox" checked={fields.acceptTerms} onChange={(event) => updateField("acceptTerms", event.target.checked)} onBlur={handleBlur("acceptTerms")} aria-invalid={!!errors.acceptTerms} aria-describedby={errors.acceptTerms ? "vendor-error-acceptTerms" : undefined} required />
-            <div><label htmlFor="vendor-accept-terms">I agree to the <Link href="/vendor-terms">vendor terms (draft)</Link></label> <span>({VENDOR_TERMS_VERSION}).</span></div>
+            <div><label htmlFor="vendor-accept-terms">I agree to the <Link href="/vendor-terms">vendor terms (version {VENDOR_TERMS_VERSION}, pending legal review)</Link>. We'll ask you to accept the final version before your first paid booking.</label></div>
           </div>
           {fieldError("acceptTerms")}
         </div>

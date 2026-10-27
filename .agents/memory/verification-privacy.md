@@ -9,6 +9,12 @@ Vendor identity and verification documents must remain private to admins. Vendor
 
 **How to apply:** protect both metadata and bytes with role checks, never include bytes in general application queries, and treat backup retention as a separate privacy decision if a permanent-erasure guarantee is requested.
 
+Public listing photos and private vendor verification documents are separate storage and access domains. Adding public photo uploads is not permission to move or expose verification documents.
+
+**Why:** the user explicitly required object storage for public listing photos while keeping private verification documents private and unchanged.
+
+**How to apply:** make public-photo storage changes independently; preserve the existing private document route, admin checks and deletion audit.
+
 Production uses an external owner-managed Neon database. Development schema changes are applied to development only; the production owner applies reviewed SQL separately before release.
 
 **Why:** the user explicitly reserves production schema changes for their own rollout and forbids production db:push in this stage.

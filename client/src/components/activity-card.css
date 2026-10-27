@@ -20,6 +20,9 @@
 .activity-card :focus-visible { outline: 2px solid #171717; outline-offset: 3px; }
 .activity-card-error { font-size: 14px; border-top: 1px solid #e2e8f0; margin-top: 8px; padding-top: 8px; }
 .activity-card-error button { min-height: 44px; text-decoration: underline; }
+.activity-card-booking { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; padding-top: 11px; border-top: 1px solid #e8e9df; color: #617267; font-size: 12px; }
+.activity-card-booking button { min-height: 38px; padding: 0 12px; border: 1px solid #b9c9b9; border-radius: 999px; background: #f2f5ed; color: #315a48; font-size: 12px; font-weight: 700; }
+.activity-card-booking button:hover { background: #e7efe2; }
 .activity-card-photo > a:hover img { transform: scale(1.02); }
 .activity-card-photo img { transition: transform .2s ease; }
 @media (prefers-reduced-motion: reduce) {

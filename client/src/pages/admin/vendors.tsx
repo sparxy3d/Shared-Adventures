@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Plus, RotateCcw, Store } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
-import { errorMessage, formatAdminDate, refreshAdmin, isDemoEmail } from "@/lib/admin";
+import { errorMessage, formatAdminDate, refreshAdmin } from "@/lib/admin";
 import { AdminDialog } from "@/components/admin/dialog";
 import { CredentialDialog, type LoginCredentials } from "@/components/admin/credential-dialog";
 import { AdminTable, type AdminColumn } from "@/components/admin/table";
@@ -11,7 +11,7 @@ import { AdminError, AdminLoading } from "@/components/admin/states";
 import { useToast } from "@/hooks/use-toast";
 import { SUPPORTED_CITIES } from "@shared/catalog";
 
-type Vendor = { id: number; businessName: string; ownerProfileId?: number; ownerName?: string; ownerEmail?: string; contactPhone?: string; city?: string; verificationStatus: string; live?: boolean; takingBookings: boolean; approvedAt?: string; listingCount?: number; publishedCount?: number; bookingsThisMonth?: number; };
+type Vendor = { id: number; businessName: string; ownerProfileId?: number; ownerName?: string; ownerEmail?: string; isDemo?: boolean; contactPhone?: string; city?: string; verificationStatus: string; live?: boolean; takingBookings: boolean; approvedAt?: string; listingCount?: number; publishedCount?: number; bookingsThisMonth?: number; };
 type NewVendor = { businessName: string; contactName: string; contactEmail: string; contactPhone: string; city: string; description: string };
 const initial: NewVendor = { businessName: "", contactName: "", contactEmail: "", contactPhone: "", city: "", description: "" };
 
@@ -55,11 +55,11 @@ export default function Vendors() {
     if (filter === "live") return row.live;
     if (filter === "approved-not-live") return row.verificationStatus === "approved" && !row.live;
     if (filter === "paused") return row.verificationStatus === "paused";
-    if (filter === "demo") return isDemoEmail(row.ownerEmail);
+    if (filter === "demo") return !!row.isDemo;
     return true;
   });
   const columns: AdminColumn<Vendor>[] = [
-    { key: "businessName", label: "Vendor", sortValue: (row) => row.businessName, render: (row) => <Link href={`/admin/vendors/${row.id}`} className="ad-cell-title" style={{ textDecoration: "none" }}>{row.businessName}{isDemoEmail(row.ownerEmail) && <span className="ad-badge warm" style={{ marginLeft: 7 }}>Demo</span>}<div className="ad-cell-sub">{row.ownerName ?? "Owner"} · {row.ownerEmail ?? "Email unavailable"}</div></Link> },
+    { key: "businessName", label: "Vendor", sortValue: (row) => row.businessName, render: (row) => <Link href={`/admin/vendors/${row.id}`} className="ad-cell-title" style={{ textDecoration: "none" }}>{row.businessName}{row.isDemo && <span className="ad-badge warm" style={{ marginLeft: 7 }}>Demo</span>}<div className="ad-cell-sub">{row.ownerName ?? "Owner"} · {row.ownerEmail ?? "Email unavailable"}</div></Link> },
     { key: "city", label: "City", sortValue: (row) => row.city ?? "" },
     { key: "verificationStatus", label: "Status", render: (row) => <span className={`ad-badge ${row.live ? "green" : row.verificationStatus === "paused" ? "red" : "warm"}`}>{row.live ? "Live" : row.verificationStatus}</span> },
     { key: "takingBookings", label: "Bookings", sortValue: (row) => row.takingBookings ? 1 : 0, render: (row) => <span className={`ad-badge ${row.takingBookings ? "green" : "warm"}`}>{row.takingBookings ? "Taking bookings" : "Offline"}</span> },

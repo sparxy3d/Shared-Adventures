@@ -1,5 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
 
+.v4-document-upload .v4-document-requirement { margin-top: -4px; min-height: 20px; font-size: 13px; color: #64748b; }
+
 .v4 {
   --v4-cream: #fff8f1;
   --v4-ink: #171717;

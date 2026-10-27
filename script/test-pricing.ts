@@ -29,13 +29,14 @@ const safeSchema = `"${schema}"`; // generated digits and fixed prefix, never ex
 try {
   await pool.query(`CREATE SCHEMA ${safeSchema}`);
   isolatePricingPool(pool, schema);
-  for (const table of ["users", "countries", "vendors", "vendor_documents", "experiences", "experience_images", "availability_slots", "bookings", "pricing_settings", "favorites", "reviews"]) {
+  for (const table of ["users", "countries", "vendors", "vendor_documents", "experiences", "experience_images", "availability_slots", "bookings", "pricing_settings", "site_settings", "waiting_list", "favorites", "reviews"]) {
     await pool.query(`CREATE TABLE ${safeSchema}.${table} (LIKE public.${table} INCLUDING ALL)`);
     await pool.query(`CREATE SEQUENCE ${safeSchema}.${table}_fixture_seq START 1000`);
     await pool.query(`ALTER TABLE ${safeSchema}.${table} ALTER COLUMN id SET DEFAULT nextval('${schema}.${table}_fixture_seq')`);
   }
   assert.equal((await pool.query("SELECT current_schema() AS name")).rows[0].name, schema);
   await pool.query("INSERT INTO pricing_settings(id,usd_to_lkr_rate) VALUES (1,300)");
+  await pool.query("INSERT INTO site_settings(id,show_demo_content,bookings_open) VALUES(1,true,true)");
   const password = "PricingTestOnly123";
   const salt = "pricing-integration-fixture";
   const hash = `${scryptSync(password, salt, 64).toString("hex")}.${salt}`;

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, Route, Switch, useLocation } from "wouter";
 import BrandLogo from "@/components/brand-logo";
-import { Activity, ClipboardList, LayoutDashboard, LogOut, Menu, Settings2, Store, Users, X } from "lucide-react";
+import { Activity, ClipboardList, LayoutDashboard, LogOut, Menu, Settings2, Store, Users, UserRoundPlus, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { getJson, errorMessage } from "@/lib/admin";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -14,6 +14,7 @@ import Members from "./members";
 import Settings from "./settings";
 import VendorDetail from "./vendor-detail";
 import AdminListings from "./listings";
+import WaitingList from "./waiting-list";
 import "./../../components/admin/admin.css";
 
 type Application = { verificationStatus: string };
@@ -23,6 +24,7 @@ const navigation = [
   { label: "Vendors", href: "/admin/vendors", icon: Store },
   { label: "Listings", href: "/admin/listings", icon: Activity },
   { label: "Bookings", href: "/admin/bookings", icon: ClipboardList },
+  { label: "Waiting list", href: "/admin/waiting-list", icon: UserRoundPlus },
   { label: "Members", href: "/admin/members", icon: Users },
   { label: "Settings", href: "/admin/settings", icon: Settings2 },
 ];
@@ -73,6 +75,7 @@ export default function AdminConsole() {
           <Route path="/admin/vendors/:id"><VendorDetail /></Route>
           <Route path="/admin/listings"><AdminListings /></Route>
           <Route path="/admin/bookings"><Bookings /></Route>
+          <Route path="/admin/waiting-list"><WaitingList /></Route>
           <Route path="/admin/members"><Members /></Route>
           <Route path="/admin/settings"><Settings /></Route>
           <Route><Overview /></Route>

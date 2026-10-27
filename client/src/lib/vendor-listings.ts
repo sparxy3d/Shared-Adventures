@@ -43,14 +43,8 @@ export async function loadListingSlots(id: number, admin = false): Promise<Avail
   return response.json();
 }
 export async function duplicateListing(exp: Experience): Promise<Experience> {
-  const allow: ListingInput = {
-    title: `${exp.title.slice(0, 53)} (copy)`, category: exp.category, description: exp.description || "",
-    locationText: exp.locationText || "", region: exp.region || "", city: exp.city || "",
-    durationMinutes: exp.durationMinutes, priceAmount: exp.priceAmount, visitorPriceUsd: exp.visitorPriceUsd, capacity: exp.capacity,
-    ageMin: exp.ageMin, safetyNotes: exp.safetyNotes || "", idealForTags: exp.idealForTags || [],
-    status: "draft", imageUrl: exp.imageUrl || "",
-  };
-  return createListing(allow);
+  const response = await apiRequest("POST", `/api/vendor/experiences/${exp.id}/duplicate`, {});
+  return response.json();
 }
 export function nextOpenSession(slots: AvailabilitySlot[] | undefined): AvailabilitySlot | undefined {
   const now = Date.now();

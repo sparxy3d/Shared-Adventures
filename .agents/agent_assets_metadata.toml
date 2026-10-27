@@ -546,3 +546,17 @@ mtime_ms = 1793089690707
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/d48fa294-cd12-4817-94a9-c72d12a0499c/71f49a0c-e0f1-4094-bb5d-e370a994bb2d"
 storage_version_token = "1793090092608991"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "qljE9GwxojPSWBD3lsNtY"
+uri = "file://generated-artifacts/stage-three/stage-three-report.html"
+type = "html"
+title = "Stage 3 report and screenshots"
+description = "Complete file list, production migration instructions, test results, assumptions, and 12 desktop/phone screenshots. Real photo uploads remain blocked until App Storage is configured."
+logical_id = "52ca032f-1ac3-4dd1-8420-d10d9f42451c"
+content_hash = "sha256:7f0a83317de727ce7421479bfa83eb55cc00a3a9eb4a6d64bc07942e0d41cf92"
+size = 1401144
+mtime_ms = 1793095011830
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/52ca032f-1ac3-4dd1-8420-d10d9f42451c/2df68b7b-6e3b-4268-a3ba-b14f35fed6f4"
+storage_version_token = "1793095078006185"
+content_type = "text/html"

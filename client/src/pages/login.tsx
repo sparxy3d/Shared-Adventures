@@ -35,6 +35,10 @@ export default function Login() {
     onSuccess: (user) => {
       queryClient.clear();
       queryClient.setQueryData(["/api/auth/me"], user);
+      if (user.mustChangePassword) {
+        navigate("/set-password");
+        return;
+      }
       toast({ title: "Welcome back", description: "You’re signed in and ready to make a plan." });
       const vendorReturn = user.role === "vendor" && next && /^\/vendor(?:\/|\?|$)/.test(next);
       navigate(next && (user.role === "customer" || vendorReturn) ? next : homeForRole(user.role));

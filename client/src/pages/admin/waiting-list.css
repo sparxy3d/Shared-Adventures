@@ -1,0 +1,29 @@
+.ad-waiting-page .ad-page-head { align-items:flex-end; }
+.ad-waiting-page .ad-page-head>.ad-button { display:flex; align-items:center; gap:8px; }
+.wl-summary { display:grid; grid-template-columns:minmax(210px,.7fr) minmax(0,1.7fr); gap:15px; margin-bottom:17px; }
+.wl-total,.wl-listing-counts { border:1px solid #ebded2; border-radius:13px; background:#fffaf5; }
+.wl-total { display:flex; align-items:center; gap:15px; padding:21px; }
+.wl-icon { display:grid; place-items:center; width:44px; height:44px; border-radius:12px; background:#f6e3d3; color:#a9502d; }
+.wl-total>div { display:grid; gap:2px; }
+.wl-total strong { color:#293a32; font-size:31px; font-variant-numeric:tabular-nums; line-height:1.1; }
+.wl-total>div>span { color:#7b8780; font-size:11px; }
+.wl-listing-counts { padding:17px 19px; }
+.wl-listing-counts>.ad-eyebrow { display:block; margin-bottom:9px; }
+.wl-listing-counts>div { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:7px 0; border-top:1px solid #efe7df; color:#55675e; font-size:12px; }
+.wl-listing-counts>div strong { min-width:26px; text-align:right; color:#273a30; font-size:13px; font-variant-numeric:tabular-nums; }
+.wl-listing-counts>p { margin:0; padding-top:8px; border-top:1px solid #efe7df; color:#7a867f; font-size:12px; }
+.wl-table-card .ad-section-head { align-items:center; }
+.wl-listing-filter { display:flex; align-items:center; gap:8px; color:#718077; font-size:11px; font-weight:700; }
+.wl-listing-filter select { max-width:280px; min-height:36px; padding:6px 30px 6px 10px; border:1px solid #e1d5ca; border-radius:8px; background:#fffdfa; color:#33463c; font:inherit; font-size:11px; }
+.wl-email { display:inline-flex; align-items:center; gap:7px; color:#a24e2b; font-weight:650; text-decoration:none; }
+.wl-email:hover { text-decoration:underline; }
+.wl-empty { padding:34px 12px; }
+.ad-waiting-page>.ad-form-error { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+@media(max-width:700px) {
+  .wl-summary { grid-template-columns:1fr; gap:10px; }
+  .wl-total { padding:16px; }
+  .wl-listing-filter { width:100%; align-items:stretch; flex-direction:column; }
+  .wl-listing-filter select { max-width:none; width:100%; }
+  .wl-table-card .ad-section-head { align-items:flex-start; flex-direction:column; }
+  .ad-waiting-page .ad-page-head>.ad-button { width:100%; justify-content:center; }
+}

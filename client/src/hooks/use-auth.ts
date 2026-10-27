@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import type { User } from "@shared/schema";
 
-export type AuthUser = Omit<User, "password">;
+export type AuthUser = Omit<User, "password"> & { mustChangePassword?: boolean };
 
 /** Where each role lands after login. */
 export function homeForRole(role: string | undefined): string {
@@ -20,7 +20,14 @@ export function useAuth() {
     queryFn: async () => {
       const res = await fetch("/api/auth/me", { credentials: "include" });
       if (res.status === 401) return null;
-      if (!res.ok) throw new Error(`${res.status}`);
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null) as { code?: string } | null;
+        if (res.status === 403 && payload?.code === "PASSWORD_CHANGE_REQUIRED" &&
+            typeof window !== "undefined" && window.location.pathname !== "/set-password") {
+          window.location.assign("/set-password");
+        }
+        throw new Error(`${res.status}: ${payload?.code ?? "Account could not be loaded"}`);
+      }
       return res.json();
     },
   });

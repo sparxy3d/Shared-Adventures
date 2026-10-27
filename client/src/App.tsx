@@ -9,6 +9,7 @@ import Home from "@/pages/home";
 import SearchPage from "@/pages/search";
 import ExperienceDetail from "@/pages/experience-detail";
 import Login from "@/pages/login";
+import SetPassword from "@/pages/set-password";
 import Signup from "@/pages/signup";
 import Account from "@/pages/account";
 import MyBookings from "@/pages/my-bookings";
@@ -29,6 +30,7 @@ import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import { RequireRole } from "@/components/require-role";
 import VendorShell from "@/components/vendor-shell";
+import { useAuth } from "@/hooks/use-auth";
 
 function LegalPage() {
   return <><Navbar /><Legal /><Footer /></>;
@@ -42,6 +44,7 @@ function VendorRoute({ children }: { children: ReactNode }) {
 }
 
 function Router() {
+  useAuth();
   return (
     <Switch>
       <Route path="/" component={Home} />
@@ -50,6 +53,7 @@ function Router() {
       <Route path="/activity/:id" component={ExperienceDetail} />
       <Route path="/experience/:id">{params => <Redirect to={`/activity/${params.id}${window.location.search}${window.location.hash}`} />}</Route>
       <Route path="/login" component={Login} />
+      <Route path="/set-password" component={SetPassword} />
       <Route path="/signup" component={Signup} />
       <Route path="/account/bookings" component={MyBookings} />
       <Route path="/account/saved" component={Favorites} />
@@ -79,6 +83,7 @@ function Router() {
       <Route path="/for-vendors" component={ForVendors} />
       <Route path="/for-vendors/apply" component={VendorApply} />
       <Route path="/admin">{() => <RequireRole role="admin"><AdminDashboard /></RequireRole>}</Route>
+      <Route path="/admin/waiting-list">{() => <RequireRole role="admin"><AdminDashboard /></RequireRole>}</Route>
       <Route path="/admin/*">{() => <RequireRole role="admin"><AdminDashboard /></RequireRole>}</Route>
       <Route component={NotFound} />
     </Switch>

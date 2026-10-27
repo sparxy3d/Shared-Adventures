@@ -8,6 +8,8 @@ import { sessionAvailability, sessionBookable, sessionDayHeading } from "@/lib/a
 import { formatTime12h } from "@/lib/dates";
 import type { ActivityBooking } from "@/hooks/use-activity-booking";
 import { formatLkr, formatUsd, validExchangeRate } from "@/lib/pricing";
+import { useSiteConfig } from "@/hooks/use-site-config";
+import NotifyDialog from "@/components/notify-dialog";
 
 type ActivitySessionPanelProps = {
   flow: ActivityBooking;
@@ -128,13 +130,19 @@ function PanelContent({ flow, title, priceAmount, visitorPriceUsd }: ActivitySes
 
 export default function ActivitySessionPanel(props: ActivitySessionPanelProps) {
   const isMobile = useIsMobile();
+  const siteConfig = useSiteConfig();
+  const [notifyOpen, setNotifyOpen] = useState(false);
   const { flow, priceAmount } = props;
   const price = priceText(priceAmount, props.visitorPriceUsd, flow);
-  if (!flow.takingBookings) {
-    return <div className="activity-detail-offline" role="status">
-      <span className="activity-detail-offline-mark" aria-hidden="true" />
-      <div><strong>Not taking bookings right now</strong><p>This experience is still here to explore. Check back another time.</p></div>
-    </div>;
+  if (!flow.takingBookings || siteConfig.data?.bookingsOpen !== true) {
+    return <>
+      <div className="activity-detail-offline activity-bookings-soon" role="status">
+        <span className="activity-detail-offline-mark" aria-hidden="true" />
+        <div><strong>{flow.takingBookings ? "Bookings open soon" : "Not taking bookings right now"}</strong><p>{flow.takingBookings ? "This experience is still here to explore. Leave your email and we’ll let you know when booking opens." : "Save this activity to your bucket list and check back later."}</p>
+          {flow.takingBookings && <button type="button" className="activity-detail-cta" onClick={() => setNotifyOpen(true)}>Notify me</button>}</div>
+      </div>
+      <NotifyDialog experienceId={Number(flow.activity.data?.id)} title={props.title} open={notifyOpen} onOpenChange={setNotifyOpen} />
+    </>;
   }
   if (!isMobile) {
     return <aside className="activity-detail-panel sticky-panel" aria-label="Request a session">

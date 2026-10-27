@@ -7,6 +7,7 @@ import { CONTACT_DETAILS_MESSAGE, containsContactDetails } from "@shared/contact
 import type { AvailabilitySlot, Experience } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import ExperienceCard from "@/components/experience-card";
+import ListingPhotoEditor from "@/components/listing-photo-editor";
 import type { Activity } from "@/lib/discovery";
 import { useToast } from "@/hooks/use-toast";
 import { CITY_CHOICES, EXPERIENCE_IMAGE_CHOICES, IDEAL_FOR, imageAlt, loadListing, loadListingSlots, updateListing, type ListingInput } from "@/lib/vendor-listings";
@@ -47,6 +48,7 @@ export default function ListingEditor({ adminVendorId, adminListingId, backHref 
   const listingQuery = useQuery<Experience>({queryKey:listingKey,queryFn:()=>loadListing(listingId,adminMode),enabled:editing && Number.isFinite(listingId)});
   const slotsQuery = useQuery<AvailabilitySlot[]>({queryKey:adminMode?["/api/admin/experiences",listingId,"slots"]:["/api/vendor/experiences",listingId,"slots"],queryFn:()=>loadListingSlots(listingId,adminMode),enabled:editing});
   const [form,setForm]=useState<FormState>(blank);
+  const [hasUploadedPhotos,setHasUploadedPhotos]=useState(false);
   const [initialized,setInitialized]=useState(!editing);
   const [saved,setSaved]=useState("");
   const [expanded,setExpanded]=useState<Record<string,boolean>>({basics:true,group:true,details:true,photo:true,preview:true});
@@ -247,8 +249,7 @@ export default function ListingEditor({ adminVendorId, adminListingId, backHref 
         </section>
         <section id="section-photo" className="v5-panel v5-section">
           <button type="button" className="v5-section-toggle" onClick={()=>toggle("photo")} aria-expanded={expanded.photo}><h2>04 · Choose a photo</h2><ChevronDown size={18}/></button>
-          <p className="v5-hint">Photo upload and promo video are coming at go-live.</p>
-          {expanded.photo&&<><p className="v5-hint">Select a curated image that best represents your experience. A photo is required to publish.</p><div className="v5-images" role="radiogroup" aria-label="Experience photos">{EXPERIENCE_IMAGE_CHOICES.map((image,index)=><button className="v5-image-choice" type="button" role="radio" aria-checked={form.imageUrl===image} aria-label={`Photo option ${index+1}: ${imageAlt(image)}`} key={image} onClick={()=>change("imageUrl",image)}><img src={image} alt={imageAlt(image)} loading="lazy"/>{form.imageUrl===image&&<span><Check size={14} aria-label="Selected"/></span>}</button>)}</div></>}
+          {expanded.photo&&<><p className="v5-hint">{hasUploadedPhotos ? "Drag photos or use the arrows to reorder. The first photo is the cover." : "Choose a curated cover or upload photos. A listing can have up to six photos, including its existing cover."}</p><div className="v5-images" style={hasUploadedPhotos?{display:"none"}:undefined} role="radiogroup" aria-label="Experience photos">{EXPERIENCE_IMAGE_CHOICES.map((image,index)=><button className="v5-image-choice" type="button" role="radio" aria-checked={form.imageUrl===image} aria-label={`Photo option ${index+1}: ${imageAlt(image)}`} key={image} onClick={()=>change("imageUrl",image)}><img src={image} alt={imageAlt(image)} loading="lazy"/>{form.imageUrl===image&&<span><Check size={14} aria-label="Selected"/></span>}</button>)}</div><ListingPhotoEditor listingId={editing ? listingId : undefined} adminMode={adminMode} onUploadStateChange={setHasUploadedPhotos} onCoverChange={(url)=>change("imageUrl",url)} /></>}
         </section>
         <section id="section-preview" className="v5-panel v5-section">
           <button type="button" className="v5-section-toggle" onClick={()=>toggle("preview")} aria-expanded={expanded.preview}><h2>05 · Preview and publish</h2><ChevronDown size={18}/></button>

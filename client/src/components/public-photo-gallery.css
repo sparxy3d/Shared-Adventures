@@ -1,0 +1,9 @@
+.public-gallery { min-width: 0; }
+.public-gallery-main { position: relative; overflow: hidden; border-radius: 22px; aspect-ratio: 16 / 8.5; background: #e9e9dc; }
+.public-gallery-main > img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.public-gallery-thumbnails { display: flex; gap: 10px; margin-top: 12px; overflow-x: auto; padding: 2px 1px 5px; }
+.public-gallery-thumbnails button { flex: 0 0 92px; width: 92px; height: 68px; padding: 0; overflow: hidden; border: 2px solid transparent; border-radius: 11px; background: #e8e9df; }
+.public-gallery-thumbnails button.is-current { border-color: #315a48; }
+.public-gallery-thumbnails img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.public-gallery-retry { position: absolute; right: 12px; bottom: 12px; padding: 8px 12px; border: 1px solid #dce0d8; border-radius: 999px; background: #fbfaf5; color: #315a48; font-size: 12px; }
+@media (max-width: 700px) { .public-gallery-main { border-radius: 16px; aspect-ratio: 4 / 3; } }

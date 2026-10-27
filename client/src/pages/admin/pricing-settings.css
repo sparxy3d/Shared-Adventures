@@ -16,6 +16,19 @@
 .ad-pricing-skeleton:first-of-type { height:110px; }
 @keyframes ad-price-pulse { to { opacity:.58; } }
 .ad-ops-card { margin-top:16px; }
+.ad-site-controls { display:grid; margin:4px 0 20px; border-top:1px solid #edf0e9; }
+.ad-site-control { display:flex; justify-content:space-between; align-items:center; gap:20px; padding:16px 2px; border-bottom:1px solid #edf0e9; }
+.ad-site-control>div:first-child strong { color:#293b32; font-size:13px; }
+.ad-site-control p { max-width:520px; margin:5px 0 0; color:#7c8981; font-size:11px; line-height:1.5; }
+.ad-site-actions { display:flex; align-items:center; gap:10px; flex:none; }
+.ad-ops-subhead { margin-top:12px; padding-top:18px; border-top:1px solid #e9e1d9; }
+.ad-site-loading { display:grid; gap:10px; margin:12px 0 22px; }
+.ad-site-loading i { height:62px; border-radius:9px; background:#f3ebe3; animation:ad-price-pulse 1.4s ease-in-out infinite alternate; }
+.ad-site-confirm-backdrop { position:fixed; z-index:120; inset:0; display:grid; place-items:center; padding:18px; background:#24342d66; }
+.ad-site-confirm { width:min(100%,450px); padding:25px; border:1px solid #ead8ca; border-radius:14px; background:#fffaf5; box-shadow:0 20px 60px #25342f35; }
+.ad-site-confirm h2 { margin:7px 0; color:#27382f; font-size:21px; }
+.ad-site-confirm>p:not(.ad-eyebrow) { color:#748179; font-size:13px; line-height:1.6; }
+.ad-site-confirm>div { display:flex; justify-content:flex-end; gap:9px; margin-top:22px; }
 .ad-setting-row { display:flex; gap:13px; align-items:flex-start; padding:16px 0; border-bottom:1px solid #edf0e9; }
 .ad-setting-row .ad-state-mark { margin:0; width:36px; height:36px; flex:0 0 36px; }
 .ad-setting-copy { flex:1; }
@@ -36,5 +49,8 @@
   .ad-pricing-audit,.ad-pricing-inline-error,.ad-pricing-actions { grid-column:1; }
   .ad-pricing-actions .ad-button { width:100%; }
   .ad-setting-title { align-items:flex-start; }
+  .ad-site-control { align-items:flex-start; flex-direction:column; gap:12px; }
+  .ad-site-actions { width:100%; justify-content:space-between; }
+  .ad-site-confirm>div { flex-direction:column-reverse; }
 }
 @media(prefers-reduced-motion:reduce) { .ad-pricing-skeleton { animation:none; } }

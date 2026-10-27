@@ -10,6 +10,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatPrice } from "@/lib/currency";
 import { durationLabel, sessionChip, type Activity } from "@/lib/discovery";
 import { usePricingConfig } from "@/hooks/use-pricing-config";
+import { useSiteConfig } from "@/hooks/use-site-config";
+import NotifyDialog from "@/components/notify-dialog";
 import { formatLkr, formatUsd, validExchangeRate } from "@/lib/pricing";
 import "./activity-card.css";
 
@@ -23,7 +25,10 @@ export default function ExperienceCard({ experience, saved, onRemove, removePend
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [error, setError] = useState("");
+  const [notifyOpen, setNotifyOpen] = useState(false);
   const [clock, setClock] = useState(() => new Date());
+  const siteConfig = useSiteConfig();
+  const bookingsOpen = siteConfig.data?.bookingsOpen === true;
   useEffect(() => {
     const timer = window.setInterval(() => setClock(new Date()), 60_000);
     return () => window.clearInterval(timer);
@@ -61,7 +66,8 @@ export default function ExperienceCard({ experience, saved, onRemove, removePend
   return <article className="activity-card" data-testid={`card-experience-${experience.id}`}>
     <div className="activity-card-photo">
       <Link href={href} aria-label={`View ${experience.title}`}>
-        <img src={experience.imageUrl || "/images/fallback.png"} alt={experience.title} loading="lazy"
+        <img src={experience.imageUrl || "/images/fallback.png"} srcSet={(experience as Activity & { photoSrcSet?: string | null }).photoSrcSet || undefined}
+          sizes="(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw" alt={experience.title} loading="lazy"
           onError={event => { if (!event.currentTarget.src.endsWith("/images/fallback.png")) event.currentTarget.src = "/images/fallback.png"; }} />
       </Link>
       <div className="activity-card-badges">
@@ -88,11 +94,16 @@ export default function ExperienceCard({ experience, saved, onRemove, removePend
         </div>
         <Link href={href} className="activity-card-view" aria-label={`View ${experience.title}`}>View <ArrowUpRight size={16} aria-hidden="true" /></Link>
       </div>
+      {!bookingsOpen && <div className="activity-card-booking">
+        <span>Bookings open soon</span>
+        <button type="button" onClick={() => setNotifyOpen(true)} aria-label={`Get notified when bookings open for ${experience.title}`}>Notify me</button>
+      </div>}
       {(error || authError || favorites.isError) && <div role="alert" className="activity-card-error">
         <p>{error || (authError ? "Your account couldn’t be checked." : "Your bucket list couldn’t be loaded.")}</p>
         <button type="button" onClick={() => error ? toggle.mutate() : authError ? retryAuth() : favorites.refetch()}>Retry</button>
       </div>}
     </div>
+    <NotifyDialog experienceId={experience.id} title={experience.title} open={notifyOpen} onOpenChange={setNotifyOpen} />
   </article>;
 }
 

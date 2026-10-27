@@ -79,6 +79,11 @@
 .activity-detail-offline-mark { flex: 0 0 11px; width: 11px; height: 11px; margin-top: 5px; border-radius: 50%; background: #ad7852; box-shadow: 0 0 0 5px #f4e6d8; }
 .activity-detail-offline strong { display: block; font-size: 15px; }
 .activity-detail-offline p { margin: 6px 0 0; color: #75695f; font-size: 13px; line-height: 1.55; }
+.activity-bookings-soon { border-color: #d7e0d3; background: #f4f7ef; color: #344c3c; }
+.activity-bookings-soon .activity-detail-offline-mark { background: #6b8a68; box-shadow: 0 0 0 5px #e2ebdf; }
+.activity-bookings-soon p { color: #647269; }
+.activity-bookings-soon .activity-detail-cta { max-width: 180px; min-height: 44px; margin-top: 15px; border-color: #315a48; background: #315a48; color: #fff; }
+.activity-bookings-soon .activity-detail-cta:hover { background: #264a3a; }
 .activity-detail-price { font: 800 1.8rem "Plus Jakarta Sans", sans-serif; letter-spacing: -.04em; }
 .activity-detail-per-person { color: var(--detail-muted); font-size: .85rem; }
 .activity-detail-group { padding: 1.2rem 0 1rem; margin-top: .9rem; border-top: 1px solid var(--detail-line); border-bottom: 1px solid var(--detail-line); }

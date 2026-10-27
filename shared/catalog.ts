@@ -89,7 +89,7 @@ export const GUEST_BOOKING_ENABLED = false;
 export const VENDOR_APPLICATION_THANK_YOU = "Thanks — we'll call you to talk it through.";
 
 // Placeholder copy. Labelled as drafts wherever it appears.
-export const VENDOR_TERMS_VERSION = "draft v0 (8 Oct 2026)";
+export const VENDOR_TERMS_VERSION = "0.9";
 
 // Reasons a vendor can pick when declining a request.
 export const DECLINE_REASONS = [

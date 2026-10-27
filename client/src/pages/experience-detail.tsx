@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "wouter";
+import { Link, useParams, useLocation, useSearch } from "wouter";
 import { ArrowLeft, Clock3, Heart, MapPin, Share2, ShieldCheck } from "lucide-react";
 import { categoryLabel, IDEAL_FOR_TAGS } from "@shared/catalog";
 import Navbar from "@/components/navbar";
@@ -7,10 +7,12 @@ import Footer from "@/components/footer";
 import ExperienceCard from "@/components/experience-card";
 import ActivitySessionPanel from "@/components/activity-session-panel";
 import BookingRequestDialog from "@/components/booking-request-dialog";
+import PublicPhotoGallery from "@/components/public-photo-gallery";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useActivityBooking } from "@/hooks/use-activity-booking";
 import { durationLabel } from "@/lib/discovery";
+import { useSiteConfig } from "@/hooks/use-site-config";
 import "./../components/activity-detail-stage-three.css";
 
 const idealForNames: Record<(typeof IDEAL_FOR_TAGS)[number], string> = {
@@ -36,15 +38,26 @@ function ActivitySkeleton() {
 
 export default function ExperienceDetail() {
   const { id = "" } = useParams<{ id: string }>();
+  const [, navigate] = useLocation();
+  const search = useSearch();
   const flow = useActivityBooking(id);
+  const siteConfig = useSiteConfig();
   const { toast } = useToast();
   const [shareError, setShareError] = useState("");
   const [shareCopied, setShareCopied] = useState(false);
   const activity = flow.activity.data;
+  const bookingsOpen = siteConfig.data?.bookingsOpen === true;
 
   useEffect(() => {
     if (activity?.title) document.title = `${activity.title} · Free Spirit`;
   }, [activity?.title]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    if (params.get("booking") !== "1" || siteConfig.isLoading || bookingsOpen) return;
+    params.delete("booking");
+    navigate(`/activity/${id}${params.toString() ? `?${params.toString()}` : ""}`, { replace: true });
+  }, [bookingsOpen, id, navigate, search, siteConfig.isLoading]);
 
   async function shareActivity() {
     setShareError("");
@@ -87,10 +100,7 @@ export default function ExperienceDetail() {
         </Link>
       </div>
 
-      <div className="activity-detail-photo">
-        <img src={activity.imageUrl || "/images/fallback.png"} alt={activity.title}
-          onError={event => { if (!event.currentTarget.src.endsWith("/images/fallback.png")) event.currentTarget.src = "/images/fallback.png"; }} />
-      </div>
+      <PublicPhotoGallery experienceId={activity.id} fallbackUrl={activity.imageUrl || "/images/fallback.png"} title={activity.title} />
       {shareCopied && <div className="activity-detail-share-toast" role="status">Link copied to clipboard</div>}
       {shareError && <div className="activity-detail-error" role="alert">{shareError} <button type="button" onClick={shareActivity}>Retry</button></div>}
       {(flow.saveError || flow.favoritesError || flow.auth.error) && <div className="activity-detail-error" role="alert">
@@ -166,6 +176,6 @@ export default function ExperienceDetail() {
       </section>
     </main>
     <Footer />
-    <BookingRequestDialog flow={flow} />
+    {bookingsOpen && flow.takingBookings && <BookingRequestDialog flow={flow} />}
   </div>;
 }
