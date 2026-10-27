@@ -22,17 +22,23 @@ export interface PhotoObjects {
 export class AppStoragePhotos implements PhotoObjects {
   // Client eagerly starts async initialization. Construct only alongside an
   // awaited request operation, never at boot when a bucket may not exist yet.
+  private client() {
+    const isProduction = process.env.NODE_ENV === "production" || !!process.env.REPLIT_DEPLOYMENT;
+    const bucketId = process.env[isProduction ? "LISTING_PHOTOS_BUCKET_PROD" : "LISTING_PHOTOS_BUCKET_DEV"]?.trim();
+    if (!bucketId) throw new Error("Listing photo storage is unavailable");
+    return new Client({ bucketId });
+  }
   async put(key: string, bytes: Buffer) {
-    const result = await new Client().uploadFromBytes(key, bytes);
+    const result = await this.client().uploadFromBytes(key, bytes);
     if (!result.ok) throw new Error("Listing photo storage is unavailable");
   }
   async get(key: string) {
-    const result = await new Client().downloadAsBytes(key);
+    const result = await this.client().downloadAsBytes(key);
     if (!result.ok) throw new Error("Listing photo storage is unavailable");
     return result.value[0];
   }
   async remove(key: string) {
-    const result = await new Client().delete(key, { ignoreNotFound: true });
+    const result = await this.client().delete(key, { ignoreNotFound: true });
     if (!result.ok) throw new Error("Listing photo storage is unavailable");
   }
 }

@@ -76,11 +76,18 @@ the public registry fine, because the other 592 entries already use it.
 Read directly from `process.env` at the point of use. There is no config module and no
 startup validation.
 
+Listing-photo clients are created only inside awaited storage operations. A missing
+or empty selected bucket ID makes those operations fail with the existing 503
+responses, never using the project's default bucket or the other environment.
+The `--real-storage` onboarding test refuses production and requires the DEV bucket.
+
 | Variable | Used in | Purpose |
 |---|---|---|
 | `NEON_DATABASE_URL_DEV` | `server/db.ts`, `drizzle.config.ts` | DEV database. Used when not in production |
 | `NEON_DATABASE_URL_PROD` | same | PROD database. Used when `NODE_ENV=production` or `REPLIT_DEPLOYMENT` is set |
 | `DATABASE_URL` | same | Fallback (Replit-managed Postgres) when the matching Neon variable is absent |
+| `LISTING_PHOTOS_BUCKET_DEV` | `server/listing-photos.ts`, real-storage onboarding test | Explicit DEV App Storage bucket ID. Required outside production; no default-bucket fallback |
+| `LISTING_PHOTOS_BUCKET_PROD` | `server/listing-photos.ts` | Explicit PROD App Storage bucket ID when `NODE_ENV=production` or `REPLIT_DEPLOYMENT` is set. Production must never fall back to the development bucket |
 | `DB_TARGET` | `drizzle.config.ts` | `prod` makes `db:push` target PROD. Anything else targets DEV |
 | `SESSION_SECRET` | `server/routes.ts` | Session cookie signing. Falls back to a hard-coded string (known debt) |
 | `ENABLE_SEED` | `server/index.ts` | `true` runs `seedDatabase()` at boot. Any other value skips it |

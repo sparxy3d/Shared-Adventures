@@ -1,7 +1,7 @@
 /**
  * Real handlers/auth/SQL with an isolated development schema.
  * Default object storage is a test adapter, NOT a live cloud bucket.
- * Add --real-storage only after configuring a default App Storage bucket.
+ * Add --real-storage only after configuring LISTING_PHOTOS_BUCKET_DEV.
  * Run: NODE_ENV=development npx tsx script/test-onboarding.ts [--screenshots]
  */
 import assert from "node:assert/strict";
@@ -15,6 +15,9 @@ import { isolatePricingPool } from "./isolated-pricing-db";
 import type { PhotoObjects } from "../server/listing-photos";
 
 if (process.env.REPLIT_DEPLOYMENT || process.env.NODE_ENV === "production" || process.env.DB_TARGET === "prod") throw new Error("Development only");
+if (process.argv.includes("--real-storage") && !process.env.LISTING_PHOTOS_BUCKET_DEV?.trim()) {
+  throw new Error("Real-storage onboarding tests require LISTING_PHOTOS_BUCKET_DEV; default and production buckets are never used");
+}
 const { pool } = await import("../server/db");
 const { storage } = await import("../server/storage");
 const { registerRoutes } = await import("../server/routes");
@@ -187,7 +190,7 @@ try {
     console.log(`SCREENSHOT_FIXTURE_READY ${base} schema=${schema}`);
     await new Promise<void>(resolve => { process.once("SIGTERM", resolve); process.once("SIGINT", resolve); });
   }
-  pass(cloud ? "All onboarding checks passed with real object storage" : "All onboarding checks passed (test-only object adapter, cloud bucket not verified)");
+  pass(cloud ? "All onboarding checks passed with real object storage in the DEV bucket only" : "All onboarding checks passed (test-only object adapter, cloud bucket not verified)");
 } finally {
   if (listening) { server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); }
   if (cloud) {
