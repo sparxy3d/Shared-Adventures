@@ -2,6 +2,7 @@ import "@/components/stage-one.css";
 import { Link, useLocation } from "wouter";
 import { ArrowUpRight } from "lucide-react";
 import { SUPPORT_EMAIL } from "@shared/catalog";
+import VendorTerms from "@/components/vendor-terms";
 
 const legalPages: Record<string, { eyebrow: string; title: string; lede: string; sections: { heading: string; body: string }[] }> = {
   "/terms": {
@@ -26,16 +27,6 @@ const legalPages: Record<string, { eyebrow: string; title: string; lede: string;
       { heading: "A working draft", body: "This policy is a draft. Before the marketplace launches fully, the final policy will describe data retention, service providers, security and your applicable privacy rights." },
     ],
   },
-  "/vendor-terms": {
-    eyebrow: "For experience providers",
-    title: "Vendor terms",
-    lede: "A starting point for the people and places who make memorable days possible.",
-    sections: [
-      { heading: "Your listings", body: "Providers are responsible for accurate experience descriptions, schedules, requirements and pricing, and for keeping listing details current." },
-      { heading: "Your guests", body: "Providers are responsible for communicating relevant preparation and safety information and delivering the experience as described." },
-      { heading: "A working draft", body: "Vendor terms are a draft and are not a final agreement. Contact our team before relying on these notes as contractual terms." },
-    ],
-  },
 };
 
 export default function Legal() {
@@ -57,15 +48,15 @@ export default function Legal() {
       </main>
     );
   }
+  if (pathname === "/vendor-terms") return <VendorTerms />;
   const page = legalPages[pathname] ?? legalPages["/terms"];
-  const isDraft = pathname !== "/about";
   return (
     <main className="stage-content stage-one">
       <div className="stage-content-inner">
         <span className="stage-content-kicker">{page.eyebrow}</span>
         <h1 className="stage-content-title">{page.title}</h1>
         <p className="stage-content-lede">{page.lede}</p>
-        {isDraft && <div className="stage-draft-note" role="status">{pathname === "/vendor-terms" ? "Version 0.9, pending legal review" : "Draft, final version coming soon"}</div>}
+        <div className="stage-draft-note" role="status">Draft, final version coming soon</div>
         <div className="stage-legal-body">
           {page.sections.map((section) => <section key={section.heading}><h2>{section.heading}</h2><p>{section.body}</p></section>)}
           <p>Questions? Visit <Link href="/help">Help &amp; support</Link> or email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.</p>

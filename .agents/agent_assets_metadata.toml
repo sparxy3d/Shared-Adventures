@@ -583,3 +583,31 @@ mtime_ms = 1793102882083
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/59750338-0d26-43fe-af1b-bf1c2fe2d3ec/ee760df3-4fd2-4e76-8e46-65dad4c8a442"
 storage_version_token = "1793102905592827"
 content_type = "text/html"
+
+[[outputs]]
+id = "csU8NsWmHh7JO1-Kvrepw"
+uri = "file://generated-artifacts/vendor-terms/top-1440.jpg"
+type = "image"
+title = "Vendor Terms at 1440px"
+description = "Desktop top of page with generated section navigation. Static frontend check; backend was not started."
+logical_id = "fd3938de-b8dc-4c15-b3e4-5421ecfb0310"
+content_hash = "sha256:2c84069b7f9f8e947d7a8818a41b9c09c1ff54f3dc2ea5ef162e64057e8aef3b"
+size = 108053
+mtime_ms = 1793116884473
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/fd3938de-b8dc-4c15-b3e4-5421ecfb0310/9775815e-e2a5-4bf1-9543-02861586f233"
+storage_version_token = "1793117023772060"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "pJGyPC8DoI9yzEofF-30m"
+uri = "file://generated-artifacts/vendor-terms/top-375.jpg"
+type = "image"
+title = "Vendor Terms at 375px"
+description = "Phone top of page with readable terms and 16px side gutters."
+logical_id = "5c004db2-80d5-470b-bc7f-cba850b240b3"
+content_hash = "sha256:a121f67771bf759ffc59947a15736cd0aad48082d5c2b17caf2c417a29aa569c"
+size = 62990
+mtime_ms = 1793116886117
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/5c004db2-80d5-470b-bc7f-cba850b240b3/dece1652-f990-460f-a10b-2aa9975c6d98"
+storage_version_token = "1793117025307453"
+content_type = "image/jpeg"
