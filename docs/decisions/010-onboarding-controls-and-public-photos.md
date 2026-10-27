@@ -11,4 +11,5 @@ must be explicit; never persist uploads to the development filesystem.
 
 Existing listing images remain valid. New vendors/listings default non-demo;
 only a one-time reviewed migration marks known demo owners and existing listings.
-Production SQL is owner-applied, never run automatically by boot or deployment.
+Superseded by ADR 013: production schema changes use immutable tracked startup
+migrations, after the one-time legacy baseline. No db:push or hand-applied SQL.

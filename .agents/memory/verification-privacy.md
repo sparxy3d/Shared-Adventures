@@ -15,8 +15,6 @@ Public listing photos and private vendor verification documents are separate sto
 
 **How to apply:** make public-photo storage changes independently; preserve the existing private document route, admin checks and deletion audit.
 
-Production uses an external owner-managed Neon database. Development schema changes are applied to development only; the production owner applies reviewed SQL separately before release.
-
-**Why:** the user explicitly reserves production schema changes for their own rollout and forbids production db:push in this stage.
-
-**How to apply:** never assume development schema changes propagate on publishing. Keep a reviewed migration and verify development before handing over production steps.
+Production uses an external owner-managed Neon database. Its former owner-applied
+SQL rollout rule is superseded by ADR 013 and the automated-migrations memory note.
+Private document access and deletion audit rules above are not superseded.

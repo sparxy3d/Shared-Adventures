@@ -51,8 +51,10 @@ Path aliases: `@/*` is `client/src/*`, and `@shared/*` is `shared/*` (`tsconfig.
 | Build | `npm run build` | Verified 2026-10-08. Client chunk is about 600 kB (Vite size warning) |
 | Dev server | `npm run dev` | UNVERIFIED here (needs a database). It is the Replit run command |
 | Prod server | `npm start` | UNVERIFIED here. Replit deployment runs `node ./dist/index.cjs` |
-| Schema push | `npm run db:push` | UNVERIFIED. Writes to a live database |
-| Tests | none | No test runner or test files exist |
+| Migrate | `npm run db:migrate` | Applies pending numbered SQL to the same selected database as the app |
+| Migration status | `npm run db:status` | Read-only applied/pending files and SHA-256 |
+| Legacy baseline | `npm run db:baseline` | One-time metadata registration of already-applied 007, 009 through 012 |
+| Migration tests | `npm run test:migrations` | Disposable DEV schemas, after build; never production |
 | Lint and format | none | No ESLint or Prettier config |
 
 ### Lockfile trap
@@ -84,11 +86,11 @@ The `--real-storage` onboarding test refuses production and requires the DEV buc
 | Variable | Used in | Purpose |
 |---|---|---|
 | `NEON_DATABASE_URL_DEV` | `server/db.ts`, `drizzle.config.ts` | DEV database. Used when not in production |
-| `NEON_DATABASE_URL_PROD` | same | PROD database. Used when `NODE_ENV=production` or `REPLIT_DEPLOYMENT` is set |
-| `DATABASE_URL` | same | Fallback (Replit-managed Postgres) when the matching Neon variable is absent |
+| `NEON_DATABASE_URL_PROD` | `server/db.ts` | PROD database. Used when `NODE_ENV=production` or `REPLIT_DEPLOYMENT` is set; Drizzle has no production path |
+| `DATABASE_URL` | `server/db.ts`, `drizzle.config.ts` | Fallback when the matching Neon variable is absent |
 | `LISTING_PHOTOS_BUCKET_DEV` | `server/listing-photos.ts`, real-storage onboarding test | Explicit DEV App Storage bucket ID. Required outside production; no default-bucket fallback |
 | `LISTING_PHOTOS_BUCKET_PROD` | `server/listing-photos.ts` | Explicit PROD App Storage bucket ID when `NODE_ENV=production` or `REPLIT_DEPLOYMENT` is set. Production must never fall back to the development bucket |
-| `DB_TARGET` | `drizzle.config.ts` | `prod` makes `db:push` target PROD. Anything else targets DEV |
+| `DB_TARGET` | `drizzle.config.ts`, test guards | Legacy `prod` is refused; not a migration target selector |
 | `SESSION_SECRET` | `server/routes.ts` | Session cookie signing. Falls back to a hard-coded string (known debt) |
 | `ENABLE_SEED` | `server/index.ts` | `true` runs `seedDatabase()` at boot. Any other value skips it |
 | `PORT` | `server/index.ts` | Listen port, default 5000 (`.replit` sets 5000) |
@@ -125,12 +127,31 @@ app `@sudeshi/FREE-SPIRIT`, and local clones.
   database. It is the only automated gate.
 - Release is a Replit deployment: `npm run build`, then `node ./dist/index.cjs`. It is
   triggered from Replit, and each publish appears as a commit on `main`.
-- There are no migration files. Schema changes reach PROD only through `db:push` with
-  `DB_TARGET=prod`.
+- Every schema change is a new numbered `migrations/NNN_description.sql` file. Never
+  edit/remove an applied file or run db:push/hand SQL against production.
+- Only additive, backward-compatible migrations. Expand and contract across separate
+  releases so a failed release can leave the previous app compatible with the schema.
+- Startup runs migrations before listening, seeding or registering routes. Failure
+  exits non-zero. SQL is copied to `dist/migrations`; CLI is `dist/migrate.cjs`.
+- A dedicated direct Neon connection holds a session advisory lock throughout the
+  run; pooled Neon hostnames have only their `-pooler` suffix removed. Database,
+  credentials and environment selection remain the same as `server/db.ts`.
+- `schema_migrations` records filename, SHA-256 checksum and applied_at. Each file
+  and its history insert share one transaction. Changed/missing history files fail.
+- Existing hand-upgraded databases must first run `npm run db:baseline`, or
+  `NODE_ENV=production node dist/migrate.cjs baseline` in the production environment
+  using its existing secrets. This records 007, 009, 010, 011, 012 without running them.
+  There is no 008 migration. It verifies legacy column prerequisites and never records 013.
+- Check `node dist/migrate.cjs status` with the appropriate environment after baseline.
+  On the next start, 013 creates the session table/index idempotently. The session
+  package no longer creates tables or reads its bundled table.sql.
+- New environments are created by branching the Neon production database. An empty
+  database bootstrap is deliberately unsupported. See ADR 013.
 
 ## Testing approach
 
-There are no automated tests. Verification today is `npm run check`, `npm run build`, and a
-manual check in the Replit preview with the seeded test accounts (listed in `product.md`).
-Adding a test runner (Vitest for server logic, or Playwright for flows) is its own change.
-Do not add one as a side effect of a feature.
+Use `npm run check`, `npm run build` and `npm run test:migrations`. Migration tests
+use disposable schemas on the selected DEV database, direct connections, and clean up
+in finally. Built-server tests point both subprocess database variables to the isolated
+DEV fixture and omit ENABLE_SEED only in that subprocess. Configured secrets are unchanged.
+Other focused test scripts live in script/. No new test framework is required.

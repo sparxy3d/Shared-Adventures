@@ -5,10 +5,9 @@ and `server/seed.ts`.
 
 ## Where the schema lives
 
-`shared/schema.ts` is the only definition. The vendor verification stage has a reviewed
-manual SQL migration for external Neon: apply it to development first and have Madushan
-apply it to production before compatible code ships. `npm run db:push` remains available
-for other changes but must never be run against production for this stage.
+Every schema change starts as a new, numbered `migrations/*.sql` file, with
+`shared/schema.ts` updated to match application-facing tables. Applied files are
+immutable. ADR 013 supersedes the earlier manual production SQL process.
 
 ## Naming
 
@@ -31,19 +30,20 @@ There is no row-level security. Every query that serves a vendor or customer end
 filters by that owner in the `where` clause, or the handler checks ownership before it
 writes.
 
-## Pushing schema changes
+## Changing schema
 
-1. Change `shared/schema.ts`.
-2. `npm run db:push` targets Neon DEV (or `DATABASE_URL`). Read every statement drizzle-kit
-   proposes.
-3. Drizzle-kit may propose dropping the `session` table, because connect-pg-simple owns it
-   and it is not in the schema. Answer no. (UNVERIFIED; check the first time.)
-4. Renames look like drop-plus-add, which loses data. Prefer add column, backfill, then drop
-   in a later change.
-5. PROD: `DB_TARGET=prod npm run db:push`, only after the change has run on DEV, and with a
-   Neon branch or snapshot taken first.
-6. Backfills that existing rows need go in `server/seed.ts` as idempotent per-record
-   updates, or in a one-off script that is reviewed in the PR.
+1. Write the next numbered additive SQL file in `migrations/`. Update `shared/schema.ts`
+   for tables used by drizzle; never alter or delete a file already applied anywhere.
+2. Keep compatibility with the previous running version of the app. Expand first;
+   backfill and contract in separate releases. Avoid column renames/drop-plus-add.
+3. Run `npm run db:status`, `npm run db:migrate`, `npm run check`,
+   `npm run build`, `npm run test:migrations` on development.
+4. The production bundle copies the SQL files. Startup takes an advisory lock and
+   applies pending files transactionally before listening; a failure exits non-zero.
+5. Existing hand-upgraded databases require the one-time explicit `db:baseline`
+   of 007 and 009 through 012. New environments are branched from Neon production.
+6. Never run db:push or hand SQL against production. Never put a one-off schema
+   backfill into seed code in place of a tracked migration.
 
 ## Queries
 
@@ -57,7 +57,8 @@ writes.
 
 ## Do not
 
-- Edit the database by hand in Neon PROD without recording it in the PR.
-- Add a column without a default to a table with rows, unless the push handles the backfill.
+- Run db:push or hand SQL in production, even after a successful development check.
+- Add a required column to a table with rows without an additive default/backfill
+  and compatibility plan.
 - Store money in minor units. This repo stores whole LKR.
 - Seed demo users in a production database that has real customers.

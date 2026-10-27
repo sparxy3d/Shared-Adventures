@@ -15,7 +15,7 @@ engineer. Keep it under 150 lines. It holds rules and pointers only. Detail live
 |---|---|
 | What the product is, who uses it, what it is not | `docs/context/product.md` |
 | Boundaries, request path, auth, ownership, data | `docs/context/architecture.md` |
-| Stack, versions, how to build, run, push schema, environments | `docs/context/tech.md` |
+| Stack, versions, how to build, run, migrate, environments | `docs/context/tech.md` |
 | Coding rules for this repo | `docs/context/conventions.md` and the profile for the stack you are touching |
 | Why things are the way they are | `docs/decisions/` |
 | The change in progress | `docs/specs/<NNN>-<name>/` |
@@ -58,8 +58,10 @@ typecheck: npm run check          # tsc, strict. Passes as of 2026-10-08
 build:     npm run build          # vite client + esbuild server into dist/. Passes as of 2026-10-08
 run (dev): npm run dev            # one process, API and client on PORT (default 5000)
 run (prod):npm start              # node dist/index.cjs
-schema:    npm run db:push        # drizzle-kit push to Neon DEV; DB_TARGET=prod targets PROD
-test:      none exists
+schema:    npm run db:migrate     # same DEV/PROD selection as server/db.ts; also runs at boot
+status:    npm run db:status      # read-only applied/pending checksums
+baseline:  npm run db:baseline    # one time for already hand-upgraded 007 through 012
+test:      npm run test:migrations # disposable DEV schemas; requires npm run build first
 lint:      none exists
 ```
 
@@ -84,8 +86,11 @@ on pushes to `main`. Full list, environment variables, and environments: `docs/c
 6. Anything in `server/seed.ts` must be safe to run again on every boot, and guarded per
    record. Values bound to integer columns must be integers (`Math.round`), or the whole
    seed aborts.
-7. `shared/schema.ts` is the only schema definition. Push to Neon DEV first. Push to PROD
-   only on purpose, after reading what drizzle-kit says it will drop or rewrite.
+7. Every schema change is a new numbered file in `migrations/`, with matching types in
+   `shared/schema.ts`. Never edit/remove an applied file. Only additive, backward-compatible
+   changes; expand then contract across separate releases. Never run `db:push` or hand SQL
+   against production. Startup applies tracked migrations before listening (ADR 013).
+   New environments are created by branching Neon production, not empty bootstrap.
 8. Business dates and "now" are Sri Lanka time (Asia/Colombo, UTC+05:30), not server UTC
    and not the browser's zone. Existing code gets this wrong (`architecture.md`, known
    debt). Do not copy that pattern.

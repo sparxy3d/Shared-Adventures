@@ -2,8 +2,9 @@
 - [Manual vendor onboarding](vendor-onboarding.md) — vendors are onboarded manually; admins need to edit listings on vendors' behalf.
 - [Browser verification](verification-tooling.md) — use existing tools; wait for React/new-document navigation; distinguish hash changes from leaving a page.
 - [Vendor approval age](vendor-approval-age.md) — base stale-not-live alerts on explicit approval time, not application submission time.
-- [Verification privacy and rollout](verification-privacy.md) — verification documents remain private and auditable; external production schema changes are owner-applied.
+- [Verification privacy](verification-privacy.md) — verification documents remain private and auditable; rollout now follows ADR 013.
 - [Neon test isolation](neon-test-isolation.md) — pooled Neon requires transaction-local schema scoping; session-level search_path can leak test state across requests.
 - [Typed JSON validation](json-column-validation.md) — drizzle-zod typed JSON arrays need explicit shared schema overrides, not casts around insert errors.
 - [Vendor fee policy](vendor-fee-policy.md) — introductory eligibility precedes publication; approval saves an agreed fee plan and booking snapshots stay immutable.
 - [Photo bucket isolation](photo-bucket-isolation.md) — separate DEV/PROD photo buckets selected by LISTING_PHOTOS_BUCKET_DEV/PROD; no fallback.
+- [Automated migrations](automated-migrations.md) — immutable numbered SQL at startup replaces manual production SQL; branch production for new environments.

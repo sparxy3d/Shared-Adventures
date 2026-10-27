@@ -320,7 +320,7 @@ export async function registerRoutes(httpServer: Server, app: Express, options: 
 
   app.use(
     session({
-      store: new PgStore({ pool, createTableIfMissing: true }),
+      store: new PgStore({ pool, createTableIfMissing: false }),
       secret: process.env.SESSION_SECRET || "free-spirit-secret-key",
       resave: false,
       saveUninitialized: false,

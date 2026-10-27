@@ -1,3 +1,9 @@
+# Rollout amendment
+
+ADR 013 supersedes this ADR's owner-applied production SQL instructions only.
+Use immutable tracked startup migrations and the one-time baseline. Privacy and
+document access/deletion decisions below remain unchanged.
+
 # Private verification documents and vendor availability
 
 Use PostgreSQL bytea for bounded verification documents in this prototype.

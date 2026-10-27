@@ -19,7 +19,8 @@ Express, one process on PORT  ── server/index.ts
    │            └─ server/db.ts  pg.Pool + drizzle (Neon DEV or PROD)
    ├─ dev:  Vite middleware (server/vite.ts)
    └─ prod: static dist/public, with SPA fallback (server/static.ts)
-Boot: if ENABLE_SEED=true, run server/seed.ts before routes are registered
+Boot: tracked migrations first; then existing ENABLE_SEED gate; then routes and listening.
+Migration failure exits non-zero before the server accepts requests.
 ```
 
 ## Components
@@ -65,7 +66,7 @@ requires the vendor role: vendor endpoints rely on `getVendorByOwner` returning 
 ## Authentication
 
 - Email and password. scrypt with a 16-byte salt, stored as `hex.salt`, and compared with `timingSafeEqual`.
-- Sessions are server-side in the Postgres `session` table (created automatically). The cookie
+- Sessions are server-side in the Postgres `session` table (created by migration 013). The cookie
   lasts 30 days, `httpOnly`, `sameSite: lax`, `secure: false`.
 - `GET /api/auth/me` is how the client learns who is signed in. Client role checks (for
   example `admin-dashboard.tsx`) only affect what is shown.
@@ -74,7 +75,8 @@ requires the vendor role: vendor endpoints rely on `getVendorByOwner` returning 
 
 Tables (`shared/schema.ts`): `users`, `countries`, `vendors`, `experiences`,
 `experience_images`, `availability_slots`, `bookings`, `favorites`, `reviews`, plus
-`session` (owned by connect-pg-simple, not in the schema).
+`session` (migration 013, used by connect-pg-simple), and `schema_migrations`
+(filename, SHA-256 checksum, applied_at, owned by the migration runner).
 
 - Primary keys are `serial`. Foreign keys are declared, with no cascade rules.
 - No soft delete and no `updated_at` on core records. Verification document contents are nulled on admin deletion, retaining the deletion audit.
@@ -90,7 +92,14 @@ Tables (`shared/schema.ts`): `users`, `countries`, `vendors`, `experiences`,
 - `price_amount` and `total_amount` are whole LKR. `rating` is tenths.
 - `experiences.ideal_for_tags` is `text[]` (friends, couples, families, teams, solo).
 - Categories in use: `sports`, `adventure`, `arts`, `wellness`, `recreation`.
-- Schema changes go through `drizzle-kit push`. There are no migration files and no history.
+- Every schema change is a new numbered SQL file in migrations/, mirrored in
+  shared/schema.ts where applicable. Never edit or remove applied files.
+- server/migrations.ts checks immutable history and serializes runs with a direct
+  PostgreSQL advisory lock. Each file and history record commit together.
+- Only additive, backward-compatible changes; expand then contract across separate
+  releases. Never db:push or hand SQL against production. New environments branch
+  Neon production. Existing hand-applied databases require the one-time baseline
+  described in ADR 013; the runner refuses to replay legacy files without it.
 
 ### Seed and the rolling slot window
 

@@ -9,14 +9,15 @@ import * as schema from "@shared/schema";
 const isProduction =
   process.env.NODE_ENV === "production" || !!process.env.REPLIT_DEPLOYMENT;
 
-const connectionString = isProduction
+const selectedConnectionString = isProduction
   ? process.env.NEON_DATABASE_URL_PROD || process.env.DATABASE_URL
   : process.env.NEON_DATABASE_URL_DEV || process.env.DATABASE_URL;
 
-if (!connectionString) {
+if (!selectedConnectionString) {
   throw new Error("No database connection string set (NEON_DATABASE_URL_DEV/PROD or DATABASE_URL)");
 }
 
+export const connectionString = selectedConnectionString;
 export const pool = new pg.Pool({ connectionString });
 
 export const db = drizzle(pool, { schema });

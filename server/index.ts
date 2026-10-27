@@ -3,6 +3,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { connectionString } from "./db";
+import { migrationClient, runMigrations } from "./migrations";
 
 const app = express();
 const httpServer = createServer(app);
@@ -48,6 +50,17 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  const client = migrationClient(connectionString);
+  try {
+    await client.connect();
+    for (const message of await runMigrations(client)) log(message, "migrations");
+  } catch (error) {
+    console.error("[migrations] Startup refused:", error instanceof Error ? error.message.replace(/postgres(?:ql)?:\/\/\S+/gi, "[redacted]") : "Migration failure");
+    process.exit(1);
+  } finally {
+    await client.end();
+  }
+
   if (process.env.ENABLE_SEED === "true") {
     const { seedDatabase } = await import("./seed");
     await seedDatabase().catch(err => {
