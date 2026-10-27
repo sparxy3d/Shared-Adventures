@@ -250,8 +250,8 @@ export default function VendorApplicationForm({ onBack }: { onBack?: () => void 
     return (
       <section ref={successRef} className="v4-success" aria-live="polite" data-testid="vendor-application-success" tabIndex={-1}>
         <span className="v4-success-mark" aria-hidden="true">✓</span>
-        <p className="v4-eyebrow">Application received</p>
-        <h2>{VENDOR_APPLICATION_THANK_YOU}</h2>
+        <h2>Application received</h2>
+        <p className="v4-success-message">{VENDOR_APPLICATION_THANK_YOU}</p>
       </section>
     );
   }

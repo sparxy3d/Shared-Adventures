@@ -121,6 +121,13 @@
 .av-commission-box > div > p:last-child { margin:0; color:var(--av-muted); font-size:13px; line-height:1.5; }
 .av-commission-form { display:grid; gap:12px; }
 .av-commission-form .av-field { gap:7px; }
+.av-fee-fields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.av-fee-fields .av-field { min-width:0; }
+.av-fee-fields .av-field span { min-height:36px; }
+.av-fee-fields .av-field input { min-width:0; }
+.av-fee-settings-state { align-self:start; padding:13px; border:1px solid var(--av-line); border-radius:8px; background:#fff; color:var(--av-muted); font-size:13px; line-height:1.5; }
+.av-fee-settings-state button { display:block; margin-top:9px; padding:0; border:0; background:transparent; color:var(--av-accent-dark); font-weight:800; text-decoration:underline; cursor:pointer; }
+.av-fee-settings-state button:disabled { opacity:.55; cursor:wait; }
 .av-commission-form .av-button { justify-self:end; }
 .av-commission-form input[aria-invalid="true"] { border-color:#bd5144; background:#fff9f7; }
 .av-commission-error { color:#9b382c; font-size:12px; line-height:1.5; }
@@ -191,6 +198,8 @@
   .av-section { padding:16px 12px; }
   .av-profile-form, .av-meta-grid { grid-template-columns:1fr; }
   .av-commission-box { grid-template-columns:1fr; gap:14px; }
+  .av-fee-fields { grid-template-columns:1fr; }
+  .av-fee-fields .av-field span { min-height:0; }
   .av-field-full { grid-column:auto; }
   .av-section-heading { align-items:flex-start; }
   .av-record-mark { display:none; }

@@ -1,0 +1,3 @@
+- [x] Fix fee phases and persist vendor plans with development migration.
+- [x] Compact confirmation/dashboard and add editable approval/vendor fee forms.
+- [x] Verify defaults, custom plans, snapshots and responsive screenshots.

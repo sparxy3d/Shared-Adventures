@@ -120,6 +120,28 @@
 .v-button { border: 0; border-radius: 9px; padding: 0 14px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; cursor: pointer; font-size: 13px !important; font-weight: 800; }.v-button:disabled { opacity: .55; cursor: wait; }.v-button-primary { color: white !important; background: #ff6b24; }.v-button-primary:hover:not(:disabled) { background: #e75816; }.v-button-quiet { background: #fff; color: #687586; border: 1px solid #e8e5e1; }.v-button-quiet:hover { background: #faf7f4; }.v-button-danger { color: white; background: #b94032; }.v-button-outline { color: #ae4034; background: #fff; border: 1px solid #e7b7ae; }
 .vba { display: grid; gap: 8px; }.vba-buttons { display: flex; gap: 8px; flex-wrap: wrap; }.vba-compact .v-button { min-height: 39px; }.vba-decline { display: grid; gap: 10px; background: #fffaf6; border: 1px solid #f2dfd1; padding: 13px; border-radius: 12px; }.vba-decline label { display: grid; gap: 5px; color: #4c5969; font-size: 12px; font-weight: 700; }.vba-decline select, .vba-decline textarea { width: 100%; border: 1px solid #d9dfe5; background: white; border-radius: 8px; padding: 9px 10px; color: #252a30; font-size: 13px; }.vba-decline select { min-height: 42px; }.vba-decline textarea { resize: vertical; }.v-inline-error { margin: 0; color: #a53d32; font-size: 12px; }.v-inline-error button { border: 0; background: none; text-decoration: underline; color: inherit; font-weight: 800; cursor: pointer; min-height: 35px; }
 .v-page-heading { margin-bottom: 24px; }
+.v-page:has(.v-dashboard-head) .v-dashboard-head { gap: 16px; margin-bottom: 18px; }
+.v-page:has(.v-dashboard-head) .v-dashboard-head h1 { font-size: 32px; }
+.v-page:has(.v-dashboard-head) .v-panel { padding: 16px; }
+.v-page:has(.v-dashboard-head) .v-taking-bookings { margin-bottom: 15px; gap: 3px 12px; }
+.v-page:has(.v-dashboard-head) .v-commission-summary { gap: 11px; margin-bottom: 15px; padding: 12px 14px; }
+.v-page:has(.v-dashboard-head) .v-commission-mark { width: 36px; height: 36px; border-radius: 10px; font-size: 20px; }
+.v-page:has(.v-dashboard-head) .v-dashboard-columns { gap: 14px; }
+.v-page:has(.v-dashboard-head) .v-checklist { margin-bottom: 15px; }
+.v-page:has(.v-dashboard-head) .v-panel-heading { gap: 11px; margin-bottom: 13px; }
+.v-page:has(.v-dashboard-head) .v-requests { padding: 15px 0 0; }
+.v-page:has(.v-dashboard-head) .v-requests > .v-panel-heading { padding: 0 15px; }
+.v-page:has(.v-dashboard-head) .v-request { padding: 13px 15px 14px; }
+.v-page:has(.v-dashboard-head) .v-side-stack { gap: 13px; }
+.v-page:has(.v-dashboard-head) .v-quick-links { gap: 7px; margin-top: 13px; }
+.v-page:has(.v-dashboard-head) .v-week-item { gap: 7px; padding: 9px 0; }
+.v-page:has(.v-dashboard-head) .v-month-grid { gap: 7px; }
+.v-page:has(.v-dashboard-head) .v-month-grid > div { padding: 9px; }
+.v-page:has(.v-dashboard-head) .v-checklist-grid { gap: 7px; }
+.v-page:has(.v-dashboard-head) .v-check-step { min-height: 57px; padding: 8px; gap: 7px; }
+.v-page:has(.v-dashboard-head) .v-empty { padding: 25px 15px 27px; }
+.v-commission-summary .v-fee-copy { min-width: 0; }
+.v-commission-summary .v-fee-copy > p:last-child { max-width: 880px; }
 .v-booking-controls { display: flex; justify-content: space-between; gap: 15px; align-items: center; margin-bottom: 16px; }
 .v-tabs { display: flex; gap: 3px; border-bottom: 1px solid #e8ded5; flex: 1; overflow-x: auto; }.v-tabs button { display: inline-flex; align-items: center; gap: 7px; min-height: 47px; padding: 0 11px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #687687; white-space: nowrap; font-size: 12px !important; font-weight: 700; cursor: pointer; }.v-tabs button.is-active { color: #b94a17; border-bottom-color: #ff6b24; }.v-tabs button span { background: #f0ede9; border-radius: 99px; padding: 2px 6px; font-size: 10px; }.v-tabs button.is-active span { background: #fff0e5; color: #b94a17; }
 .v-search { height: 42px; width: min(280px, 100%); flex: 0 0 240px; display: flex; align-items: center; gap: 8px; padding: 0 11px; border: 1px solid #e4ddd6; background: white; color: #8a95a2; border-radius: 10px; }.v-search input { border: 0; outline: 0; min-width: 0; width: 100%; color: #262a30; font-size: 12px; }.v-search input::placeholder { color: #929ba6; }
@@ -136,6 +158,18 @@
   .v-taking-bookings { margin: -2px 0 19px; padding: 16px; }
   .v-commission-summary { margin:-1px 0 18px; padding:15px; }
   .v-dashboard-head { display: grid; gap: 15px; margin: 4px 0 22px; }.v-status { justify-self: start; }
+  .v-page:has(.v-dashboard-head) .v-dashboard-head { gap: 10px; margin-bottom: 15px; }
+  .v-page:has(.v-dashboard-head) .v-dashboard-head h1 { font-size: 28px; }
+  .v-page:has(.v-dashboard-head) .v-panel { padding: 12px; }
+  .v-page:has(.v-dashboard-head) .v-requests { padding: 12px 0 0; }
+  .v-page:has(.v-dashboard-head) .v-requests > .v-panel-heading { padding: 0 12px; }
+  .v-page:has(.v-dashboard-head) .v-request { padding: 11px 12px; }
+  .v-page:has(.v-dashboard-head) .v-commission-summary { padding: 10px 11px; }
+  .v-page:has(.v-dashboard-head) .v-taking-bookings { padding: 11px; margin-bottom: 13px; }
+  .v-page:has(.v-dashboard-head) .v-dashboard-columns { gap: 11px; }
+  .v-page:has(.v-dashboard-head) .v-panel-heading { margin-bottom: 10px; }
+  .v-page:has(.v-dashboard-head) .v-check-step { min-height: 58px; padding: 7px; gap: 5px; }
+  .v-page:has(.v-dashboard-head) .v-check-icon { flex-basis: 27px; height: 27px; }
   .v-panel { padding: 17px; border-radius: 14px; }.v-requests { padding: 17px 0 0; }.v-requests > .v-panel-heading { padding: 0 17px; }.v-request { padding: 16px 17px; }
   .v-panel-heading h2 { font-size: 17px; }.v-dashboard-columns { grid-template-columns: 1fr; gap: 15px; }.v-checklist-grid { grid-template-columns: 1fr 1fr; gap: 8px; }.v-check-step { min-height: 66px; padding: 9px; gap: 7px; font-size: 11px; }.v-check-icon { flex-basis: 30px; height: 30px; }.v-step-arrow { width: 14px; }
   .v-request-top { display: block; }.v-received { display: block; text-align: left; margin-top: 6px; }.v-request-meta { gap: 9px 12px; }.v-request-meta strong { width: 100%; }.v-quick-links { flex-direction: column; }.v-quick-links a { justify-content: center; }

@@ -247,10 +247,10 @@
 .v4-form-alert strong { display: block; margin-bottom: 3px; }
 .v4-form-alert a { color: #8b3516; font-weight: 700; text-underline-offset: 3px; }
 .v4-form-alert button { min-height: 40px; margin-top: 10px; padding: 0 14px; border: 1px solid #c45b32; border-radius: 999px; color: #762b14; background: transparent; font-weight: 700; cursor: pointer; }
-.v4-success { max-width: 760px; margin: auto; padding: clamp(30px, 7vw, 62px); border: 1px solid #d9e6d7; border-radius: 22px; background: #f5fbf1; }
-.v4-success-mark { display: grid; width: 48px; height: 48px; place-items: center; margin-bottom: 22px; border-radius: 50%; color: #fff; background: #436f4a; font-size: 23px; }
-.v4-success h2 { margin-bottom: 12px; font-size: clamp(30px, 5vw, 44px); }
-.v4-success p { color: #53655a; line-height: 1.7; }
+.v4-success { max-width: 760px; margin: auto; padding: 22px 26px; border: 1px solid #d9e6d7; border-radius: 18px; background: #f5fbf1; }
+.v4-success-mark { display: grid; width: 36px; height: 36px; place-items: center; margin-bottom: 12px; border-radius: 50%; color: #fff; background: #436f4a; font-size: 19px; }
+.v4-success h2 { margin: 0 0 7px; font-size: 28px; line-height: 1.2; }
+.v4-success .v4-success-message { margin: 0; color: #53655a; font-size: 17px; line-height: 1.5; }
 .v4-success a { color: #35583a; font-weight: 700; text-underline-offset: 3px; }
 .v4-back-link { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 20px; color: #8d431e !important; font-weight: 700; text-decoration: none; }
 .v4-footer-gap { padding-top: 0; }
@@ -281,6 +281,9 @@
   .v4-field--full { grid-column: auto; }
   .v4-category-grid { grid-template-columns: 1fr; }
   .v4-group-pills { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .v4-success { padding: 16px 15px; border-radius: 14px; }
+  .v4-success h2 { font-size: 22px; }
+  .v4-success .v4-success-message { font-size: 16px; }
 }
 @media (max-width: 390px) {
   .v4-shell { width: calc(100% - 32px); }
@@ -291,6 +294,9 @@
   .v4-submit-row { align-items: stretch; flex-direction: column; }
   .v4-submit-row .v4-button { width: 100%; }
   .v4-form-card { padding: 19px 16px; border-radius: 17px; }
+  .v4-success { padding: 16px 15px; border-radius: 14px; }
+  .v4-success h2 { font-size: 22px; }
+  .v4-success .v4-success-message { font-size: 16px; }
 }
 @media (min-width: 761px) {
   .v4-process-note, .v4-preview-head > p { margin-top: 0; }

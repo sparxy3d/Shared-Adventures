@@ -29,24 +29,42 @@ export function calculatePricing(input: PricingInput) {
 }
 
 export function commissionForVendor(
-  vendor: { firstListingPublishedAt: Date | string | null; commissionOverrideRate: number | string | null },
+  vendor: {
+    firstListingPublishedAt: Date | string | null;
+    commissionOverrideRate: number | string | null;
+    commissionIntroductoryRate?: number | string | null;
+    commissionStandardRate?: number | string | null;
+    commissionIntroductoryMonths?: number | null;
+  },
   settings: { introductoryRate: number | string; standardRate: number | string; introductoryMonths: number },
   now = new Date(),
 ) {
   const start = vendor.firstListingPublishedAt ? new Date(vendor.firstListingPublishedAt) : null;
+  const introductoryRate = Number(vendor.commissionIntroductoryRate ?? settings.introductoryRate);
+  const standardRate = Number(vendor.commissionStandardRate ?? settings.standardRate);
+  const introductoryMonths = vendor.commissionIntroductoryMonths ?? settings.introductoryMonths;
+  const hasPlan = vendor.commissionIntroductoryRate != null
+    || vendor.commissionStandardRate != null || vendor.commissionIntroductoryMonths != null;
+  const flatOverride = !hasPlan && vendor.commissionOverrideRate != null;
   let end: Date | null = null;
   if (start) {
-    end = new Date(start);
+    // Calendar months use the publication's Sri Lanka date, not its UTC date.
+    const colomboOffset = 330 * 60_000;
+    end = new Date(start.getTime() + colomboOffset);
     const day = end.getUTCDate();
     end.setUTCDate(1);
-    end.setUTCMonth(end.getUTCMonth() + settings.introductoryMonths);
+    end.setUTCMonth(end.getUTCMonth() + introductoryMonths);
     const lastDay = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() + 1, 0)).getUTCDate();
     end.setUTCDate(Math.min(day, lastDay));
+    end = new Date(end.getTime() - colomboOffset);
   }
-  const overridden = vendor.commissionOverrideRate !== null;
-  const introductory = !overridden && !!start && !!end && now >= start && now < end;
+  const overridden = flatOverride || hasPlan;
+  const introductoryNotStarted = !flatOverride && !start && introductoryMonths > 0;
+  const introductory = !flatOverride && introductoryMonths > 0
+    && (!start || (!!end && now < end));
   return {
-    rate: Number(overridden ? vendor.commissionOverrideRate : introductory ? settings.introductoryRate : settings.standardRate),
+    rate: Number(flatOverride ? vendor.commissionOverrideRate : introductory ? introductoryRate : standardRate),
     introductory, introductoryEndsAt: end?.toISOString() ?? null, overridden,
+    introductoryNotStarted, introductoryRate, standardRate, introductoryMonths,
   };
 }

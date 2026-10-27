@@ -456,8 +456,21 @@ export class DatabaseStorage {
   }
 
   async setVendorCommission(id: number, rate: number | null) {
-    const [vendor] = await db.update(vendors).set({ commissionOverrideRate: rate === null ? null : String(rate) })
+    const [vendor] = await db.update(vendors).set({
+      commissionOverrideRate: rate === null ? null : String(rate),
+      commissionIntroductoryRate: null, commissionStandardRate: null, commissionIntroductoryMonths: null,
+    })
       .where(eq(vendors.id, id)).returning();
+    return vendor;
+  }
+
+  async setVendorFeePlan(id: number, plan: { introductoryRate: number; standardRate: number; introductoryMonths: number }) {
+    const [vendor] = await db.update(vendors).set({
+      commissionIntroductoryRate: String(plan.introductoryRate),
+      commissionStandardRate: String(plan.standardRate),
+      commissionIntroductoryMonths: plan.introductoryMonths,
+      commissionOverrideRate: null,
+    }).where(eq(vendors.id, id)).returning();
     return vendor;
   }
 
@@ -674,7 +687,9 @@ export class DatabaseStorage {
     });
   }
 
-  async approveVendorApplication(vendorId: number, credentials: { hash: string; temporaryPassword: string }) {
+  async approveVendorApplication(vendorId: number, credentials: { hash: string; temporaryPassword: string },
+    feePlan?: { introductoryRate: number; standardRate: number; introductoryMonths: number }) {
+    const defaults = feePlan ?? await this.getPricingSettings();
     return db.transaction(async tx => {
       const [vendor] = await tx.select().from(vendors).where(eq(vendors.id, vendorId)).for("update");
       if (!vendor) return undefined;
@@ -706,7 +721,13 @@ export class DatabaseStorage {
       await tx.update(users).set({
         role: "vendor", ...(placeholder ? { password: credentials.hash, mustChangePassword: true } : {}),
       }).where(eq(users.id, owner.id));
-      const [approved] = await tx.update(vendors).set({ verificationStatus: "approved", description: withApprovalDate(vendor.description) })
+      const [approved] = await tx.update(vendors).set({
+        verificationStatus: "approved", description: withApprovalDate(vendor.description),
+        commissionIntroductoryRate: String(defaults.introductoryRate),
+        commissionStandardRate: String(defaults.standardRate),
+        commissionIntroductoryMonths: defaults.introductoryMonths,
+        commissionOverrideRate: null,
+      })
         .where(eq(vendors.id, vendorId)).returning();
       return {
         ...approved,

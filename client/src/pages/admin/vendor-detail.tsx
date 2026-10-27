@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "wouter";
 import { ArrowLeft, Building2, CalendarDays, KeyRound, ListChecks, Save, ShieldCheck, Users } from "lucide-react";
@@ -17,6 +17,7 @@ type DetailVendor = Vendor & {
   ownerId?: number; ownerEmail?: string | null; ownerName?: string | null; ownerPhone?: string | null;
   listingsCount?: number; bookingsThisMonth?: number; monthlyBookings?: number; approvedAt?: string | null;
 };
+type PricingSettings = { introductoryRate: number; standardRate: number; introductoryMonths: number };
 type Tab = "profile" | "listings" | "schedule" | "bookings" | "stats";
 const TABS: { id: Tab; label: string; icon: typeof Building2 }[] = [
   { id: "profile", label: "Profile", icon: Building2 },
@@ -40,10 +41,20 @@ export default function VendorDetail() {
   const adminListingId: number | "new" | undefined = listingParam === "new" ? "new" : listingParam && /^\d+$/.test(listingParam) ? Number(listingParam) : undefined;
   const vendorQuery = useQuery<DetailVendor>({ queryKey: ["/api/admin/vendors", vendorId] });
   const vendor = vendorQuery.data;
+  const pricingQuery = useQuery<PricingSettings>({
+    queryKey: ["/api/admin/pricing-settings"],
+    refetchOnMount: "always",
+    queryFn: async () => {
+      const response = await fetch("/api/admin/pricing-settings", { credentials: "include" });
+      if (!response.ok) throw new Error(String(response.status));
+      return response.json();
+    },
+  });
   const experiencesQuery = useQuery<Experience[]>({ queryKey: ["/api/admin/vendors", vendorId, "experiences"], enabled: activeTab === "listings" && !listingParam });
   const [profile, setProfile] = useState({ businessName: "", about: "", city: "", region: "", address: "", contactEmail: "", contactPhone: "" });
-  const [commissionOverride, setCommissionOverride] = useState("");
+  const [feePlan, setFeePlan] = useState({ introductoryRate: "", standardRate: "", introductoryMonths: "" });
   const [initialized, setInitialized] = useState<number | null>(null);
+  const feeInitializedForId = useRef<number | null>(null);
   const [confirmation, setConfirmation] = useState<"pause" | "reset" | null>(null);
   const [credential, setCredential] = useState<{ email: string; temporaryPassword: string } | null>(null);
 
@@ -54,9 +65,18 @@ export default function VendorDetail() {
       city: vendor.city || "", region: vendor.region || "", address: vendor.address || "",
       contactEmail: vendor.contactEmail || "", contactPhone: vendor.contactPhone || "",
     });
-    setCommissionOverride(vendor.commissionOverrideRate == null ? "" : String(vendor.commissionOverrideRate));
     setInitialized(vendor.id);
   }, [vendor, initialized]);
+  useEffect(() => {
+    if (!vendor || !pricingQuery.data || !pricingQuery.isFetchedAfterMount || pricingQuery.isFetching || pricingQuery.isError || feeInitializedForId.current === vendor.id) return;
+    const legacyRate = vendor.commissionOverrideRate == null ? null : String(vendor.commissionOverrideRate);
+    setFeePlan({
+      introductoryRate: String(vendor.commissionIntroductoryRate ?? legacyRate ?? pricingQuery.data.introductoryRate),
+      standardRate: String(vendor.commissionStandardRate ?? legacyRate ?? pricingQuery.data.standardRate),
+      introductoryMonths: String(vendor.commissionIntroductoryMonths ?? pricingQuery.data.introductoryMonths),
+    });
+    feeInitializedForId.current = vendor.id;
+  }, [vendor, pricingQuery.data, pricingQuery.isFetchedAfterMount, pricingQuery.isFetching, pricingQuery.isError]);
 
   const moveTab = (tab: Tab) => navigate(`/admin/vendors/${vendorId}?tab=${tab}`);
   const setListing = (listing?: number | "new") => navigate(`/admin/vendors/${vendorId}?tab=listings${listing === undefined ? "" : `&listing=${listing}`}`);
@@ -76,24 +96,37 @@ export default function VendorDetail() {
     onError: () => toast({ title: "Couldn’t save vendor profile", description: "Your edits are still here. Retry when ready.", variant: "destructive" }),
   });
   const commissionMutation = useMutation({
-    mutationFn: async (commissionOverrideRate: number | null) => { await apiRequest("PATCH", `/api/admin/vendors/${vendorId}/commission`, { commissionOverrideRate }); },
-    onSuccess: async (_updated, commissionOverrideRate) => {
-      client.setQueryData<DetailVendor>(["/api/admin/vendors", vendorId], (current) => current ? {
-        ...current, commissionOverrideRate: commissionOverrideRate === null ? null : String(commissionOverrideRate),
-      } : current);
-      await client.invalidateQueries({ queryKey: ["/api/admin/vendors"] });
-      toast({ title: "Commission override saved", description: "The vendor’s future bookings will use the updated rate." });
+    mutationFn: async (plan: { introductoryRate: number; standardRate: number; introductoryMonths: number }) => {
+      await apiRequest("PATCH", `/api/admin/vendors/${vendorId}/commission`, plan);
+      return plan;
     },
-    onError: () => toast({ title: "Could not save commission override", description: "Your entry is still here. Please retry.", variant: "destructive" }),
+    onSuccess: async (plan) => {
+      client.setQueryData<DetailVendor>(["/api/admin/vendors", vendorId], (current) => current ? {
+        ...current,
+        commissionIntroductoryRate: String(plan.introductoryRate),
+        commissionStandardRate: String(plan.standardRate),
+        commissionIntroductoryMonths: plan.introductoryMonths,
+        commissionOverrideRate: null,
+      } : current);
+      await client.invalidateQueries({ queryKey: ["/api/admin/vendors", vendorId] });
+      await client.invalidateQueries({ queryKey: ["/api/admin/vendors"] });
+      toast({ title: "Free Spirit fee saved", description: "The vendor’s future bookings will use the updated fee plan." });
+    },
+    onError: () => toast({ title: "Could not save Free Spirit fee", description: "Your entries are still here. Please retry.", variant: "destructive" }),
   });
   const saveCommission = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const trimmed = commissionOverride.trim();
-    if (trimmed && (!/^\d+(?:\.\d{1,2})?$/.test(trimmed) || Number(trimmed) > 100)) {
+    const validRate = (value: string) => /^(?:\d{1,3})(?:\.\d{1,2})?$/.test(value.trim()) && Number(value) <= 100;
+    const validMonths = /^\d{1,3}$/.test(feePlan.introductoryMonths.trim()) && Number(feePlan.introductoryMonths) <= 120;
+    if (!validRate(feePlan.introductoryRate) || !validRate(feePlan.standardRate) || !validMonths) {
       commissionMutation.reset();
       return;
     }
-    commissionMutation.mutate(trimmed ? Number(trimmed) : null);
+    commissionMutation.mutate({
+      introductoryRate: Number(feePlan.introductoryRate),
+      standardRate: Number(feePlan.standardRate),
+      introductoryMonths: Number(feePlan.introductoryMonths),
+    });
   };
   const statusMutation = useMutation({
     mutationFn: (status: "paused" | "approved") => apiRequest("POST", `/api/admin/vendors/${vendorId}/${status === "paused" ? "pause" : "resume"}`),
@@ -129,6 +162,10 @@ export default function VendorDetail() {
 
   const metadata = applicationDetails(vendor.description);
   const field = (key: keyof typeof profile, label: string, full = false) => <label className={`av-field${full ? " av-field-full" : ""}`} key={key}><span>{label}</span><input value={profile[key]} maxLength={key === "businessName" ? 120 : undefined} onChange={(event)=>setProfile((current)=>({...current,[key]:event.target.value}))}/></label>;
+  const validCommissionRate = (value: string) => /^(?:\d{1,3})(?:\.\d{1,2})?$/.test(value.trim()) && Number(value) <= 100;
+  const validCommissionMonths = /^\d{1,3}$/.test(feePlan.introductoryMonths.trim()) && Number(feePlan.introductoryMonths) <= 120;
+  const commissionFieldsInvalid = !validCommissionRate(feePlan.introductoryRate)
+    || !validCommissionRate(feePlan.standardRate) || !validCommissionMonths;
 
   return <main className="av-page av-detail">
     <Link className="av-back" href="/admin/vendors"><ArrowLeft size={16}/> Vendors</Link>
@@ -148,13 +185,22 @@ export default function VendorDetail() {
         <div className="av-form-actions"><button className="av-button" type="submit" disabled={saveProfile.isPending||!profile.businessName.trim()}><Save size={16}/>{saveProfile.isPending?"Saving…":"Save profile"}</button></div>
       </form>
       <section className="av-commission-box" aria-labelledby="av-commission-heading">
-        <div><p className="av-kicker">Commission</p><h3 id="av-commission-heading">Vendor rate override</h3><p>Leave blank to use the global introductory and standard commission settings.</p></div>
-        <form className="av-commission-form" onSubmit={saveCommission}>
-          <label className="av-field"><span>Override commission (%)</span><input type="number" inputMode="decimal" min="0" max="100" step="0.01" placeholder="Use global rate" value={commissionOverride} onChange={(event)=>setCommissionOverride(event.target.value)} aria-invalid={!!commissionOverride.trim()&&(!/^\d+(?:\.\d{1,2})?$/.test(commissionOverride.trim())||Number(commissionOverride)>100)} /><small>Enter 0 to 100, with up to 2 decimal places. Current saved value: {vendor.commissionOverrideRate == null ? "Global rate" : `${vendor.commissionOverrideRate}%`}.</small></label>
-          {!!commissionOverride.trim()&&(!/^\d+(?:\.\d{1,2})?$/.test(commissionOverride.trim())||Number(commissionOverride)>100)&&<div className="av-commission-error" role="alert">Enter a commission from 0 to 100 with up to 2 decimal places.</div>}
-          {commissionMutation.isError&&<div className="av-commission-error" role="alert">The override was not saved. Your entry remains here. <button type="submit">Retry</button></div>}
-          <button className="av-button" type="submit" disabled={commissionMutation.isPending|| (!!commissionOverride.trim()&&(!/^\d+(?:\.\d{1,2})?$/.test(commissionOverride.trim())||Number(commissionOverride)>100))}>{commissionMutation.isPending?"Saving…":"Save commission"}</button>
-        </form>
+        <div><p className="av-kicker">Free Spirit fee</p><h3 id="av-commission-heading">Vendor fee plan</h3><p>Global settings prefill fields without a vendor-specific value. A legacy flat override appears in both rate fields until you save a new plan.</p></div>
+        {(pricingQuery.isFetching || (!pricingQuery.isError && !pricingQuery.isFetchedAfterMount)) && <div className="av-fee-settings-state" role="status">Loading global fee settings…</div>}
+        {!pricingQuery.isFetching && (pricingQuery.isError || !pricingQuery.data) && <div className="av-fee-settings-state av-commission-error" role="alert">
+          Global fee settings could not be loaded. The fee plan cannot be saved until the current settings are available.
+          <button type="button" disabled={pricingQuery.isFetching} onClick={() => void pricingQuery.refetch()}>{pricingQuery.isFetching ? "Retrying…" : "Retry settings"}</button>
+        </div>}
+        {!pricingQuery.isFetching && !pricingQuery.isError && pricingQuery.isFetchedAfterMount && pricingQuery.data && feeInitializedForId.current === vendor.id && <form className="av-commission-form" onSubmit={saveCommission}>
+          <div className="av-fee-fields">
+            <label className="av-field"><span>Introductory rate (%)</span><input type="number" inputMode="decimal" min="0" max="100" step="0.01" value={feePlan.introductoryRate} onChange={(event)=>{setFeePlan((current)=>({...current,introductoryRate:event.target.value}));commissionMutation.reset();}} aria-invalid={!validCommissionRate(feePlan.introductoryRate)} /><small>0 to 100, up to 2 decimal places.</small></label>
+            <label className="av-field"><span>Introductory months</span><input type="number" inputMode="numeric" min="0" max="120" step="1" value={feePlan.introductoryMonths} onChange={(event)=>{setFeePlan((current)=>({...current,introductoryMonths:event.target.value}));commissionMutation.reset();}} aria-invalid={!validCommissionMonths} /><small>Whole number from 0 to 120.</small></label>
+            <label className="av-field"><span>Standard rate (%)</span><input type="number" inputMode="decimal" min="0" max="100" step="0.01" value={feePlan.standardRate} onChange={(event)=>{setFeePlan((current)=>({...current,standardRate:event.target.value}));commissionMutation.reset();}} aria-invalid={!validCommissionRate(feePlan.standardRate)} /><small>0 to 100, up to 2 decimal places.</small></label>
+          </div>
+          {commissionFieldsInvalid&&<div className="av-commission-error" role="alert">Enter rates from 0 to 100 with up to 2 decimal places and months as a whole number from 0 to 120.</div>}
+          {commissionMutation.isError&&<div className="av-commission-error" role="alert">The fee plan was not saved. Your entries remain here. <button type="submit">Retry</button></div>}
+          <button className="av-button" type="submit" disabled={commissionMutation.isPending||commissionFieldsInvalid}>{commissionMutation.isPending?"Saving…":"Save fee plan"}</button>
+        </form>}
       </section>
       <section className="av-metadata"><h3>Application record · preserved</h3><div className="av-meta-grid"><div><small>Terms version</small><strong>{metadata.termsVersion}</strong></div><div><small>Accepted</small><strong>{metadata.termsDate}</strong></div><div><small>Approval date</small><strong>{vendor.approvedAt ? new Date(vendor.approvedAt).toLocaleDateString("en-LK",{dateStyle:"medium",timeZone:"Asia/Colombo"}) : "Not recorded"}</strong></div><div><small>Original application</small><p>{metadata.metadata}</p></div></div></section>
     </section>}

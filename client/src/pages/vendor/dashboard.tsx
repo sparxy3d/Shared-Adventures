@@ -9,7 +9,16 @@ import { apiRequest } from "@/lib/queryClient";
 
 interface DashboardData {
   vendor: { businessName: string; verificationStatus: string; takingBookings: boolean };
-  commission?: { rate: number; introductory: boolean; introductoryEndsAt: string | null; overridden: boolean };
+  commission?: {
+    rate: number;
+    introductory: boolean;
+    introductoryEndsAt: string | null;
+    overridden: boolean;
+    introductoryNotStarted?: boolean;
+    introductoryRate?: number;
+    standardRate?: number;
+    introductoryMonths?: number;
+  };
   accountStatus: string;
   listings: { total: number; published: number };
   pendingRequests: VendorBooking[];
@@ -70,16 +79,33 @@ export default function VendorDashboard() {
   const commissionEndDate = data?.commission?.introductoryEndsAt
     ? new Intl.DateTimeFormat("en-LK", { dateStyle: "long", timeZone: "Asia/Colombo" }).format(new Date(data.commission.introductoryEndsAt))
     : null;
+  const commissionRate = data?.commission?.rate;
+  const introRate = data?.commission?.introductoryRate ?? commissionRate;
+  const standardRate = data?.commission?.standardRate ?? commissionRate;
+  const introductoryMonths = data?.commission?.introductoryMonths;
+  const percentage = (rate?: number) => rate == null ? "Not available" : `${Number(rate.toFixed(2))}%`;
 
   if (query.isLoading) return <div className="v-page"><div className="v-skeleton v-skel-hero" /><div className="v-skeleton v-skel-panel" /><div className="v-skeleton v-skel-panel" /></div>;
   if (query.isError || !data) return <div className="v-page"><div className="v-error" role="alert"><h1>We couldn’t load your dashboard</h1><p>{query.error instanceof Error ? query.error.message : "Please try again."}</p><button className="v-button v-button-primary" onClick={() => query.refetch()}>Retry</button></div></div>;
 
   return <div className="v-page">
     <header className="v-dashboard-head"><div><p className="v-eyebrow">{greeting}{user?.fullName ? `, ${shortName(user.fullName)}` : ""}</p><h1>{data.vendor.businessName}</h1><p className="v-head-sub">A clear view of what’s happening with your sessions.</p></div><span className={`v-status v-status-${data.accountStatus}`}><i />{statusText[data.accountStatus] ?? data.accountStatus}</span></header>
-    {data.commission && <section className="v-panel v-commission-summary" aria-label="Commission rate">
+    {data.commission && <section className="v-panel v-commission-summary" aria-label="Free Spirit fee" data-testid="dashboard-fee">
       <div className="v-commission-mark" aria-hidden="true">%</div>
-      <div><p className="v-eyebrow">Your commission</p><h2>{data.commission.rate}% <span>{data.commission.introductory ? "introductory rate" : data.commission.overridden ? "vendor rate" : "standard rate"}</span></h2>
-        <p className="v-muted">{data.commission.introductory ? `Your introductory rate ends ${commissionEndDate ?? "on a date not recorded"}.` : data.commission.overridden ? "A custom rate has been set for your account." : "Applied when a new booking is requested."}</p>
+      <div className="v-fee-copy"><p className="v-eyebrow">Free Spirit fee</p>
+        {data.commission.introductoryNotStarted && introductoryMonths === 0 ? <>
+          <h2>{percentage(standardRate)} <span>standard rate</span></h2>
+          <p className="v-muted">Your introductory period is 0 months, so the introductory rate of {percentage(introRate)} is skipped. The standard rate of {percentage(standardRate)} applies from your first booking. You keep {percentage(standardRate == null ? undefined : 100 - standardRate)} of each completed booking.</p>
+        </> : data.commission.introductoryNotStarted ? <>
+          <h2>{percentage(introRate)} <span>introductory rate</span></h2>
+          <p className="v-muted">Your introductory rate applies {introductoryMonths == null ? "for your introductory period" : `for your first ${introductoryMonths} ${introductoryMonths === 1 ? "month" : "months"}`} once your first listing goes live, then {percentage(standardRate)}.</p>
+        </> : data.commission.introductory ? <>
+          <h2>{percentage(commissionRate)} <span>introductory rate</span></h2>
+          <p className="v-muted">You keep {percentage(commissionRate == null ? undefined : 100 - commissionRate)} of each completed booking until {commissionEndDate ?? "the end date on your account"}.</p>
+        </> : <>
+          <h2>{percentage(commissionRate)} <span>{data.commission.overridden ? "fee rate" : "standard rate"}</span></h2>
+          <p className="v-muted">You keep {percentage(commissionRate == null ? undefined : 100 - commissionRate)} of each completed booking.</p>
+        </>}
       </div>
     </section>}
     <section className={`v-panel v-taking-bookings ${takingBookings ? "is-taking-bookings" : "is-not-taking-bookings"}`} aria-labelledby="taking-bookings-title">

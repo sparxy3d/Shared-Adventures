@@ -242,6 +242,11 @@ const bookingSchema = z.object({
 
 const commissionRate = z.number().min(0).max(100).refine(n => Math.abs(n * 100 - Math.round(n * 100)) < 0.000001,
   "Use at most two decimal places");
+const vendorFeePlanSchema = z.object({
+  introductoryRate: commissionRate,
+  standardRate: commissionRate,
+  introductoryMonths: z.number().int().min(0).max(120),
+}).strict();
 const pricingSettingsSchema = z.object({
   introductoryRate: commissionRate.optional(),
   standardRate: commissionRate.optional(),
@@ -374,9 +379,14 @@ export async function registerRoutes(httpServer: Server, app: Express, options: 
   }));
 
   app.patch("/api/admin/vendors/:id/commission", h(async (req, res) => {
-    const data = parse(z.object({ commissionOverrideRate: commissionRate.nullable() }).strict(), req.body, res);
+    const data = parse(z.union([
+      vendorFeePlanSchema,
+      z.object({ commissionOverrideRate: commissionRate.nullable() }).strict(),
+    ]), req.body, res);
     if (!data) return;
-    const vendor = await storage.setVendorCommission(id(req.params.id), data.commissionOverrideRate);
+    const vendor = "introductoryRate" in data
+      ? await storage.setVendorFeePlan(id(req.params.id), data)
+      : await storage.setVendorCommission(id(req.params.id), data.commissionOverrideRate);
     if (!vendor) return res.status(404).json({ message: "Vendor not found" });
     res.json(vendor);
   }));
@@ -959,11 +969,12 @@ export async function registerRoutes(httpServer: Server, app: Express, options: 
   }));
 
   app.post("/api/admin/vendors/:id/approve", h(async (req, res) => {
-    if (!parse(adminActionSchema, req.body ?? {}, res)) return;
+    const data = parse(z.object({ feePlan: vendorFeePlanSchema.optional() }).strict(), req.body ?? {}, res);
+    if (!data) return;
     const temporaryPassword = `fs-${randomBytes(16).toString("hex")}`;
     const result = await storage.approveVendorApplication(id(req.params.id), {
       hash: await hashPassword(temporaryPassword), temporaryPassword,
-    });
+    }, data.feePlan);
     if (!result) return res.status(404).json({ message: "Vendor not found" });
     if ("error" in result) return res.status(409).json({ message: result.error });
     res.json(result);

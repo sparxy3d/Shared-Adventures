@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Check, ExternalLink, Mail, MessageCircle, Phone, X } from "lucide-react";
@@ -16,6 +16,7 @@ import { categoryLabel } from "@shared/catalog";
 import type { ApplicationActivity } from "@shared/application-activities";
 
 type Application = { id: number; businessName?: string; ownerName?: string; ownerEmail?: string; ownerPhone?: string; contactEmail?: string; contactPhone?: string; address?: string; city?: string; category?: string; description?: string; verificationStatus: string; createdAt?: string; approvedAt?: string; applicationDescription?: string; applicationActivities?: ApplicationActivity[] | null; };
+type PricingSettings = { introductoryRate: number | string; standardRate: number | string; introductoryMonths: number | string };
 export default function Applications() {
   const { toast } = useToast();
   const [declining, setDeclining] = useState<Application | null>(null);
@@ -23,17 +24,32 @@ export default function Applications() {
   const [reason, setReason] = useState("");
   const [filter, setFilter] = useState(new URLSearchParams(window.location.search).get("filter") ?? "all");
   const [credentials, setCredentials] = useState<LoginCredentials | null>(null);
+  const [approving, setApproving] = useState<Application | null>(null);
+  const [feePlan, setFeePlan] = useState({ introductoryRate: "", standardRate: "", introductoryMonths: "" });
+  const [approvalPricingState, setApprovalPricingState] = useState<"idle" | "loading" | "error" | "ready">("idle");
+  const pricingRequestId = useRef(0);
+  const pricing = useQuery<PricingSettings>({
+    queryKey: ["/api/admin/pricing-settings"],
+    queryFn: async () => {
+      const response = await fetch("/api/admin/pricing-settings", { credentials: "include" });
+      if (!response.ok) throw new Error(String(response.status));
+      return response.json();
+    },
+  });
   const query = useQuery<Application[]>({ queryKey: ["/api/admin/vendors"], queryFn: async () => {
     const response = await fetch("/api/admin/vendors", { credentials: "include" });
     if (!response.ok) throw new Error(String(response.status));
     return response.json();
   } });
   const action = useMutation({
-    mutationFn: async ({ row, status, declineReason }: { row: Application; status: string; declineReason?: string }) => {
+    mutationFn: async ({ row, status, declineReason, feePlan: plan }: { row: Application; status: string; declineReason?: string; feePlan?: { introductoryRate: number; standardRate: number; introductoryMonths: number } }) => {
       if (status === "contacted") { await apiRequest("POST", `/api/admin/vendors/${row.id}/contacted`, {}); return null; }
-      const response = status === "rejected"
-        ? await apiRequest("POST", `/api/admin/vendors/${row.id}/decline`, { reason: declineReason })
-        : await apiRequest("POST", `/api/admin/vendors/${row.id}/approve`, {});
+      if (status === "rejected") {
+        const response = await apiRequest("POST", `/api/admin/vendors/${row.id}/decline`, { reason: declineReason });
+        return response.json();
+      }
+      if (!plan) throw new Error("A complete Free Spirit fee plan is required to approve this application.");
+      const response = await apiRequest("POST", `/api/admin/vendors/${row.id}/approve`, { feePlan: plan });
       return response.json();
     },
     onSuccess: async (result, variables) => {
@@ -41,8 +57,54 @@ export default function Applications() {
       if (variables.status === "approved" && result?.login) setCredentials(result.login);
       else toast({ title: variables.status === "approved" ? "Application approved" : variables.status === "contacted" ? "Marked as contacted" : "Application declined" });
       setDeclining(null); setReason("");
+      setApproving(null);
     },
   });
+  const feeRateValid = (value: string) => /^(?:\d{1,3})(?:\.\d{1,2})?$/.test(value.trim()) && Number(value) <= 100;
+  const feePlanValid = feeRateValid(feePlan.introductoryRate) && feeRateValid(feePlan.standardRate)
+    && /^\d{1,3}$/.test(feePlan.introductoryMonths) && Number(feePlan.introductoryMonths) <= 120;
+  const loadApprovalSettings = async () => {
+    const requestId = ++pricingRequestId.current;
+    setApprovalPricingState("loading");
+    try {
+      const result = await pricing.refetch();
+      const settings = result.data;
+      if (requestId !== pricingRequestId.current) return;
+      if (result.isError || !settings) {
+        setApprovalPricingState("error");
+        return;
+      }
+      const introductoryRate = Number(settings.introductoryRate);
+      const standardRate = Number(settings.standardRate);
+      const introductoryMonths = Number(settings.introductoryMonths);
+      const settingsValid = Number.isFinite(introductoryRate) && introductoryRate >= 0 && introductoryRate <= 100
+        && Number.isFinite(standardRate) && standardRate >= 0 && standardRate <= 100
+        && Number.isInteger(introductoryMonths) && introductoryMonths >= 0 && introductoryMonths <= 120;
+      if (!settingsValid) {
+        setApprovalPricingState("error");
+        return;
+      }
+      setFeePlan({
+        introductoryRate: String(introductoryRate),
+        standardRate: String(standardRate),
+        introductoryMonths: String(introductoryMonths),
+      });
+      setApprovalPricingState("ready");
+    } catch {
+      if (requestId === pricingRequestId.current) setApprovalPricingState("error");
+    }
+  };
+  const openApproval = (row: Application) => {
+    action.reset();
+    setApproving(row);
+    void loadApprovalSettings();
+  };
+  const closeApproval = () => {
+    pricingRequestId.current += 1;
+    setApprovalPricingState("idle");
+    setApproving(null);
+    action.reset();
+  };
   const pipeline = (query.data ?? []).filter((row) => ["pending", "contacted", "rejected"].includes(row.verificationStatus));
   const rows = pipeline.filter((row) => filter === "all" || (filter === "waiting" ? ["pending", "contacted"].includes(row.verificationStatus) : filter === "new" ? row.verificationStatus === "pending" : row.verificationStatus === filter));
   const columns: AdminColumn<Application>[] = [
@@ -57,7 +119,7 @@ export default function Applications() {
       {phone && <a className="ad-icon-button" href={`tel:${phone}`} aria-label={`Call ${row.businessName ?? "applicant"}`}><Phone size={15} /></a>}
       {phone && <a className="ad-icon-button" href={`https://wa.me/${phone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" aria-label="Open WhatsApp"><MessageCircle size={15} /></a>}
       {row.verificationStatus === "pending" && <button className="ad-icon-button" title="Mark contacted" aria-label="Mark contacted" disabled={action.isPending} onClick={() => action.mutate({ row, status: "contacted" })}><Phone size={15} /></button>}
-      {row.verificationStatus !== "rejected" && <button className="ad-icon-button" title="Approve" aria-label="Approve application" disabled={action.isPending} onClick={() => action.mutate({ row, status: "approved" })}><Check size={15} /></button>}
+      {row.verificationStatus !== "rejected" && <button className="ad-icon-button" title="Approve" aria-label="Approve application" disabled={action.isPending} onClick={() => openApproval(row)}><Check size={15} /></button>}
       {row.verificationStatus !== "rejected" && <button className="ad-icon-button" title="Decline" aria-label="Decline application" disabled={action.isPending} onClick={() => setDeclining(row)}><X size={15} /></button>}
     </div>; } },
   ];
@@ -71,6 +133,26 @@ export default function Applications() {
       {action.isError && <div className="ad-form-error" role="alert">{errorMessage(action.error)} <button className="ad-button secondary" onClick={() => action.reset()}>Dismiss</button></div>}
       {!rows.length && <div className="ad-state" style={{ padding: "24px 12px" }}><div className="ad-state-mark"><Check size={18} /></div><h2>{pipeline.length ? "No applications in this view" : "No applications yet"}</h2><p>{pipeline.length ? "Choose another application status to see more records." : "New vendor applications will appear here when they are submitted."}</p><button className="ad-button secondary" onClick={() => pipeline.length ? setFilter("all") : query.refetch()}>{pipeline.length ? "Show all applications" : "Refresh applications"}</button></div>}
     </section>
+    {approving && <AdminDialog title="Review Free Spirit fee" onClose={() => { if (!action.isPending) closeApproval(); }}>
+      <div className="ad-fee-plan-dialog" data-testid="approval-fee-dialog" style={{ display: "grid", gap: 14 }}>
+        <p>Choose the fee plan for {approving.businessName ?? "this vendor"} before approving their application.</p>
+        {approvalPricingState === "loading" && <div className="ad-fee-plan-loading" aria-label="Loading current global fee settings"><span/><span/><span/></div>}
+        {approvalPricingState === "error" && <div className="ad-form-error" role="alert">Current global fee settings could not be loaded. Approval is disabled until the settings are available. <button className="ad-button secondary" disabled={pricing.isFetching} onClick={() => void loadApprovalSettings()}>{pricing.isFetching ? "Retrying…" : "Retry"}</button></div>}
+        {approvalPricingState === "ready" && <>
+          <div className="ad-fee-plan-fields" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
+            <label className="ad-field"><span>Introductory rate (%)</span><input type="number" min="0" max="100" step="0.01" value={feePlan.introductoryRate} onChange={(event) => setFeePlan((current) => ({ ...current, introductoryRate: event.target.value }))} /></label>
+            <label className="ad-field"><span>Introductory period (months)</span><input type="number" min="0" max="120" step="1" value={feePlan.introductoryMonths} onChange={(event) => setFeePlan((current) => ({ ...current, introductoryMonths: event.target.value }))} /></label>
+            <label className="ad-field"><span>Standard rate (%)</span><input type="number" min="0" max="100" step="0.01" value={feePlan.standardRate} onChange={(event) => setFeePlan((current) => ({ ...current, standardRate: event.target.value }))} /></label>
+          </div>
+          {!feePlanValid && <p className="ad-fee-plan-error" role="alert">Rates must be from 0 to 100 with up to 2 decimal places. Months must be a whole number from 0 to 120.</p>}
+          {action.isError && <p className="ad-fee-plan-error" role="alert">{errorMessage(action.error)}</p>}
+          <div className="ad-dialog-actions">
+            <button className="ad-button secondary" disabled={action.isPending} onClick={closeApproval}>Cancel</button>
+            <button className="ad-button" data-testid="approval-fee-confirm" disabled={approvalPricingState !== "ready" || !feePlanValid || action.isPending} onClick={() => action.mutate({ row: approving, status: "approved", feePlan: { introductoryRate: Number(feePlan.introductoryRate), standardRate: Number(feePlan.standardRate), introductoryMonths: Number(feePlan.introductoryMonths) } })}>{action.isPending ? "Approving…" : "Confirm and approve"}</button>
+          </div>
+        </>}
+      </div>
+    </AdminDialog>}
     {declining && <AdminDialog title="Decline application" onClose={() => { setDeclining(null); setReason(""); }}>
       <p style={{ color: "#70817a", fontSize: 13, lineHeight: 1.5 }}>This decision will be recorded for {declining.businessName ?? "this applicant"}. Give a reason before continuing.</p>
       <div className="ad-field"><label htmlFor="application-decline-reason">Reason *</label><textarea className="ad-textarea" id="application-decline-reason" value={reason} onChange={(event) => setReason(event.target.value)} maxLength={500} /></div>

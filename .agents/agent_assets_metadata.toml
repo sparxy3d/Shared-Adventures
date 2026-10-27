@@ -567,4 +567,19 @@ uri = "file://generated-artifacts/application-fixes/application-login-verificati
 type = "html"
 title = "Application and login: screenshots and verification"
 description = "All eight screenshots at 1440px and 375px, the complete changed-file list, test results, assumptions and production migration instructions."
+logical_id = "d683dd2c-9b05-4858-84ac-08525f91c62c"
+content_type = "text/html"
+
+[[outputs]]
+id = "TJxokZi1xmJ_BJAnBO7Za"
+uri = "file://generated-artifacts/vendor-fees/vendor-fees-verification.html"
+type = "html"
+title = "Vendor fee fixes: screenshots and verification"
+description = "Six screenshots at 1440px and 375px, every changed file, test results, the bug cause, assumptions and production migration instructions."
+logical_id = "59750338-0d26-43fe-af1b-bf1c2fe2d3ec"
+content_hash = "sha256:145f019a4599f29e3e4b4370ac0c27d3c089f523f807794342ad26ef2b204cb4"
+size = 455877
+mtime_ms = 1793102882083
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/59750338-0d26-43fe-af1b-bf1c2fe2d3ec/ee760df3-4fd2-4e76-8e46-65dad4c8a442"
+storage_version_token = "1793102905592827"
 content_type = "text/html"

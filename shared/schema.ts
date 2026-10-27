@@ -49,6 +49,9 @@ export const vendors = pgTable("vendors", {
   isDemo: boolean("is_demo").notNull().default(false),
   firstListingPublishedAt: timestamp("first_listing_published_at", { withTimezone: true }),
   commissionOverrideRate: numeric("commission_override_rate", { precision: 5, scale: 2 }),
+  commissionIntroductoryRate: numeric("commission_introductory_rate", { precision: 5, scale: 2 }),
+  commissionStandardRate: numeric("commission_standard_rate", { precision: 5, scale: 2 }),
+  commissionIntroductoryMonths: integer("commission_introductory_months"),
   applicationActivities: jsonb("application_activities").$type<ApplicationActivity[]>(),
   createdAt: timestamp("created_at").defaultNow(),
 });
