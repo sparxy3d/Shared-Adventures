@@ -99,7 +99,7 @@ const normalized = text => text.replace(/\s+/g, " ").trim();
       assert.match(await clause.innerText(), /Your fee is set out in your fee plan/);
       assert.doesNotMatch(await clause.innerText(), /10%|15%|3 months/);
       await clause.screenshot({ path: `${output}/terms-5-1-${width}.jpg`, type: "jpeg", quality: 90 });
-      assert.match(await adminPage.locator("article").innerText(), /with a fee of 15%:/);
+      assert.doesNotMatch(await adminPage.locator("article").innerText(), /5\.9|Worked example|\d+(?:\.\d+)?\s*%/);
       assert.equal(await adminPage.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       console.log(`PASS: ${width}px dashboard two plans/no intro, admin labels/previews/ranges, terms and no overflow`);
     }

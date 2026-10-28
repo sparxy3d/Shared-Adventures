@@ -32,3 +32,13 @@ introductions, without changing fees already agreed or snapshotted.
 
 **How to apply:** Public terms describe the agreed plan; dashboard copy uses that
 vendor's plan. New admin entries allow 0..30% and 0..12 months.
+
+Public acquisition and terms copy calls this an "introductory offer", without
+describing the vendor fee as free/no fee or publishing percentages or durations.
+Keep the expressly approved cancellation no-fee wording and liability lookback.
+
+**Why:** The owner wants offers agreed individually, not public promises of a free
+period or fixed fee; authenticated fee cards must still explain the actual plan.
+
+**How to apply:** Apply this to public pages and application copy, not vendor/admin
+plan screens, and do not change unrelated customer cancellation wording.

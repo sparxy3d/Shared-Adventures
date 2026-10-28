@@ -82,7 +82,7 @@ Once a booking is confirmed, we share your contact details with that customer so
 
 ## 5. Our fee and your payouts
 
-5.1 **Our fee.** For each completed booking, we keep a fee (commission) on the booking value. Your fee is set out in your fee plan, which we agree with you when we approve your account and which is always shown in your dashboard. Your fee plan may start with an introductory period, during which we charge a reduced fee or no fee at all, followed by a standard rate. The introductory period is a limited offer, not a permanent rate. Your dashboard shows the date it ends.
+5.1 **Our fee.** For each completed booking, we keep a fee (commission) on the booking value. Your fee is set out in your fee plan, which we agree with you when we approve your account and which is always shown in your dashboard. Your fee plan may start with an introductory offer for a set period, followed by a standard rate. The introductory offer is limited, not permanent. Your dashboard shows the date it ends.
 
 5.2 **The rate is fixed per booking.** Each booking records the fee rate in force when it was made. A later change to rates never changes bookings already made.
 
@@ -97,14 +97,6 @@ Once a booking is confirmed, we share your contact details with that customer so
 5.7 **Holding back payment.** We may delay or hold back payment for a booking if the customer has raised a complaint or a card dispute, if the session did not take place as listed, or if we reasonably suspect fraud. We will tell you why and resolve it as quickly as we can. Amounts we refund to customers under clause 6 are deducted from what we owe you.
 
 5.8 **Your taxes.** You are responsible for your own income tax, VAT and any other taxes on what you earn.
-
-5.9 **Worked example.** Bowling for 6 people at LKR 2,500 each, with a fee of 15%:
-
-| | LKR |
-| --- | --- |
-| Customer pays | 15,000 |
-| Free Spirit fee (15%) | 2,250 |
-| You receive | 12,750 |
 
 ## 6. Cancellations, no-shows and refunds
 

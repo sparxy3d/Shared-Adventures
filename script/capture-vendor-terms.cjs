@@ -23,7 +23,7 @@ const output = "generated-artifacts/vendor-terms-final";
       await page.goto(base + "/vendor-terms", { waitUntil: "networkidle" });
       await page.evaluate(() => document.fonts.ready);
       assert.equal(await page.locator("article h2").count(), 10);
-      assert.equal(await page.locator("article table").count(), 1);
+      assert.equal(await page.locator("article table").count(), 0);
       assert.equal(await page.locator("article ol li").count(), 5);
       assert.equal(await page.locator("article").getByText(/draft|0\.9|pending legal review|final version coming soon/i).count(), 0);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);

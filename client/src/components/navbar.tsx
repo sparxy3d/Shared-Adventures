@@ -62,6 +62,10 @@ export default function Navbar(_props: { variant?: "default" | "transparent" } =
 
   return (
     <header className="stage-shell stage-one">
+      <div className="stage-vendor-notice">
+        <span>Now welcoming our first vendors.</span>
+        <Link href="/for-vendors">Get started</Link>
+      </div>
       <nav className="stage-nav" aria-label="Main navigation">
         <div className="stage-nav-inner">
           <Link href="/" className="stage-brand" aria-label="Free Spirit home">

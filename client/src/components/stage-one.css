@@ -15,6 +15,8 @@
   font-family: "Plus Jakarta Sans", sans-serif;
 }
 .stage-shell { font-size: 16px; background: var(--stage-ink); color: white; position: relative; z-index: 50; }
+.stage-vendor-notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; column-gap: 12px; padding: 4px 16px; background: #fff8f1; color: #171717; font-size: 14px; line-height: 1.5; }
+.stage-vendor-notice a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 .stage-auth, .stage-content, .stage-one { font-size: 16px; }
 .stage-shell :focus-visible,
 .stage-auth :focus-visible,
