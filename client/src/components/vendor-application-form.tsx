@@ -433,7 +433,7 @@ export default function VendorApplicationForm({ onBack }: { onBack?: () => void 
         <div className="v4-field v4-field--full">
           <div className="v4-check-wrap">
             <input id="vendor-accept-terms" name="acceptTerms" type="checkbox" checked={fields.acceptTerms} onChange={(event) => updateField("acceptTerms", event.target.checked)} onBlur={() => setErrors((current) => ({ ...current, acceptTerms: validateField("acceptTerms", fields.acceptTerms) }))} aria-invalid={!!errors.acceptTerms} aria-describedby={errors.acceptTerms ? "vendor-error-acceptTerms" : undefined} required />
-            <div><label htmlFor="vendor-accept-terms">I agree to the <a href="/vendor-terms" target="_blank" rel="noopener noreferrer">vendor terms</a></label></div>
+            <div><label htmlFor="vendor-accept-terms">I have read and agree to the Free Spirit <a href="/vendor-terms" target="_blank" rel="noopener noreferrer">Vendor Terms</a>, and I confirm that the information I have provided is accurate.</label></div>
           </div>
           {fieldError("acceptTerms")}
         </div>
@@ -446,7 +446,7 @@ export default function VendorApplicationForm({ onBack }: { onBack?: () => void 
         <button className="v4-button v4-button--orange" type="submit" disabled={applicationMutation.isPending} data-testid="button-submit-vendor-application">
           {applicationMutation.isPending ? "Sending..." : "Send application"} <ArrowRight size={17} aria-hidden="true" />
         </button>
-        <p>Your details are for discussing your listing and next steps with Free Spirit.</p>
+        <p>We will review your application and contact you within 2 working days. Your details are handled in line with our <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.</p>
       </div>
       {onBack && <button type="button" className="v4-back-link" onClick={onBack}><ArrowLeft size={16} aria-hidden="true" /> Back to the vendor overview</button>}
     </form>

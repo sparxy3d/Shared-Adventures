@@ -807,3 +807,31 @@ mtime_ms = 1793148566563
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/05523025-38c8-43ee-b505-a0949270fb6e/ff774fc0-f107-4769-9c80-6df9a2e1f5bb"
 storage_version_token = "1793148617941397"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "e3of9nRn5mScpymuTW8yH"
+uri = "file://generated-artifacts/application-copy/form-bottom-1440.jpg"
+type = "image"
+title = "Application form bottom, desktop 1440px"
+description = "Updated Vendor Terms checkbox and Privacy Policy note."
+logical_id = "c8d69cdf-d7bb-440f-9dcf-d96f9572a0fe"
+content_hash = "sha256:ce9c0f59395f47595fdbc1336cfd6339aa7e26996fea17504d8b4cc992cf2f39"
+size = 95605
+mtime_ms = 1793155703258
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/c8d69cdf-d7bb-440f-9dcf-d96f9572a0fe/fdbc846f-faab-4ecd-9f3c-90c3c6bb3cdd"
+storage_version_token = "1793155736280021"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "cgznS8aoq68V9ClXKxKgX"
+uri = "file://generated-artifacts/application-copy/form-bottom-375.jpg"
+type = "image"
+title = "Application form bottom, phone 375px"
+description = "Updated checkbox and review note below the Send application button."
+logical_id = "73904c1a-4b65-4177-b1a2-eec20e654282"
+content_hash = "sha256:0b8d8075f37c96b93b78b2797813d2bee4818d28833184629b4281a01de2d08e"
+size = 45388
+mtime_ms = 1793155707774
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/73904c1a-4b65-4177-b1a2-eec20e654282/f7233ded-f701-48a4-8a05-4c2acffc7f44"
+storage_version_token = "1793155737617785"
+content_type = "image/jpeg"
