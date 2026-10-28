@@ -117,8 +117,8 @@ export default function VendorDetail() {
   });
   const saveCommission = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const validRate = (value: string) => /^(?:\d{1,3})(?:\.\d{1,2})?$/.test(value.trim()) && Number(value) <= 100;
-    const validMonths = /^\d{1,3}$/.test(feePlan.introductoryMonths.trim()) && Number(feePlan.introductoryMonths) <= 120;
+    const validRate = (value: string) => /^(?:\d{1,2})(?:\.\d{1,2})?$/.test(value.trim()) && Number(value) >= 0 && Number(value) <= 30;
+    const validMonths = /^\d{1,2}$/.test(feePlan.introductoryMonths.trim()) && Number(feePlan.introductoryMonths) >= 0 && Number(feePlan.introductoryMonths) <= 12;
     if (!validRate(feePlan.introductoryRate) || !validRate(feePlan.standardRate) || !validMonths) {
       commissionMutation.reset();
       return;
@@ -163,10 +163,15 @@ export default function VendorDetail() {
 
   const metadata = applicationDetails(vendor.description);
   const field = (key: keyof typeof profile, label: string, full = false) => <label className={`av-field${full ? " av-field-full" : ""}`} key={key}><span>{label}</span><input value={profile[key]} maxLength={key === "businessName" ? 120 : undefined} onChange={(event)=>setProfile((current)=>({...current,[key]:event.target.value}))}/></label>;
-  const validCommissionRate = (value: string) => /^(?:\d{1,3})(?:\.\d{1,2})?$/.test(value.trim()) && Number(value) <= 100;
-  const validCommissionMonths = /^\d{1,3}$/.test(feePlan.introductoryMonths.trim()) && Number(feePlan.introductoryMonths) <= 120;
+  const validCommissionRate = (value: string) => /^(?:\d{1,2})(?:\.\d{1,2})?$/.test(value.trim()) && Number(value) >= 0 && Number(value) <= 30;
+  const validCommissionMonths = /^\d{1,2}$/.test(feePlan.introductoryMonths.trim()) && Number(feePlan.introductoryMonths) >= 0 && Number(feePlan.introductoryMonths) <= 12;
   const commissionFieldsInvalid = !validCommissionRate(feePlan.introductoryRate)
     || !validCommissionRate(feePlan.standardRate) || !validCommissionMonths;
+  const commissionPreview = !commissionFieldsInvalid
+    ? Number(feePlan.introductoryMonths) === 0
+      ? `Standard fee: ${Number(feePlan.standardRate)}%.`
+      : `${Number(feePlan.introductoryRate) === 0 ? `No fee for ${feePlan.introductoryMonths} ${Number(feePlan.introductoryMonths) === 1 ? "month" : "months"}` : `${Number(feePlan.introductoryRate)}% introductory fee for ${feePlan.introductoryMonths} ${Number(feePlan.introductoryMonths) === 1 ? "month" : "months"}`}, then ${Number(feePlan.standardRate)}%.`
+    : null;
 
   return <main className="av-page av-detail">
     <Link className="av-back" href="/admin/vendors"><ArrowLeft size={16}/> Vendors</Link>
@@ -194,11 +199,12 @@ export default function VendorDetail() {
         </div>}
         {!pricingQuery.isFetching && !pricingQuery.isError && pricingQuery.isFetchedAfterMount && pricingQuery.data && feeInitializedForId.current === vendor.id && <form className="av-commission-form" onSubmit={saveCommission}>
           <div className="av-fee-fields">
-            <label className="av-field"><span>Introductory rate (%)</span><input type="number" inputMode="decimal" min="0" max="100" step="0.01" value={feePlan.introductoryRate} onChange={(event)=>{setFeePlan((current)=>({...current,introductoryRate:event.target.value}));commissionMutation.reset();}} aria-invalid={!validCommissionRate(feePlan.introductoryRate)} /><small>0 to 100, up to 2 decimal places.</small></label>
-            <label className="av-field"><span>Introductory months</span><input type="number" inputMode="numeric" min="0" max="120" step="1" value={feePlan.introductoryMonths} onChange={(event)=>{setFeePlan((current)=>({...current,introductoryMonths:event.target.value}));commissionMutation.reset();}} aria-invalid={!validCommissionMonths} /><small>Whole number from 0 to 120.</small></label>
-            <label className="av-field"><span>Standard rate (%)</span><input type="number" inputMode="decimal" min="0" max="100" step="0.01" value={feePlan.standardRate} onChange={(event)=>{setFeePlan((current)=>({...current,standardRate:event.target.value}));commissionMutation.reset();}} aria-invalid={!validCommissionRate(feePlan.standardRate)} /><small>0 to 100, up to 2 decimal places.</small></label>
+             <label className="av-field"><span>Introductory fee (%)</span><input type="number" inputMode="decimal" min="0" max="30" step="0.01" value={feePlan.introductoryRate} onChange={(event)=>{setFeePlan((current)=>({...current,introductoryRate:event.target.value}));commissionMutation.reset();}} aria-invalid={!validCommissionRate(feePlan.introductoryRate)} /><small>0 to 30%, up to 2 decimal places.</small></label>
+             <label className="av-field"><span>Introductory period (months)</span><input type="number" inputMode="numeric" min="0" max="12" step="1" value={feePlan.introductoryMonths} onChange={(event)=>{setFeePlan((current)=>({...current,introductoryMonths:event.target.value}));commissionMutation.reset();}} aria-invalid={!validCommissionMonths} /><small>Whole number from 0 to 12.</small></label>
+             <label className="av-field"><span>Standard fee (%)</span><input type="number" inputMode="decimal" min="0" max="30" step="0.01" value={feePlan.standardRate} onChange={(event)=>{setFeePlan((current)=>({...current,standardRate:event.target.value}));commissionMutation.reset();}} aria-invalid={!validCommissionRate(feePlan.standardRate)} /><small>0 to 30%, up to 2 decimal places.</small></label>
           </div>
-          {commissionFieldsInvalid&&<div className="av-commission-error" role="alert">Enter rates from 0 to 100 with up to 2 decimal places and months as a whole number from 0 to 120.</div>}
+           {commissionPreview&&<p className="av-fee-preview" aria-live="polite">{commissionPreview}</p>}
+           {commissionFieldsInvalid&&<div className="av-commission-error" role="alert">Enter fees from 0 to 30% with up to 2 decimal places and an introductory period as a whole number from 0 to 12.</div>}
           {commissionMutation.isError&&<div className="av-commission-error" role="alert">The fee plan was not saved. Your entries remain here. <button type="submit">Retry</button></div>}
           <button className="av-button" type="submit" disabled={commissionMutation.isPending||commissionFieldsInvalid}>{commissionMutation.isPending?"Saving…":"Save fee plan"}</button>
         </form>}

@@ -100,11 +100,11 @@ export default function ForVendors() {
             <div>
               <p className="v4-eyebrow">Costs and commission</p>
               <h2>What it costs</h2>
-              <p className="v4-lede">You decide what your activity costs. The application is where we’ll talk through the details.</p>
+              <p className="v4-lede">No upfront costs. You only pay a fee when a booking is completed, and new vendors start with an introductory offer. We'll agree your fee plan with you when we approve your listing.</p>
             </div>
             <div className="v4-cost-note">
-              <span className="v4-eyebrow">How we charge</span>
-              <p>Simple commission only on completed bookings, <em>details on application.</em></p>
+              <span className="v4-eyebrow">Your fee plan</span>
+              <p>We’ll agree the details with you when we approve your listing.</p>
             </div>
           </div>
         </section>

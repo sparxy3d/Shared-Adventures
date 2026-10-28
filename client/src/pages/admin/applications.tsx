@@ -60,9 +60,15 @@ export default function Applications() {
       setApproving(null);
     },
   });
-  const feeRateValid = (value: string) => /^(?:\d{1,3})(?:\.\d{1,2})?$/.test(value.trim()) && Number(value) <= 100;
+  const feeRateValid = (value: string) => /^(?:\d{1,2})(?:\.\d{1,2})?$/.test(value.trim()) && Number(value) >= 0 && Number(value) <= 30;
   const feePlanValid = feeRateValid(feePlan.introductoryRate) && feeRateValid(feePlan.standardRate)
-    && /^\d{1,3}$/.test(feePlan.introductoryMonths) && Number(feePlan.introductoryMonths) <= 120;
+    && /^\d{1,2}$/.test(feePlan.introductoryMonths) && Number(feePlan.introductoryMonths) >= 0 && Number(feePlan.introductoryMonths) <= 12;
+  const approvalPreview = feePlan.introductoryMonths !== "" && feeRateValid(feePlan.introductoryRate) && feeRateValid(feePlan.standardRate)
+    && /^\d{1,2}$/.test(feePlan.introductoryMonths) && Number(feePlan.introductoryMonths) <= 12
+    ? Number(feePlan.introductoryMonths) === 0
+      ? `Standard fee: ${Number(feePlan.standardRate)}%.`
+      : `${Number(feePlan.introductoryRate) === 0 ? `No fee for ${feePlan.introductoryMonths} ${Number(feePlan.introductoryMonths) === 1 ? "month" : "months"}` : `${Number(feePlan.introductoryRate)}% introductory fee for ${feePlan.introductoryMonths} ${Number(feePlan.introductoryMonths) === 1 ? "month" : "months"}`}, then ${Number(feePlan.standardRate)}%.`
+    : null;
   const loadApprovalSettings = async () => {
     const requestId = ++pricingRequestId.current;
     setApprovalPricingState("loading");
@@ -77,9 +83,9 @@ export default function Applications() {
       const introductoryRate = Number(settings.introductoryRate);
       const standardRate = Number(settings.standardRate);
       const introductoryMonths = Number(settings.introductoryMonths);
-      const settingsValid = Number.isFinite(introductoryRate) && introductoryRate >= 0 && introductoryRate <= 100
-        && Number.isFinite(standardRate) && standardRate >= 0 && standardRate <= 100
-        && Number.isInteger(introductoryMonths) && introductoryMonths >= 0 && introductoryMonths <= 120;
+      const settingsValid = Number.isFinite(introductoryRate) && introductoryRate >= 0 && introductoryRate <= 30
+        && Number.isFinite(standardRate) && standardRate >= 0 && standardRate <= 30
+        && Number.isInteger(introductoryMonths) && introductoryMonths >= 0 && introductoryMonths <= 12;
       if (!settingsValid) {
         setApprovalPricingState("error");
         return;
@@ -140,11 +146,13 @@ export default function Applications() {
         {approvalPricingState === "error" && <div className="ad-form-error" role="alert">Current global fee settings could not be loaded. Approval is disabled until the settings are available. <button className="ad-button secondary" disabled={pricing.isFetching} onClick={() => void loadApprovalSettings()}>{pricing.isFetching ? "Retrying…" : "Retry"}</button></div>}
         {approvalPricingState === "ready" && <>
           <div className="ad-fee-plan-fields" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
-            <label className="ad-field"><span>Introductory rate (%)</span><input type="number" min="0" max="100" step="0.01" value={feePlan.introductoryRate} onChange={(event) => setFeePlan((current) => ({ ...current, introductoryRate: event.target.value }))} /></label>
-            <label className="ad-field"><span>Introductory period (months)</span><input type="number" min="0" max="120" step="1" value={feePlan.introductoryMonths} onChange={(event) => setFeePlan((current) => ({ ...current, introductoryMonths: event.target.value }))} /></label>
-            <label className="ad-field"><span>Standard rate (%)</span><input type="number" min="0" max="100" step="0.01" value={feePlan.standardRate} onChange={(event) => setFeePlan((current) => ({ ...current, standardRate: event.target.value }))} /></label>
+            <label className="ad-field"><span>Introductory fee (%)</span><input type="number" min="0" max="30" step="0.01" value={feePlan.introductoryRate} onChange={(event) => setFeePlan((current) => ({ ...current, introductoryRate: event.target.value }))} /></label>
+            <label className="ad-field"><span>Introductory period (months)</span><input type="number" min="0" max="12" step="1" value={feePlan.introductoryMonths} onChange={(event) => setFeePlan((current) => ({ ...current, introductoryMonths: event.target.value }))} /></label>
+            <label className="ad-field"><span>Standard fee (%)</span><input type="number" min="0" max="30" step="0.01" value={feePlan.standardRate} onChange={(event) => setFeePlan((current) => ({ ...current, standardRate: event.target.value }))} /></label>
           </div>
-          {!feePlanValid && <p className="ad-fee-plan-error" role="alert">Rates must be from 0 to 100 with up to 2 decimal places. Months must be a whole number from 0 to 120.</p>}
+          <p className="ad-fee-plan-help">Fees can be 0 to 30%, with up to 2 decimal places. The introductory period must be a whole number from 0 to 12 months.</p>
+          {approvalPreview && <p className="ad-fee-plan-preview" aria-live="polite">{approvalPreview}</p>}
+          {!feePlanValid && <p className="ad-fee-plan-error" role="alert">Fees must be from 0 to 30% with up to 2 decimal places. Months must be a whole number from 0 to 12.</p>}
           {action.isError && <p className="ad-fee-plan-error" role="alert">{errorMessage(action.error)}</p>}
           <div className="ad-dialog-actions">
             <button className="ad-button secondary" disabled={action.isPending} onClick={closeApproval}>Cancel</button>

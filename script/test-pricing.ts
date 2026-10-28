@@ -6,6 +6,7 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { scryptSync } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import express from "express";
 import path from "node:path";
 import { commissionForVendor, calculatePricing } from "../shared/pricing";
@@ -29,6 +30,7 @@ const safeSchema = `"${schema}"`; // generated digits and fixed prefix, never ex
 try {
   await pool.query(`CREATE SCHEMA ${safeSchema}`);
   isolatePricingPool(pool, schema);
+  await pool.query(await readFile(path.resolve("migrations/013_session_table.sql"), "utf8"));
   for (const table of ["users", "countries", "vendors", "vendor_documents", "experiences", "experience_images", "availability_slots", "bookings", "pricing_settings", "site_settings", "waiting_list", "favorites", "reviews"]) {
     await pool.query(`CREATE TABLE ${safeSchema}.${table} (LIKE public.${table} INCLUDING ALL)`);
     await pool.query(`CREATE SEQUENCE ${safeSchema}.${table}_fixture_seq START 1000`);

@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { scryptSync } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import express from "express";
 import path from "node:path";
 import { commissionForVendor } from "../shared/pricing";
@@ -23,6 +24,7 @@ const password = "FeeFixtureTest123";
 try {
   await pool.query(`CREATE SCHEMA "${schema}"`);
   isolatePricingPool(pool, schema);
+  await pool.query(await readFile(path.resolve("migrations/013_session_table.sql"), "utf8"));
   for (const table of ["users", "countries", "vendors", "vendor_documents", "experiences", "experience_images", "availability_slots", "bookings", "pricing_settings", "site_settings", "waiting_list", "favorites", "reviews"]) {
     await pool.query(`CREATE TABLE "${schema}".${table} (LIKE public.${table} INCLUDING ALL)`);
     await pool.query(`CREATE SEQUENCE "${schema}".${table}_fixture_seq START 1000`);
@@ -59,8 +61,9 @@ try {
     return result.response.headers.get("set-cookie")!.split(";")[0];
   };
   const admin = await login(1), member = await login(2);
-  const defaultPlan = { introductoryRate: 10, introductoryMonths: 3, standardRate: 15 };
-  const customPlan = { introductoryRate: 8, introductoryMonths: 6, standardRate: 12 };
+  const defaultPlan = { introductoryRate: 0, introductoryMonths: 3, standardRate: 15 };
+  const customPlan = { introductoryRate: 5, introductoryMonths: 2, standardRate: 12 };
+  assert.equal((await call("/api/admin/pricing-settings", "PATCH", defaultPlan, admin)).status, 200);
   assert.equal(commissionForVendor({
     firstListingPublishedAt: "2026-09-30T20:30:00Z", commissionOverrideRate: null,
   }, defaultPlan, new Date("2026-10-01T00:00:00Z")).introductoryEndsAt, "2026-12-31T20:30:00.000Z");
@@ -85,7 +88,7 @@ try {
     assert.equal(commissionForVendor({ ...vendor, firstListingPublishedAt: published }, defaults, atEnd).rate, plan.standardRate);
     console.log(`PASS: Approved vendor ${id}: ${plan.introductoryRate}% before publication and through ${plan.introductoryMonths} months; ${plan.standardRate}% at expiry`);
   }
-  assert.equal((await call("/api/vendor/dashboard", "GET", undefined, vendorCookie)).data.commission.rate, 10);
+  assert.equal((await call("/api/vendor/dashboard", "GET", undefined, vendorCookie)).data.commission.rate, 0);
   for (const id of [1, 2]) {
     await pool.query("INSERT INTO experiences(id,vendor_id,title,category,city,price_amount,capacity,status) VALUES($1,$1,$2,'sports','Colombo',2500,100,'draft')", [id, `Fee activity ${id}`]);
     await storage.updateExperience(id, { status: "published" });
@@ -98,39 +101,55 @@ try {
     return result.data;
   };
   const first = await book(1), custom = await book(2);
-  assert.equal(Number(first.commissionRateApplied), 10);
-  assert.equal(first.totalAmount, 5000); assert.equal(first.commissionAmountLkr, 500); assert.equal(first.vendorNetAmountLkr, 4500);
-  assert.equal(Number(custom.commissionRateApplied), 8); assert.equal(custom.commissionAmountLkr, 400);
+  assert.equal(Number(first.commissionRateApplied), 0);
+  assert.equal(first.totalAmount, 5000); assert.equal(first.commissionAmountLkr, 0); assert.equal(first.vendorNetAmountLkr, 5000);
+  assert.equal(Number(custom.commissionRateApplied), 5); assert.equal(custom.commissionAmountLkr, 250);
+  assert.equal(custom.vendorNetAmountLkr, 4750);
   await pool.query("UPDATE vendors SET first_listing_published_at=now()-interval '4 months' WHERE id=1");
   await pool.query("UPDATE vendors SET first_listing_published_at=now()-interval '7 months' WHERE id=2");
   assert.equal(Number((await book(1)).commissionRateApplied), 15);
   assert.equal(Number((await book(2)).commissionRateApplied), 12);
-  console.log("PASS: Real bookings charge 10% then 15%; custom plan charges 8% then 12%; totals recalculated");
+  console.log("PASS: Real bookings charge 0% then 15%; custom plan charges 5% then 12%; totals recalculated");
   assert.equal((await call("/api/admin/vendors/1/commission", "PATCH", customPlan, admin)).status, 200);
   await call("/api/admin/pricing-settings", "PATCH", { introductoryRate: 5, standardRate: 25 }, admin);
   const stored = (await pool.query("SELECT commission_rate_applied,total_amount,commission_amount_lkr,vendor_net_amount_lkr FROM bookings WHERE id=$1", [first.id])).rows[0];
-  assert.equal(Number(stored.commission_rate_applied), 10);
-  assert.equal(stored.total_amount, 5000); assert.equal(stored.commission_amount_lkr, 500); assert.equal(stored.vendor_net_amount_lkr, 4500);
-  assert.equal(Number((await book(1)).commissionRateApplied), 8);
+  assert.equal(Number(stored.commission_rate_applied), 0);
+  assert.equal(stored.total_amount, 5000); assert.equal(stored.commission_amount_lkr, 0); assert.equal(stored.vendor_net_amount_lkr, 5000);
+  await pool.query("UPDATE vendors SET first_listing_published_at=now()-interval '1 month' WHERE id=1");
+  assert.equal(Number((await book(1)).commissionRateApplied), 5);
   assert.equal(Number((await book(2)).commissionRateApplied), 12);
   const originalCustom = (await pool.query("SELECT commission_rate_applied FROM bookings WHERE id=$1", [custom.id])).rows[0];
-  assert.equal(Number(originalCustom.commission_rate_applied), 8);
+  assert.equal(Number(originalCustom.commission_rate_applied), 5);
   console.log("PASS: Vendor/global changes leave existing booking snapshots unchanged");
   assert.equal((await call("/api/admin/vendors/1/commission", "PATCH", defaultPlan, member)).status, 403);
   assert.equal((await call("/api/admin/vendors/1/commission", "PATCH", defaultPlan)).status, 401);
   assert.equal((await call("/api/admin/vendors/1/commission", "PATCH", defaultPlan, vendorCookie)).status, 403);
-  for (const bad of [{ ...customPlan, introductoryRate: 101 }, { ...customPlan, introductoryMonths: 1.5 }, { ...customPlan, standardRate: -1 }, { ...customPlan, standardRate: 8.123 }]) {
+  for (const bad of [{ ...customPlan, introductoryRate: 30.01 }, { ...customPlan, introductoryMonths: 13 }, { ...customPlan, introductoryMonths: 1.5 }, { ...customPlan, standardRate: -1 }, { ...customPlan, standardRate: 30.01 }, { ...customPlan, standardRate: 8.123 }]) {
     assert.equal((await call("/api/admin/vendors/1/commission", "PATCH", bad, admin)).status, 400);
+    assert.equal((await call("/api/admin/pricing-settings", "PATCH", bad, admin)).status, 400);
+    assert.equal((await call("/api/admin/vendors/1/approve", "POST", { feePlan: bad }, admin)).status, 400);
   }
+  assert.equal((await call("/api/admin/vendors/1/commission", "PATCH",
+    { introductoryRate: 0, introductoryMonths: 0, standardRate: 30 }, admin)).status, 200);
+  assert.equal(Number((await book(1)).commissionRateApplied), 30);
+  const noIntro = commissionForVendor({
+    firstListingPublishedAt: null, commissionOverrideRate: null,
+    commissionIntroductoryRate: 0, commissionIntroductoryMonths: 0, commissionStandardRate: 15,
+  }, defaults);
+  assert.equal(noIntro.rate, 15);
+  assert.equal(noIntro.introductory, false);
+  assert.equal(noIntro.introductoryNotStarted, false);
+  assert.equal((await call("/api/admin/pricing-settings", "PATCH",
+    { introductoryRate: 0, introductoryMonths: 12, standardRate: 30 }, admin)).status, 200);
+  console.log("PASS: Zero-month plan charges standard fee immediately; inclusive 0/30% and 0/12-month boundaries accepted");
   assert.equal(commissionForVendor({ firstListingPublishedAt: null, commissionOverrideRate: 7 }, defaults).rate, 7);
   console.log("PASS: Admin guards, fee validation and legacy flat overrides retained");
   if (process.argv.includes("--screenshots")) {
     // Reset fixture-only settings for truthful screenshots, without changing production/public rows.
     await storage.updatePricingSettings(defaultPlan, 1);
     await storage.setVendorFeePlan(1, defaultPlan);
-    await pool.query("UPDATE vendors SET first_listing_published_at=NULL WHERE id=1");
-    await pool.query("DELETE FROM bookings WHERE experience_id=1");
-    await pool.query("UPDATE experiences SET status='draft' WHERE vendor_id=1");
+    await storage.setVendorFeePlan(2, customPlan);
+    await pool.query("UPDATE vendors SET first_listing_published_at=now()-interval '1 month' WHERE id IN (1,2)");
     for (const id of [3, 4]) {
       await pool.query("INSERT INTO users(id,email,password,full_name,role) VALUES($1,$2,'!pending','Pending vendor','customer')", [id + 2, `fee-pending-${id}@test.invalid`]);
       await pool.query("INSERT INTO vendors(id,owner_profile_id,business_name,verification_status,city) VALUES($1,$2,$3,'pending','Colombo')", [id, id + 2, `Pending fee review ${id}`]);

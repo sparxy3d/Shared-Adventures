@@ -240,17 +240,17 @@ const bookingSchema = z.object({
   message: "The price groups must add up to your group size",
 });
 
-const commissionRate = z.number().min(0).max(100).refine(n => Math.abs(n * 100 - Math.round(n * 100)) < 0.000001,
+const commissionRate = z.number().min(0).max(30).refine(n => Math.abs(n * 100 - Math.round(n * 100)) < 0.000001,
   "Use at most two decimal places");
 const vendorFeePlanSchema = z.object({
   introductoryRate: commissionRate,
   standardRate: commissionRate,
-  introductoryMonths: z.number().int().min(0).max(120),
+  introductoryMonths: z.number().int().min(0).max(12),
 }).strict();
 const pricingSettingsSchema = z.object({
   introductoryRate: commissionRate.optional(),
   standardRate: commissionRate.optional(),
-  introductoryMonths: z.number().int().min(0).max(120).optional(),
+  introductoryMonths: z.number().int().min(0).max(12).optional(),
   usdToLkrRate: z.number().positive().max(1_000_000)
     .refine(n => Math.abs(n * 1_000_000 - Math.round(n * 1_000_000)) < 0.0001, "Use at most six decimal places").nullable().optional(),
 }).strict().refine(data => Object.keys(data).length > 0, "Choose a setting to update");

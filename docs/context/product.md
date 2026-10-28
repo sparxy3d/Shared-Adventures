@@ -29,8 +29,10 @@ a time (now, tonight, weekend or a date), and get ideas or a random "Surprise Us
   A listing may also have a whole-USD visitor price, converted at the admin-set USD/LKR rate.
 - The booking total, commission and vendor net are computed on the server and stored on the
   booking when it is requested. Later price or commission changes never alter existing bookings.
-- Commission: 10% for an introductory period (3 months from the vendor's first published
-  listing), then 15%. Admin-editable globally and per vendor.
+- Commission: an agreed vendor-specific introductory fee (which may be zero), introductory
+  months from first publication, then standard fee. Global defaults prefill approval.
+  New plans allow 0..30% and 0..12 months; zero months means no introductory period.
+  Defaults are configuration, not a public promise of fixed rates (ADR 016).
 - A booking needs bookings to be open site-wide, the vendor to be taking bookings, and the
   session to be open, in the future, and to have enough spots. Spots are taken immediately.
 - Vendor identity documents are private: only admins can open them.

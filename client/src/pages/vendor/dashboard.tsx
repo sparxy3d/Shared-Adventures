@@ -93,19 +93,13 @@ export default function VendorDashboard() {
     {data.commission && <section className="v-panel v-commission-summary" aria-label="Free Spirit fee" data-testid="dashboard-fee">
       <div className="v-commission-mark" aria-hidden="true">%</div>
       <div className="v-fee-copy"><p className="v-eyebrow">Free Spirit fee</p>
-        {data.commission.introductoryNotStarted && introductoryMonths === 0 ? <>
-          <h2>{percentage(standardRate)} <span>standard rate</span></h2>
-          <p className="v-muted">Your introductory period is 0 months, so the introductory rate of {percentage(introRate)} is skipped. The standard rate of {percentage(standardRate)} applies from your first booking. You keep {percentage(standardRate == null ? undefined : 100 - standardRate)} of each completed booking.</p>
-        </> : data.commission.introductoryNotStarted ? <>
-          <h2>{percentage(introRate)} <span>introductory rate</span></h2>
-          <p className="v-muted">Your introductory rate applies {introductoryMonths == null ? "for your introductory period" : `for your first ${introductoryMonths} ${introductoryMonths === 1 ? "month" : "months"}`} once your first listing goes live, then {percentage(standardRate)}.</p>
-        </> : data.commission.introductory ? <>
-          <h2>{percentage(commissionRate)} <span>introductory rate</span></h2>
-          <p className="v-muted">You keep {percentage(commissionRate == null ? undefined : 100 - commissionRate)} of each completed booking until {commissionEndDate ?? "the end date on your account"}.</p>
-        </> : <>
-          <h2>{percentage(commissionRate)} <span>{data.commission.overridden ? "fee rate" : "standard rate"}</span></h2>
-          <p className="v-muted">You keep {percentage(commissionRate == null ? undefined : 100 - commissionRate)} of each completed booking.</p>
-        </>}
+        {data.commission.introductoryNotStarted ? <p className="v-muted">
+          Your introductory period ({introRate === 0 ? "No fee" : `${percentage(introRate)} fee`} for {introductoryMonths ?? "your introductory"} {introductoryMonths === 1 ? "month" : "months"}) starts when your first listing goes live. After that, {percentage(standardRate)}.
+        </p> : data.commission.introductory ? <p className="v-muted">
+          {commissionRate === 0
+            ? <>No Free Spirit fee until {commissionEndDate ?? "your introductory period ends"}. You keep 100% of each completed booking. After that, our fee is {percentage(standardRate)}.</>
+            : <>{percentage(commissionRate)} introductory fee until {commissionEndDate ?? "your introductory period ends"}. You keep {percentage(commissionRate == null ? undefined : 100 - commissionRate)} of each completed booking. After that, {percentage(standardRate)}.</>}
+        </p> : <p className="v-muted">{percentage(commissionRate)} fee. You keep {percentage(commissionRate == null ? undefined : 100 - commissionRate)} of each completed booking.</p>}
       </div>
     </section>}
     <section className={`v-panel v-taking-bookings ${takingBookings ? "is-taking-bookings" : "is-not-taking-bookings"}`} aria-labelledby="taking-bookings-title">

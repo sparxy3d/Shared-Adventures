@@ -31,3 +31,4 @@ Architecture Decision Records. One file per decision, numbered in order, never r
 | 013 | Tracked start-up migrations; no hand-applied production SQL | accepted |
 | 014 | Production on the Neon `production` branch; Replit database retired | accepted |
 | 015 | One intake process for every request, with category-based approval | accepted |
+| 016 | Flexible agreed vendor fees, including zero-fee introductions; no public fixed-rate promise | accepted |

@@ -82,12 +82,7 @@ Once a booking is confirmed, we share your contact details with that customer so
 
 ## 5. Our fee and your payouts
 
-5.1 **Our fee.** For each completed booking, we keep a fee (commission) on the booking value:
-
-- **Introductory rate: 10%** for your first 3 months after your first listing goes live.
-- **Standard rate: 15%** after that.
-
-We may agree different rates with you when we approve your account. The rates that apply to you are always shown in your dashboard, with the date your introductory period ends. The introductory rate is a limited offer, not a permanent rate.
+5.1 **Our fee.** For each completed booking, we keep a fee (commission) on the booking value. Your fee is set out in your fee plan, which we agree with you when we approve your account and which is always shown in your dashboard. Your fee plan may start with an introductory period, during which we charge a reduced fee or no fee at all, followed by a standard rate. The introductory period is a limited offer, not a permanent rate. Your dashboard shows the date it ends.
 
 5.2 **The rate is fixed per booking.** Each booking records the fee rate in force when it was made. A later change to rates never changes bookings already made.
 
@@ -103,7 +98,7 @@ We may agree different rates with you when we approve your account. The rates th
 
 5.8 **Your taxes.** You are responsible for your own income tax, VAT and any other taxes on what you earn.
 
-5.9 **Worked example.** Bowling for 6 people at LKR 2,500 each, at the standard rate:
+5.9 **Worked example.** Bowling for 6 people at LKR 2,500 each, with a fee of 15%:
 
 | | LKR |
 | --- | --- |

@@ -695,3 +695,115 @@ mtime_ms = 1793119465093
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/af63e8e3-362e-4ca8-89b6-655fe492ad1f/df483190-9545-4cae-98d1-90458626017f"
 storage_version_token = "1793119577694594"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "znjDmIhMdGXPufBXbiBk8"
+uri = "file://generated-artifacts/flexible-vendor-fees/dashboard-no-fee-1440.jpg"
+type = "image"
+title = "Dashboard: 0% for 3 months, then 15% | 1440px"
+description = "Verified screenshot from the isolated development test server."
+logical_id = "6e15b91e-5727-4e17-b01a-eb267501fda5"
+content_hash = "sha256:3e576bd26b600cc84b4d81b71d499c12952f32eb7604c73989cf857b30a2c2ef"
+size = 13418
+mtime_ms = 1793148433918
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/6e15b91e-5727-4e17-b01a-eb267501fda5/7a33dc0f-be81-4f80-a77a-3e9cf70c7009"
+storage_version_token = "1793148608306764"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "9m4bmAWsRlHyiHVrf7-f6"
+uri = "file://generated-artifacts/flexible-vendor-fees/dashboard-no-fee-375.jpg"
+type = "image"
+title = "Dashboard: fee-free plan | 375px"
+description = "Verified screenshot from the isolated development test server."
+logical_id = "1be4c4e1-8676-4584-ae64-6b438e545f92"
+content_hash = "sha256:50003a04b7715986ba6e4bce8f5e8e756d251289eb309da643de8994c317336c"
+size = 11136
+mtime_ms = 1793148508764
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/1be4c4e1-8676-4584-ae64-6b438e545f92/50456332-55e2-4d66-87d9-b02d91529f04"
+storage_version_token = "1793148609521653"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "ic0mm6KsVj52H3MMFlG9e"
+uri = "file://generated-artifacts/flexible-vendor-fees/dashboard-five-percent-1440.jpg"
+type = "image"
+title = "Dashboard: 5% for 2 months, then 12% | 1440px"
+description = "Verified screenshot from the isolated development test server."
+logical_id = "9abfe17a-672e-43f5-a4a0-3556f963e950"
+content_hash = "sha256:012d3d18dbff167de8e5eb4124fb06672eb956e84f417a35fece012949521a75"
+size = 12948
+mtime_ms = 1793148448152
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/9abfe17a-672e-43f5-a4a0-3556f963e950/b8d1778a-498a-4e4c-9abb-140a1250b084"
+storage_version_token = "1793148610862051"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "X0rwXe2cdPLpE-56Nr6u1"
+uri = "file://generated-artifacts/flexible-vendor-fees/dashboard-five-percent-375.jpg"
+type = "image"
+title = "Dashboard: 5% plan | 375px"
+description = "Verified screenshot from the isolated development test server."
+logical_id = "237341f7-7f04-4844-ac87-fa42df46724f"
+content_hash = "sha256:9b3d20dd85e93f45b4306df882815be412fa092388e608d089da9af5c0729330"
+size = 10758
+mtime_ms = 1793148523180
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/237341f7-7f04-4844-ac87-fa42df46724f/652df345-a487-44f5-8de1-d411747c69a3"
+storage_version_token = "1793148612094276"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "zFe4XDVPiRlnqp241oVdb"
+uri = "file://generated-artifacts/flexible-vendor-fees/approval-1440.jpg"
+type = "image"
+title = "Approval fee plan | 1440px"
+description = "Verified screenshot from the isolated development test server."
+logical_id = "c5639341-cc97-4824-b52a-ab047c521f23"
+content_hash = "sha256:4f63e93027cba6fd87e1eb816ed6d2452cdf20f1bf5eade74803050b23949caf"
+size = 47038
+mtime_ms = 1793148480022
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/c5639341-cc97-4824-b52a-ab047c521f23/98d84d23-2dda-4f18-b597-12159d90061a"
+storage_version_token = "1793148613965597"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "AYI966kUO9HFGdEAygCmz"
+uri = "file://generated-artifacts/flexible-vendor-fees/approval-375.jpg"
+type = "image"
+title = "Approval fee plan | 375px"
+description = "Verified screenshot from the isolated development test server."
+logical_id = "b0a29ad8-abc9-47c2-bd61-b3f0e4079a32"
+content_hash = "sha256:c4d7e6c61b296baad642d785f36d04b4ebf1e5d47c073571f43b0016764cc22e"
+size = 47464
+mtime_ms = 1793148553451
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/b0a29ad8-abc9-47c2-bd61-b3f0e4079a32/ca1bb2e2-87dc-4e97-8fe3-8b0a8079b312"
+storage_version_token = "1793148615294990"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "RjXM46Aq7VkN1HSh-Fi52"
+uri = "file://generated-artifacts/flexible-vendor-fees/terms-5-1-1440.jpg"
+type = "image"
+title = "Vendor terms clause 5.1 | 1440px"
+description = "Verified screenshot from the isolated development test server."
+logical_id = "55340ead-e898-4762-9074-94a6dfbfc765"
+content_hash = "sha256:4084f1f4b30939312bcd09fbc22f084689b9eef2ee61e2da6424dff410fa2043"
+size = 43728
+mtime_ms = 1793148493152
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/55340ead-e898-4762-9074-94a6dfbfc765/063f0fe9-1ced-44d0-8aa5-d91f18fd7bd9"
+storage_version_token = "1793148616621378"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "FxexfcpGIngD9UEGFWZWz"
+uri = "file://generated-artifacts/flexible-vendor-fees/terms-5-1-375.jpg"
+type = "image"
+title = "Vendor terms clause 5.1 | 375px"
+description = "Verified screenshot from the isolated development test server."
+logical_id = "05523025-38c8-43ee-b505-a0949270fb6e"
+content_hash = "sha256:5aa6eaefe1e1739e0b58c4c4b6b8d0c02fd0519b6fdea734467a2197693d19c2"
+size = 42727
+mtime_ms = 1793148566563
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/05523025-38c8-43ee-b505-a0949270fb6e/ff774fc0-f107-4769-9c80-6df9a2e1f5bb"
+storage_version_token = "1793148617941397"
+content_type = "image/jpeg"

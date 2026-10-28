@@ -22,3 +22,13 @@ Future global edits should not silently replace that saved vendor-specific plan.
 
 **How to apply:** Existing vendors without a plan still inherit global defaults.
 Keep existing legacy flat overrides until an admin explicitly replaces them.
+
+Do not promise fixed fees or introductory durations publicly. Fee-free introductions
+are valid; a zero-month plan applies the standard fee immediately. Retain historic
+plans rather than silently clamping them to new entry limits.
+
+**Why:** The owner requires flexible negotiated offers per vendor, including no-fee
+introductions, without changing fees already agreed or snapshotted.
+
+**How to apply:** Public terms describe the agreed plan; dashboard copy uses that
+vendor's plan. New admin entries allow 0..30% and 0..12 months.

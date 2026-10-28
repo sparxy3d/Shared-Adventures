@@ -80,12 +80,12 @@ export default function Settings() {
   const changed = (key: keyof SettingsForm, value: string) => { setForm((previous) => ({ ...previous, [key]: value })); setFieldError(""); };
   const save = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const introValid = validDecimal(form.introductoryRate, 2) && Number(form.introductoryRate) <= 100;
-    const standardValid = validDecimal(form.standardRate, 2) && Number(form.standardRate) <= 100;
-    const monthsValid = /^\d+$/.test(form.introductoryMonths) && Number(form.introductoryMonths) <= 120;
+    const introValid = validDecimal(form.introductoryRate, 2) && Number(form.introductoryRate) >= 0 && Number(form.introductoryRate) <= 30;
+    const standardValid = validDecimal(form.standardRate, 2) && Number(form.standardRate) >= 0 && Number(form.standardRate) <= 30;
+    const monthsValid = /^\d+$/.test(form.introductoryMonths) && Number(form.introductoryMonths) >= 0 && Number(form.introductoryMonths) <= 12;
     const exchangeValid = form.usdToLkrRate === "" || (validDecimal(form.usdToLkrRate, 6) && Number(form.usdToLkrRate) > 0 && Number(form.usdToLkrRate) <= 1_000_000);
     if (!introValid || !standardValid || !monthsValid || !exchangeValid) {
-      setFieldError("Check the highlighted values. Rates must be 0 to 100 with up to 2 decimals, months 0 to 120, and exchange rate greater than 0 up to 1,000,000 with up to 6 decimals.");
+      setFieldError("Check the highlighted values. Fees must be 0 to 30% with up to 2 decimals, the introductory period must be 0 to 12 whole months, and exchange rate must be greater than 0 up to 1,000,000 with up to 6 decimals.");
       return;
     }
     const exchangeValue = form.usdToLkrRate === "" ? null : Number(form.usdToLkrRate);
@@ -103,16 +103,25 @@ export default function Settings() {
   if (query.isError || !query.data) return <main className="ad-content"><div className="ad-page-head"><div><p className="ad-eyebrow">Operational controls</p><h1>Settings</h1><p>Commission and display conversion for new pricing.</p></div></div><div className="ad-banner ad-pricing-error" role="alert"><strong>Pricing settings could not be loaded.</strong><p>{query.error instanceof Error ? query.error.message : "Please try again."}</p><button className="ad-button secondary" onClick={() => void query.refetch()}>Retry</button></div></main>;
 
   const exchangeUpdated = query.data.exchangeRateUpdatedAt ? new Intl.DateTimeFormat("en-LK", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Colombo" }).format(new Date(query.data.exchangeRateUpdatedAt)) : "Never";
+  const previewValid = validDecimal(form.introductoryRate, 2) && Number(form.introductoryRate) <= 30
+    && validDecimal(form.standardRate, 2) && Number(form.standardRate) <= 30
+    && /^\d+$/.test(form.introductoryMonths) && Number(form.introductoryMonths) <= 12;
+  const pricingPreview = previewValid
+    ? Number(form.introductoryMonths) === 0
+      ? `Standard fee: ${Number(form.standardRate)}%.`
+      : `${Number(form.introductoryRate) === 0 ? `No fee for ${form.introductoryMonths} ${Number(form.introductoryMonths) === 1 ? "month" : "months"}` : `${Number(form.introductoryRate)}% introductory fee for ${form.introductoryMonths} ${Number(form.introductoryMonths) === 1 ? "month" : "months"}`}, then ${Number(form.standardRate)}%.`
+    : null;
   return <main className="ad-content ad-pricing-page">
     <div className="ad-page-head"><div><p className="ad-eyebrow">Operational controls</p><h1>Settings</h1><p>Pricing rules used when a booking is created.</p></div></div>
     <div className="ad-banner"><strong>Pricing updates apply to new bookings only.</strong> Existing booking totals and commission snapshots stay unchanged.</div>
     <section className="ad-section ad-card ad-pricing-card">
       <div className="ad-section-head"><div><p className="ad-eyebrow">Commission and visitor pricing</p><h2>Pricing controls</h2><p>Rates are percentages. Exchange rate is LKR for one USD.</p></div><span className="ad-badge blue">Admin editable</span></div>
       <form className="ad-pricing-form" onSubmit={save} noValidate>
-        <label className="ad-pricing-field"><span>Introductory commission (%)</span><input type="number" inputMode="decimal" min="0" max="100" step="0.01" value={form.introductoryRate} onChange={(event) => changed("introductoryRate", event.target.value)} aria-invalid={!!fieldError && (!validDecimal(form.introductoryRate, 2) || Number(form.introductoryRate) > 100)} /><small>Rate during a vendor’s introductory period, unless that vendor has an override.</small></label>
-        <label className="ad-pricing-field"><span>Standard commission (%)</span><input type="number" inputMode="decimal" min="0" max="100" step="0.01" value={form.standardRate} onChange={(event) => changed("standardRate", event.target.value)} aria-invalid={!!fieldError && (!validDecimal(form.standardRate, 2) || Number(form.standardRate) > 100)} /><small>Rate after the introductory period ends.</small></label>
-        <label className="ad-pricing-field"><span>Introductory period (months)</span><input type="number" inputMode="numeric" min="0" max="120" step="1" value={form.introductoryMonths} onChange={(event) => changed("introductoryMonths", event.target.value)} aria-invalid={!!fieldError && (!/^\d+$/.test(form.introductoryMonths) || Number(form.introductoryMonths) > 120)} /><small>Calendar months from the vendor’s first published listing.</small></label>
+         <label className="ad-pricing-field"><span>Introductory fee (%)</span><input type="number" inputMode="decimal" min="0" max="30" step="0.01" value={form.introductoryRate} onChange={(event) => changed("introductoryRate", event.target.value)} aria-invalid={!!fieldError && (!validDecimal(form.introductoryRate, 2) || Number(form.introductoryRate) < 0 || Number(form.introductoryRate) > 30)} /><small>0 to 30%, up to 2 decimal places.</small></label>
+         <label className="ad-pricing-field"><span>Standard fee (%)</span><input type="number" inputMode="decimal" min="0" max="30" step="0.01" value={form.standardRate} onChange={(event) => changed("standardRate", event.target.value)} aria-invalid={!!fieldError && (!validDecimal(form.standardRate, 2) || Number(form.standardRate) < 0 || Number(form.standardRate) > 30)} /><small>0 to 30%, up to 2 decimal places.</small></label>
+         <label className="ad-pricing-field"><span>Introductory period (months)</span><input type="number" inputMode="numeric" min="0" max="12" step="1" value={form.introductoryMonths} onChange={(event) => changed("introductoryMonths", event.target.value)} aria-invalid={!!fieldError && (!/^\d+$/.test(form.introductoryMonths) || Number(form.introductoryMonths) < 0 || Number(form.introductoryMonths) > 12)} /><small>Whole number from 0 to 12 calendar months, from the vendor’s first published listing.</small></label>
         <label className="ad-pricing-field"><span>USD to LKR exchange rate</span><input type="number" inputMode="decimal" min="0.000001" max="1000000" step="0.000001" placeholder="Not set" value={form.usdToLkrRate} onChange={(event) => changed("usdToLkrRate", event.target.value)} aria-invalid={!!fieldError && form.usdToLkrRate !== "" && (!validDecimal(form.usdToLkrRate, 6) || Number(form.usdToLkrRate) <= 0 || Number(form.usdToLkrRate) > 1_000_000)} /><small>Required to display or book a visitor USD price. Leave blank to unset.</small></label>
+         {pricingPreview && <p className="ad-pricing-preview" aria-live="polite">{pricingPreview}</p>}
         <div className="ad-pricing-audit"><RefreshCw size={15} /><span>Last exchange rate update: <strong>{exchangeUpdated}</strong>{query.data.exchangeRateUpdatedByName ? ` by ${query.data.exchangeRateUpdatedByName}` : ""}</span></div>
         {fieldError && <p className="ad-pricing-inline-error" role="alert">{fieldError}</p>}
         {mutation.isError && <div className="ad-pricing-inline-error" role="alert">Settings were not saved. Your entries remain here. <button type="submit">Retry save</button></div>}
