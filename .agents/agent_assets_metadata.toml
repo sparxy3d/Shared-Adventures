@@ -835,3 +835,59 @@ mtime_ms = 1793155707774
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/73904c1a-4b65-4177-b1a2-eec20e654282/f7233ded-f701-48a4-8a05-4c2acffc7f44"
 storage_version_token = "1793155737617785"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "zUL_dq8dpFlE4p7rGxp3B"
+uri = "file://generated-artifacts/vendor-terms-draft/top-1440.jpg"
+type = "image"
+title = "Draft vendor terms, 1440px"
+description = "Approved version 1.1-draft, clearly marked under legal review and not yet in effect."
+logical_id = "278cd9c2-b715-4190-9fbb-d64ccd0c9d1d"
+content_hash = "sha256:216c791325da7d78c25bf668ea4687a6b346b358b286a110209f0a226061e557"
+size = 87452
+mtime_ms = 1794487036009
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/278cd9c2-b715-4190-9fbb-d64ccd0c9d1d/bfe1faa0-ec5d-43d3-bcb0-4eaae8a0e6c0"
+storage_version_token = "1794487127498567"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "fxFnmkuyIcitPRGQjiFsS"
+uri = "file://generated-artifacts/vendor-terms-draft/checkbox-1440.jpg"
+type = "image"
+title = "Draft acknowledgement, 1440px"
+description = "I have read the draft vendor terms, with the new-tab link."
+logical_id = "8185c197-081b-41d6-be22-55aa4f414356"
+content_hash = "sha256:a0905d123383ad4a84d747706974f4e908c579ba072159953053daf02dc0690f"
+size = 4196
+mtime_ms = 1794487037705
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/8185c197-081b-41d6-be22-55aa4f414356/d3dc9e9a-6e4a-4468-89c3-93ab1e27e2ac"
+storage_version_token = "1794487128683513"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "yjaGEQt8YtKPTe573f69b"
+uri = "file://generated-artifacts/vendor-terms-draft/top-375.jpg"
+type = "image"
+title = "Draft vendor terms, 375px"
+description = "Approved version 1.1-draft, clearly marked under legal review and not yet in effect."
+logical_id = "133bf077-d99f-4808-9e72-6209768a8dbd"
+content_hash = "sha256:53cbaaab45ddedc00513a4b89e93622a19524aa4fb105f67e216b924f76d9af9"
+size = 56609
+mtime_ms = 1794487062257
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/133bf077-d99f-4808-9e72-6209768a8dbd/e7954a62-d40e-419f-bdd0-848864731921"
+storage_version_token = "1794487130211611"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "pwyx-ugLfaut1bpiDwvgV"
+uri = "file://generated-artifacts/vendor-terms-draft/checkbox-375.jpg"
+type = "image"
+title = "Draft acknowledgement, 375px"
+description = "I have read the draft vendor terms, with the new-tab link."
+logical_id = "52434eee-a488-49f4-93fa-8f4285910f61"
+content_hash = "sha256:bd6fb01b1b0cc3be98a88d22152d9827751fe92469d3ea1d867549b1ef3dfcfd"
+size = 3387
+mtime_ms = 1794487063853
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/52434eee-a488-49f4-93fa-8f4285910f61/52f4563f-0358-4d3d-a618-0c36d80a2f3f"
+storage_version_token = "1794487131376781"
+content_type = "image/jpeg"

@@ -54,7 +54,7 @@ function validateField(field: FieldName, value: ApplicationFields[FieldName]): s
   };
   const limit = limits[field];
   if (limit && text.length > limit) return `Keep this field to ${limit} characters.`;
-  if (field === "acceptTerms") return value ? "" : "Please review and accept the vendor terms to continue.";
+  if (field === "acceptTerms") return value ? "" : "Please read the draft vendor terms to continue.";
   if (field === "contactEmail") {
     if (!text) return "Enter an email address.";
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text) ? "" : "Enter a valid email address.";
@@ -433,7 +433,7 @@ export default function VendorApplicationForm({ onBack }: { onBack?: () => void 
         <div className="v4-field v4-field--full">
           <div className="v4-check-wrap">
             <input id="vendor-accept-terms" name="acceptTerms" type="checkbox" checked={fields.acceptTerms} onChange={(event) => updateField("acceptTerms", event.target.checked)} onBlur={() => setErrors((current) => ({ ...current, acceptTerms: validateField("acceptTerms", fields.acceptTerms) }))} aria-invalid={!!errors.acceptTerms} aria-describedby={errors.acceptTerms ? "vendor-error-acceptTerms" : undefined} required />
-            <div><label htmlFor="vendor-accept-terms">I have read and agree to the Free Spirit <a href="/vendor-terms" target="_blank" rel="noopener noreferrer">Vendor Terms</a>, and I confirm that the information I have provided is accurate.</label></div>
+            <div><label htmlFor="vendor-accept-terms">I have read the <a href="/vendor-terms" target="_blank" rel="noopener noreferrer">draft vendor terms</a></label></div>
           </div>
           {fieldError("acceptTerms")}
         </div>

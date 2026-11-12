@@ -68,8 +68,8 @@ try {
   const vendor = await response.json();
   assert.deepEqual(vendor.applicationActivities, activities);
   const acceptance = await pool.query("SELECT description FROM vendors WHERE id=$1", [vendor.id]);
-  assert.match(acceptance.rows[0].description, /^Vendor terms \(1\.0\) accepted: \d{4}-\d{2}-\d{2}T[\d:.]+Z$/m);
-  const priorAcceptance = "Legacy application\n\nApplication\nVendor terms (0.9) accepted: 2026-10-01T12:34:56.000Z";
+  assert.match(acceptance.rows[0].description, /^Vendor terms \(1\.1-draft\) accepted: \d{4}-\d{2}-\d{2}T[\d:.]+Z$/m);
+  const priorAcceptance = "Legacy application\n\nApplication\nVendor terms (1.0) accepted: 2026-10-01T12:34:56.000Z";
   await pool.query("UPDATE vendors SET description=$1 WHERE id=$2", [priorAcceptance, vendor.id]);
   assert.equal((await pool.query("SELECT description FROM vendors WHERE id=$1", [vendor.id])).rows[0].description, priorAcceptance);
   assert.equal((await pool.query("SELECT count(*)::int AS n FROM experiences WHERE vendor_id=$1", [vendor.id])).rows[0].n, 0);
@@ -89,7 +89,7 @@ try {
     assert.equal(draft.is_demo, false);
   });
   assert.equal((await approve()).status, 409);
-  assert.equal((await pool.query("SELECT description FROM vendors WHERE id=$1", [vendor.id])).rows[0].description.match(/^Vendor terms .*$/m)?.[0], "Vendor terms (0.9) accepted: 2026-10-01T12:34:56.000Z");
+  assert.equal((await pool.query("SELECT description FROM vendors WHERE id=$1", [vendor.id])).rows[0].description.match(/^Vendor terms .*$/m)?.[0], "Vendor terms (1.0) accepted: 2026-10-01T12:34:56.000Z");
   assert.equal((await pool.query("SELECT count(*)::int AS n FROM experiences WHERE vendor_id=$1", [vendor.id])).rows[0].n, 2);
   console.log("PASS: Two activities saved; approval creates exactly two correctly priced drafts, repeated approval refused");
   const { activities: _activities, ...common } = application;
@@ -98,8 +98,8 @@ try {
   const oldVendor = await legacy.json(); assert.equal(oldVendor.applicationActivities, null);
   assert.ok(oldVendor.description.includes("Typical price: LKR 2200"));
   assert.equal((await fetch(`${base}/api/admin/vendors/${oldVendor.id}/approve`, { method: "POST", headers: { Cookie: cookie, "Content-Type": "application/json" }, body: "{}" })).status, 200);
-  assert.equal((await pool.query("SELECT description FROM vendors WHERE id=$1", [vendor.id])).rows[0].description.match(/^Vendor terms .*$/m)?.[0], "Vendor terms (0.9) accepted: 2026-10-01T12:34:56.000Z");
-  console.log("PASS: New applications record vendor terms 1.0 with a timestamp; historical 0.9 acceptance survives approval and subsequent applications unchanged");
+  assert.equal((await pool.query("SELECT description FROM vendors WHERE id=$1", [vendor.id])).rows[0].description.match(/^Vendor terms .*$/m)?.[0], "Vendor terms (1.0) accepted: 2026-10-01T12:34:56.000Z");
+  console.log("PASS: New applications record 1.1-draft with a timestamp; historical 1.0 acceptance survives approval and subsequent applications unchanged");
   assert.equal((await pool.query("SELECT count(*)::int AS n FROM experiences WHERE vendor_id=$1", [oldVendor.id])).rows[0].n, 0);
   console.log("PASS: Legacy single-price/category application remains readable and approvable without invented listings");
   if (process.argv.includes("--screenshots")) {

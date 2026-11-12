@@ -173,7 +173,7 @@ const applicationBaseSchema = z.object({
   description: z.string().trim().min(1).max(2000),
   mapsLink: z.string().trim().max(500).optional().nullable().refine(v =>
     isGoogleBusinessUrl(v), GOOGLE_MAPS_MESSAGE),
-  acceptTerms: z.literal(true, { errorMap: () => ({ message: "Please accept the vendor terms" }) }),
+  acceptTerms: z.literal(true, { errorMap: () => ({ message: "Please read the draft vendor terms" }) }),
 });
 const legacyApplicationSchema = applicationBaseSchema.strict().refine(data => !data.differentVisitorPrice || data.typicalVisitorPriceUsd != null, {
   message: "Enter the typical visitor price in whole US dollars", path: ["typicalVisitorPriceUsd"],

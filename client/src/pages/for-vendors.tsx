@@ -9,7 +9,7 @@ import "@/components/vendor-pitch-stage-four.css";
 const faqs = [
   { question: "Who sets prices?", answer: "You do. You set the price for your experience." },
   { question: "How are bookings confirmed?", answer: "You confirm each request after checking the session and group size." },
-  { question: "How do I get paid?", answer: "Customers pay through Free Spirit when you accept their booking. We pay you after the session, minus our commission." },
+  { question: "How do I get paid?", answer: "Payment arrangements will be confirmed with you before your first booking." },
   { question: "Can I pause?", answer: "Yes. Switch off Taking bookings in your dashboard at any time. Bookings you've already confirmed still go ahead." },
 ];
 

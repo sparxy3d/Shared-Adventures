@@ -1,6 +1,6 @@
 # 018 Draft vendor terms under legal review
 
-- Status: awaiting approval
+- Status: done (development only, not published)
 - Category: Risky (tier 2), legal representations and recorded terms acknowledgement
 - Requested by: product owner
 - Created: 2026-11-12
@@ -13,9 +13,9 @@ Replace the public Vendor Terms with a short draft that is clearly not in effect
 
 | Who | Decision | Date | Their words |
 |---|---|---|---|
-| Madushan | Awaiting approval | | |
+| Madushan | Approved with amendments | 2026-11-12 | "Spec 018 approved, 12 Nov 2026, with two amendments: (1) also replace the For vendors FAQ answer to ‘How do I get paid?’ with ‘Payment arrangements will be confirmed with you before your first booking.’, and list (without changing) any other public text that promises payments, payouts, response deadlines, retention or registered company details; (2) keep the draft text and version 1.1-draft exactly as proposed. Build 018 now; 017 stays on hold until 018 is done." |
 
-No application edits before Madushan's own approval is recorded here.
+Approval recorded before implementation. Scope includes the exact FAQ replacement above and a read-only audit of other public commitments. No other public copy is changed.
 
 ## Problem and outcome
 
@@ -80,7 +80,7 @@ Fees are agreed individually with each vendor.
 
 ## Open questions and assumptions
 
-Madushan must approve the exact draft and "1.1-draft" version identifier. This is a replacement public notice, not a conclusion that historical obligations disappear. A lawyer must advise on the effect of the two existing acceptances and whether individual agreements or corrective steps are needed. Until publishing occurs, the live page is unchanged.
+Madushan approved the exact draft and "1.1-draft" version identifier on 2026-11-12. This is a replacement public notice, not a conclusion that historical obligations disappear. A lawyer must advise on the effect of the two existing acceptances and whether individual agreements or corrective steps are needed. Until publishing occurs, the live page is unchanged.
 
 ## Proposed notice to the two vendors
 

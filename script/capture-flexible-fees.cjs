@@ -94,11 +94,11 @@ const normalized = text => text.replace(/\s+/g, " ").trim();
       assert.match(normalized(await settings.innerText()), /No fee for 1 month, then 15%/);
 
       await adminPage.goto(base + "/vendor-terms", { waitUntil: "networkidle" });
-      const clause = adminPage.locator("article p").filter({ hasText: /^5\.1 / });
+      const clause = adminPage.locator("article p").filter({ hasText: /^Fees are agreed individually with each vendor\./ });
       await clause.waitFor();
-      assert.match(await clause.innerText(), /Your fee is set out in your fee plan/);
+      assert.match(await clause.innerText(), /Fees are agreed individually with each vendor/);
       assert.doesNotMatch(await clause.innerText(), /10%|15%|3 months/);
-      await clause.screenshot({ path: `${output}/terms-5-1-${width}.jpg`, type: "jpeg", quality: 90 });
+      await clause.screenshot({ path: `${output}/draft-terms-fees-${width}.jpg`, type: "jpeg", quality: 90 });
       assert.doesNotMatch(await adminPage.locator("article").innerText(), /5\.9|Worked example|\d+(?:\.\d+)?\s*%/);
       assert.equal(await adminPage.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       console.log(`PASS: ${width}px dashboard two plans/no intro, admin labels/previews/ranges, terms and no overflow`);
