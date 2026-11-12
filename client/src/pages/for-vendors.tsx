@@ -90,7 +90,7 @@ export default function ForVendors() {
             <div className="v4-steps">
               <article className="v4-step"><span className="v4-step-number">01 / YOUR LISTING</span><h3>You list, we set you up</h3><p>Tell us what you offer, where you host and the groups you can welcome. We’ll help you get started.</p></article>
               <article className="v4-step"><span className="v4-step-number">02 / EACH BOOKING</span><h3>Customers book, you confirm</h3><p>Review every request and confirm the sessions that work for your schedule.</p></article>
-              <article className="v4-step"><span className="v4-step-number">03 / AFTER THE SESSION</span><h3>You get paid after the session</h3><p>Payment follows the experience. We’ll talk through the arrangements together.</p></article>
+              <article className="v4-step"><span className="v4-step-number">03 / AFTER THE SESSION</span><h3>We agree payment with you</h3><p>We’ll confirm how and when you’re paid before your first booking.</p></article>
             </div>
           </div>
         </section>
@@ -100,7 +100,7 @@ export default function ForVendors() {
             <div>
               <p className="v4-eyebrow">Costs and commission</p>
               <h2>What it costs</h2>
-              <p className="v4-lede">No upfront costs. You only pay a fee when a booking is completed, and new vendors start with an introductory offer. We'll agree your fee plan with you when we approve your listing.</p>
+              <p className="v4-lede">No upfront costs. We agree your fee plan with you when we approve your listing.</p>
             </div>
             <div className="v4-cost-note">
               <span className="v4-eyebrow">Your fee plan</span>

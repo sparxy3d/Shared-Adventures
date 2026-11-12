@@ -14,8 +14,9 @@ Replace the public Vendor Terms with a short draft that is clearly not in effect
 | Who | Decision | Date | Their words |
 |---|---|---|---|
 | Madushan | Approved with amendments | 2026-11-12 | "Spec 018 approved, 12 Nov 2026, with two amendments: (1) also replace the For vendors FAQ answer to ‘How do I get paid?’ with ‘Payment arrangements will be confirmed with you before your first booking.’, and list (without changing) any other public text that promises payments, payouts, response deadlines, retention or registered company details; (2) keep the draft text and version 1.1-draft exactly as proposed. Build 018 now; 017 stays on hold until 018 is done." |
+| Madushan | Approved text follow-up | 2026-11-12 | "Go ahead, Madushan, 12 Nov 2026. Small fix, text only, as part of 018: (1) For vendors “How it works” step 3: heading “We agree payment with you”, text “We’ll confirm how and when you’re paid before your first booking.” (2) For vendors “What it costs”: replace the lede with “No upfront costs. We agree your fee plan with you when we approve your listing.” (3) Booking request dialog: replace “The vendor usually confirms your request within a few hours.” with “The vendor will confirm or decline your request.” (4) Keep “within 2 working days” unchanged. Then update 018’s verification and tell me if it is ready to publish." |
 
-Approval recorded before implementation. Scope includes the exact FAQ replacement above and a read-only audit of other public commitments. No other public copy is changed.
+Approval recorded before implementation. Scope includes the exact FAQ replacement, the three approved follow-up text changes above and a read-only audit of other public commitments. Other public copy, including "within 2 working days", stays unchanged.
 
 ## Problem and outcome
 

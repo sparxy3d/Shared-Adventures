@@ -8,7 +8,8 @@ Implemented the exact approved four-section draft, version 1.1-draft, reading ac
 
 - client/src/content/vendor-terms.md: exact proposed replacement; no effective date, company claim, payment/payout/deadline/retention commitments.
 - client/src/components/vendor-application-form.tsx: exact draft acknowledgement, same new-tab link and required checkbox; client validation refers to reading.
-- client/src/pages/for-vendors.tsx: exact approved payment FAQ replacement only.
+- client/src/pages/for-vendors.tsx: exact approved payment FAQ, How it works step 3 heading/body and What it costs lede.
+- client/src/components/booking-request-dialog.tsx: replaced the few-hours response expectation with "The vendor will confirm or decline your request."; "No payment now." unchanged.
 - shared/catalog.ts: future version identifier 1.1-draft.
 - server/routes.ts: acknowledgement validation error text only; timestamp/recording behaviour and guards unchanged.
 - script/test-multi-activity-applications.ts: new-version timestamp test and preservation of a historical 1.0 fixture through approval and further submissions.
@@ -27,14 +28,22 @@ Implemented the exact approved four-section draft, version 1.1-draft, reading ac
 - Development preview retains an existing React Fragment/data-replit-metadata warning; renderer was not changed. Expected logged-out auth check returns 401. No unrelated fix.
 - Flexible-fee browser script itself was not rerun; only its now-obsolete terms-content assertion was updated. Fee/booking calculations were not changed.
 
-## Other public wording found, left unchanged
+## Approved text follow-up, 2026-11-12
+
+Madushan's exact approval is recorded in spec.md. Updated the step 3 heading to "We agree payment with you", its body to "We’ll confirm how and when you’re paid before your first booking.", the costs lede to "No upfront costs. We agree your fee plan with you when we approve your listing.", and the booking sentence to "The vendor will confirm or decline your request."
+
+Re-ran npm run check and npm run build: both passed. Browser checks at 1440px and 375px confirmed exact For vendors text and no horizontal overflow. A source assertion checked the booking text and removal of its old few-hours sentence. Both "within 2 working days" lines were compared with HEAD and confirmed unchanged. The booking dialog was not opened in this follow-up browser check; only its text source changed. Prior version/acknowledgement tests remain applicable because those files and behaviours did not change.
+
+No additional production configuration, migration, backend or database changes. No publish. Spec 017 remains on hold.
+
+## Other public wording found, left unchanged after follow-up
 
 | Location | Current text | Concern |
 |---|---|---|
-| client/src/pages/for-vendors.tsx, How it works step 3 | "03 / AFTER THE SESSION"; "You get paid after the session"; "Payment follows the experience. We’ll talk through the arrangements together." | Payment timing promise remains outside approved FAQ replacement |
+| client/src/pages/for-vendors.tsx, How it works step 3 label | "03 / AFTER THE SESSION" | Existing step label retained; heading/body now defer how and when payment occurs |
 | shared/catalog.ts, application success message | "Thanks. We'll call you within 2 working days to talk it through." | Response deadline |
 | client/src/components/vendor-application-form.tsx, submit note | "We will review your application and contact you within 2 working days. Your details are handled in line with our Privacy Policy." | Response deadline |
-| client/src/components/booking-request-dialog.tsx, review | "No payment now. The vendor usually confirms your request within a few hours." | Payment statement and qualified response-time expectation |
+| client/src/components/booking-request-dialog.tsx, review | "No payment now. The vendor will confirm or decline your request." | No immediate payment; no confirmation deadline |
 | client/src/components/booking-request-dialog.tsx, dialog description | "Request only, no payment" | Current no-payment statement, not a payout promise |
 | client/src/pages/legal.tsx, /terms | "The final terms will explain cancellations, payments, responsibilities and dispute handling in detail." | Future policy-content statement; Terms remains a working draft |
 | client/src/pages/legal.tsx, /privacy | "Before the marketplace launches fully, the final policy will describe data retention, service providers, security and your applicable privacy rights." | Future policy-content statement, not a retention period; Privacy remains a draft |
@@ -49,4 +58,4 @@ No lawyer review, vendor notification or legal conclusion about earlier acceptan
 
 Production needs no migration or new configuration; it will require a separate human publish. Existing live terms remain unchanged until then.
 
-**Ready to publish: No** as a legal/operational release recommendation: the owner should review the intentionally unchanged public promises and the notice to previous acceptors. Approved implementation itself is complete; do not automatically publish.
+**Ready to publish: Yes** for the approved draft-terms and text-only scope of 018. This is technical readiness to publish a non-effective draft, not legal approval of final terms or a conclusion about existing acceptances. The two-working-day wording is intentionally retained by Madushan. The correction notice to previous acceptors still needs owner/lawyer review and has not been sent. Publishing remains a separate human action.

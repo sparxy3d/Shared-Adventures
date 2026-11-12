@@ -133,7 +133,7 @@ export default function BookingRequestDialog({ flow }: { flow: ActivityBooking }
             </>}
           </div>
           {flow.residentCount > 0 && <p className="br-residency-note">Sri Lankans and residents: bring your NIC, Sri Lankan passport or resident visa. The vendor will check it when you arrive.</p>}
-          <p>No payment now. The vendor usually confirms your request within a few hours.</p>
+          <p>No payment now. The vendor will confirm or decline your request.</p>
           <label>Note to the vendor (optional)<textarea maxLength={1000} value={note} onChange={event => setNote(event.target.value)} /></label>
           {!user && <div className="br-error">Guest requests aren’t available to send yet. <Link href={authUrl("/login")}>Log in to send your request</Link></div>}
           <button className="br-primary" data-testid="button-send-request" disabled={!user || !flow.selectedSlot || !detailsComplete || request.isPending} onClick={() => { setError(""); request.mutate(); }}>{request.isPending ? "Sending request…" : "Send request"}</button>
