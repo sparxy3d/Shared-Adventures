@@ -891,3 +891,45 @@ mtime_ms = 1794487063853
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/52434eee-a488-49f4-93fa-8f4285910f61/52f4563f-0358-4d3d-a618-0c36d80a2f3f"
 storage_version_token = "1794487131376781"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "JFnkIqRST7O50f8gHtzb_"
+uri = "file://generated-artifacts/responsive-photos/download-report.csv"
+type = "table"
+title = "Photo download comparison"
+description = "Exact before/after bytes, request counts and largest images for phone, desktop and high-density displays."
+logical_id = "3502ea3a-a1f3-456a-9b93-d22215648e42"
+content_hash = "sha256:318e189b0b32826695e50e6f83b83293ccb9f25858a6300bed523aa6aec4857f"
+size = 2517
+mtime_ms = 1794491921812
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/3502ea3a-a1f3-456a-9b93-d22215648e42/b044664c-6352-4605-8ac4-0ae8f08311ac"
+storage_version_token = "1794492193681500"
+content_type = "text/csv"
+
+[[outputs]]
+id = "iNGVzd5TQ7Q5GvATSZO3h"
+uri = "file://generated-artifacts/responsive-photos/for-vendors-final-1440.jpg"
+type = "image"
+title = "For vendors, desktop"
+description = "The same photo grid and layout using smaller responsive images."
+logical_id = "2db46e72-3e3d-46d0-b8e5-fc8a2bac3e4b"
+content_hash = "sha256:6a6c48cb7afda612822691f0b45f1cf438f114ff526e6d2f65229f5b39f3f116"
+size = 155485
+mtime_ms = 1794491876148
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/2db46e72-3e3d-46d0-b8e5-fc8a2bac3e4b/6688086e-f8b7-4427-9f48-03ec2c3a601a"
+storage_version_token = "1794492195552644"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "smbncYngLCqnQhnINLBVS"
+uri = "file://generated-artifacts/responsive-photos/surfaces/picker-375.jpg"
+type = "image"
+title = "Photo picker, phone"
+description = "All curated photo options loaded and the selected cover shown."
+logical_id = "bea63280-f986-4b35-a06c-7f4ac2c16af5"
+content_hash = "sha256:f09b257702cc65ff50c92a4ac571be00240e5f6d2c43ab072eb227b8578f1633"
+size = 58773
+mtime_ms = 1794492116777
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/bea63280-f986-4b35-a06c-7f4ac2c16af5/790aa001-8f31-43cd-adcb-54f4535c5d0b"
+storage_version_token = "1794492197067308"
+content_type = "image/jpeg"
