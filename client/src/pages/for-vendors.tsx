@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { ArrowDown, ArrowRight, BadgeCheck, Bell, CalendarDays, Check, CircleDollarSign, Clock3, List, Store } from "lucide-react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
+import ActivityPhoto from "@/components/activity-photo";
 import VendorApplicationForm from "@/components/vendor-application-form";
 import "@/components/vendor-pitch-stage-four.css";
 
@@ -46,19 +47,19 @@ export default function ForVendors() {
             <div className="v4-hero-gallery">
               <div className="v4-hero-grid" aria-label="Experiences on Free Spirit">
                 <div className="v4-hero-tile">
-                  <img src="/images/category-sports-800.webp" srcSet="/images/category-sports-400.webp 400w, /images/category-sports-800.webp 800w" sizes="(max-width: 760px) 50vw, 22vw" alt="Friends playing sports together outdoors" />
+                  <ActivityPhoto src="/images/category-sports-800.webp" srcSet="/images/category-sports-400.webp 400w, /images/category-sports-800.webp 800w" sizes="(max-width: 760px) calc((100vw - 44px) / 2), 258px" alt="Friends playing sports together outdoors" loading="eager" fetchPriority="high" width={800} height={600} />
                   <span>Sports</span>
                 </div>
                 <div className="v4-hero-tile">
-                  <img src="/images/rafting.png" alt="A group rafting together on a flowing river" />
+                  <ActivityPhoto src="/images/rafting.png" sizes="(max-width: 760px) calc((100vw - 44px) / 2), 258px" alt="A group rafting together on a flowing river" loading="eager" fetchPriority="high" />
                   <span>Adventure</span>
                 </div>
                 <div className="v4-hero-tile">
-                  <img src="/images/pottery.png" alt="People shaping clay at pottery wheels in a sunlit workshop" />
+                  <ActivityPhoto src="/images/pottery.png" sizes="(max-width: 760px) calc((100vw - 44px) / 2), 258px" alt="People shaping clay at pottery wheels in a sunlit workshop" />
                   <span>Arts &amp; Classes</span>
                 </div>
                 <div className="v4-hero-tile">
-                  <img src="/images/yoga.png" alt="A guided yoga session in a peaceful studio" />
+                  <ActivityPhoto src="/images/yoga.png" sizes="(max-width: 760px) calc((100vw - 44px) / 2), 258px" alt="A guided yoga session in a peaceful studio" />
                   <span>Wellness</span>
                 </div>
               </div>
@@ -129,7 +130,7 @@ export default function ForVendors() {
               <article className="v4-preview-card">
                 <div className="v4-preview-bar"><span className="v4-preview-brand">Your listing</span><span className="v4-preview-tag"><Check size={13} aria-hidden="true" /> Your page</span></div>
                 <div className="v4-mini-listing">
-                  <img src="/images/rafting.png" alt="Rafting experience photo example" />
+                  <ActivityPhoto src="/images/rafting.png" sizes="78px" alt="Rafting experience photo example" />
                   <div><strong>A page for your experience</strong><span>Details you provide</span></div>
                 </div>
               </article>

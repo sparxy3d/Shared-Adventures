@@ -7,6 +7,7 @@ import { CONTACT_DETAILS_MESSAGE, containsContactDetails } from "@shared/contact
 import type { AvailabilitySlot, Experience } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import ExperienceCard from "@/components/experience-card";
+import ActivityPhoto from "@/components/activity-photo";
 import ListingPhotoEditor from "@/components/listing-photo-editor";
 import type { Activity } from "@/lib/discovery";
 import { useToast } from "@/hooks/use-toast";
@@ -250,7 +251,7 @@ export default function ListingEditor({ adminVendorId, adminListingId, backHref 
         </section>
         <section id="section-photo" className="v5-panel v5-section">
           <button type="button" className="v5-section-toggle" onClick={()=>toggle("photo")} aria-expanded={expanded.photo}><h2>04 · Choose a photo</h2><ChevronDown size={18}/></button>
-          {expanded.photo&&<><p className="v5-hint">{hasUploadedPhotos ? "Drag photos or use the arrows to reorder. The first photo is the cover." : "Choose a curated cover or upload photos. A listing can have up to six photos, including its existing cover."}</p><div className="v5-images" style={hasUploadedPhotos?{display:"none"}:undefined} role="radiogroup" aria-label="Experience photos">{EXPERIENCE_IMAGE_CHOICES.map((image,index)=><button className="v5-image-choice" type="button" role="radio" aria-checked={form.imageUrl===image} aria-label={`Photo option ${index+1}: ${imageAlt(image)}`} key={image} onClick={()=>change("imageUrl",image)}><img src={image} alt={imageAlt(image)} loading="lazy"/>{form.imageUrl===image&&<span><Check size={14} aria-label="Selected"/></span>}</button>)}</div><ListingPhotoEditor listingId={editing ? listingId : undefined} adminMode={adminMode} onUploadStateChange={setHasUploadedPhotos} onCoverChange={(url)=>change("imageUrl",url)} /></>}
+          {expanded.photo&&<><p className="v5-hint">{hasUploadedPhotos ? "Drag photos or use the arrows to reorder. The first photo is the cover." : "Choose a curated cover or upload photos. A listing can have up to six photos, including its existing cover."}</p><div className="v5-images" style={hasUploadedPhotos?{display:"none"}:undefined} role="radiogroup" aria-label="Experience photos">{EXPERIENCE_IMAGE_CHOICES.map((image,index)=><button className="v5-image-choice" type="button" role="radio" aria-checked={form.imageUrl===image} aria-label={`Photo option ${index+1}: ${imageAlt(image)}`} key={image} onClick={()=>change("imageUrl",image)}><ActivityPhoto src={image} sizes="(max-width: 767px) calc((100vw - 80px) / 3), 210px" alt={imageAlt(image)}/>{form.imageUrl===image&&<span><Check size={14} aria-label="Selected"/></span>}</button>)}</div><ListingPhotoEditor listingId={editing ? listingId : undefined} adminMode={adminMode} onUploadStateChange={setHasUploadedPhotos} onCoverChange={(url)=>change("imageUrl",url)} /></>}
         </section>
         <section id="section-preview" className="v5-panel v5-section">
           <button type="button" className="v5-section-toggle" onClick={()=>toggle("preview")} aria-expanded={expanded.preview}><h2>05 · Preview and publish</h2><ChevronDown size={18}/></button>

@@ -18,6 +18,14 @@ What it takes to build, run, release and change this repo.
 | Migrations | Numbered SQL in `migrations/`, applied by `server/migrations.ts` at start-up | ADR 013 |
 | Object storage | Replit App Storage (`@replit/object-storage`) for listing photos, separate DEV and PROD buckets | — |
 | Images | sharp (upload resizing to 1600, 800 and 400 px WebP) | — |
+
+Curated activity photos use committed static WebP derivatives and a shared responsive
+renderer alongside the existing uploaded variants. Regenerate with
+`npx tsx script/generate-activity-photos.ts`; keep originals for compatibility and
+rollback. The 1600px target never enlarges a smaller original. See spec 017.
+Image regression checks: `node script/test-activity-photos.cjs` and
+`node script/verify-activity-photo-surfaces.cjs` (development only; browser fixtures
+for member bookings/gallery/favorite interactions, no listing saves).
 | Client | React 18, wouter, TanStack Query 5, shadcn/ui on Radix | ^18.3.1, ^3.3.5, ^5.60.5 |
 | Styling | Tailwind CSS 3, Plus Jakarta Sans | ^3.4.17 |
 | Bundling | Vite 7 for the client, esbuild for the server (`script/build.ts`) | ^7.3.0, ^0.25.0 |

@@ -1,0 +1,296 @@
+{
+  "/images/arcade.png": {
+    "width": 1024,
+    "height": 1024,
+    "variants": [
+      {
+        "src": "/images/responsive/arcade-400.webp",
+        "width": 400,
+        "bytes": 43212
+      },
+      {
+        "src": "/images/responsive/arcade-800.webp",
+        "width": 800,
+        "bytes": 144220
+      },
+      {
+        "src": "/images/responsive/arcade-1600.webp",
+        "width": 1024,
+        "bytes": 221494
+      }
+    ]
+  },
+  "/images/billiards.png": {
+    "width": 1024,
+    "height": 1024,
+    "variants": [
+      {
+        "src": "/images/responsive/billiards-400.webp",
+        "width": 400,
+        "bytes": 32506
+      },
+      {
+        "src": "/images/responsive/billiards-800.webp",
+        "width": 800,
+        "bytes": 92270
+      },
+      {
+        "src": "/images/responsive/billiards-1600.webp",
+        "width": 1024,
+        "bytes": 137218
+      }
+    ]
+  },
+  "/images/cooking.png": {
+    "width": 1280,
+    "height": 896,
+    "variants": [
+      {
+        "src": "/images/responsive/cooking-400.webp",
+        "width": 400,
+        "bytes": 33696
+      },
+      {
+        "src": "/images/responsive/cooking-800.webp",
+        "width": 800,
+        "bytes": 88586
+      },
+      {
+        "src": "/images/responsive/cooking-1600.webp",
+        "width": 1280,
+        "bytes": 165646
+      }
+    ]
+  },
+  "/images/darts.png": {
+    "width": 1024,
+    "height": 1024,
+    "variants": [
+      {
+        "src": "/images/responsive/darts-400.webp",
+        "width": 400,
+        "bytes": 43634
+      },
+      {
+        "src": "/images/responsive/darts-800.webp",
+        "width": 800,
+        "bytes": 130480
+      },
+      {
+        "src": "/images/responsive/darts-1600.webp",
+        "width": 1024,
+        "bytes": 196484
+      }
+    ]
+  },
+  "/images/golf.png": {
+    "width": 1280,
+    "height": 896,
+    "variants": [
+      {
+        "src": "/images/responsive/golf-400.webp",
+        "width": 400,
+        "bytes": 26740
+      },
+      {
+        "src": "/images/responsive/golf-800.webp",
+        "width": 800,
+        "bytes": 100466
+      },
+      {
+        "src": "/images/responsive/golf-1600.webp",
+        "width": 1280,
+        "bytes": 246150
+      }
+    ]
+  },
+  "/images/pottery.png": {
+    "width": 1280,
+    "height": 896,
+    "variants": [
+      {
+        "src": "/images/responsive/pottery-400.webp",
+        "width": 400,
+        "bytes": 31646
+      },
+      {
+        "src": "/images/responsive/pottery-800.webp",
+        "width": 800,
+        "bytes": 81856
+      },
+      {
+        "src": "/images/responsive/pottery-1600.webp",
+        "width": 1280,
+        "bytes": 158812
+      }
+    ]
+  },
+  "/images/rafting.png": {
+    "width": 1280,
+    "height": 896,
+    "variants": [
+      {
+        "src": "/images/responsive/rafting-400.webp",
+        "width": 400,
+        "bytes": 44278
+      },
+      {
+        "src": "/images/responsive/rafting-800.webp",
+        "width": 800,
+        "bytes": 164132
+      },
+      {
+        "src": "/images/responsive/rafting-1600.webp",
+        "width": 1280,
+        "bytes": 361996
+      }
+    ]
+  },
+  "/images/recreation.png": {
+    "width": 1024,
+    "height": 1024,
+    "variants": [
+      {
+        "src": "/images/responsive/recreation-400.webp",
+        "width": 400,
+        "bytes": 41954
+      },
+      {
+        "src": "/images/responsive/recreation-800.webp",
+        "width": 800,
+        "bytes": 119120
+      },
+      {
+        "src": "/images/responsive/recreation-1600.webp",
+        "width": 1024,
+        "bytes": 171654
+      }
+    ]
+  },
+  "/images/spa.png": {
+    "width": 1280,
+    "height": 896,
+    "variants": [
+      {
+        "src": "/images/responsive/spa-400.webp",
+        "width": 400,
+        "bytes": 31118
+      },
+      {
+        "src": "/images/responsive/spa-800.webp",
+        "width": 800,
+        "bytes": 89016
+      },
+      {
+        "src": "/images/responsive/spa-1600.webp",
+        "width": 1280,
+        "bytes": 186684
+      }
+    ]
+  },
+  "/images/surfing.png": {
+    "width": 1280,
+    "height": 896,
+    "variants": [
+      {
+        "src": "/images/responsive/surfing-400.webp",
+        "width": 400,
+        "bytes": 16756
+      },
+      {
+        "src": "/images/responsive/surfing-800.webp",
+        "width": 800,
+        "bytes": 53344
+      },
+      {
+        "src": "/images/responsive/surfing-1600.webp",
+        "width": 1280,
+        "bytes": 117284
+      }
+    ]
+  },
+  "/images/volleyball.png": {
+    "width": 1280,
+    "height": 896,
+    "variants": [
+      {
+        "src": "/images/responsive/volleyball-400.webp",
+        "width": 400,
+        "bytes": 26374
+      },
+      {
+        "src": "/images/responsive/volleyball-800.webp",
+        "width": 800,
+        "bytes": 77970
+      },
+      {
+        "src": "/images/responsive/volleyball-1600.webp",
+        "width": 1280,
+        "bytes": 166432
+      }
+    ]
+  },
+  "/images/yoga.png": {
+    "width": 1280,
+    "height": 896,
+    "variants": [
+      {
+        "src": "/images/responsive/yoga-400.webp",
+        "width": 400,
+        "bytes": 20140
+      },
+      {
+        "src": "/images/responsive/yoga-800.webp",
+        "width": 800,
+        "bytes": 65218
+      },
+      {
+        "src": "/images/responsive/yoga-1600.webp",
+        "width": 1280,
+        "bytes": 152958
+      }
+    ]
+  },
+  "/images/fallback.png": {
+    "width": 1024,
+    "height": 1024,
+    "variants": [
+      {
+        "src": "/images/responsive/fallback-400.webp",
+        "width": 400,
+        "bytes": 51704
+      },
+      {
+        "src": "/images/responsive/fallback-800.webp",
+        "width": 800,
+        "bytes": 173034
+      },
+      {
+        "src": "/images/responsive/fallback-1600.webp",
+        "width": 1024,
+        "bytes": 257484
+      }
+    ]
+  },
+  "/images/hero-bg.png": {
+    "width": 1408,
+    "height": 768,
+    "variants": [
+      {
+        "src": "/images/responsive/hero-bg-400.webp",
+        "width": 400,
+        "bytes": 29800
+      },
+      {
+        "src": "/images/responsive/hero-bg-800.webp",
+        "width": 800,
+        "bytes": 102628
+      },
+      {
+        "src": "/images/responsive/hero-bg-1600.webp",
+        "width": 1408,
+        "bytes": 269846
+      }
+    ]
+  }
+}

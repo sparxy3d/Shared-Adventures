@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, ImagePlus, LoaderCircle, Trash2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import "@/components/listing-photo-editor.css";
+import ActivityPhoto from "@/components/activity-photo";
 
 export type ListingPhoto = { id: number; experienceId: number; imageUrl: string; sortOrder: number; storageKey: string | null; srcSet: string | null };
 type Props = { listingId?: number; adminMode?: boolean; onCoverChange?: (url: string) => void; onUploadStateChange?: (uploaded: boolean) => void };
@@ -109,7 +110,7 @@ export default function ListingPhotoEditor({ listingId, adminMode = false, onCov
     {loading && <div className="listing-photo-loading" aria-label="Loading photos"><i/><i/><i/></div>}
     {!loading && photos.length === 0 && <p className="listing-photo-empty">Your original photos will appear here. JPG, PNG or WebP, up to 10 MB each.</p>}
     {photos.length > 0 && <div className="listing-photo-grid">{photos.map((photo, index) => <article key={photo.id} className="listing-photo-item" draggable onDragStart={(event) => event.dataTransfer.setData("text/plain", String(index))} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); void reorder(Number(event.dataTransfer.getData("text/plain")), index); }}>
-      <img src={photo.imageUrl} srcSet={photo.srcSet || undefined} sizes="(max-width: 700px) 45vw, 180px" alt={`Listing photo ${index + 1}`} />
+      <ActivityPhoto src={photo.imageUrl} srcSet={photo.srcSet} sizes="(max-width: 700px) 45vw, 180px" alt={`Listing photo ${index + 1}`} />
       <div className="listing-photo-tools"><span>{index === 0 ? "Cover" : `Photo ${index + 1}`}</span><div><button type="button" aria-label={`Move photo ${index + 1} up`} disabled={index === 0} onClick={() => void reorder(index, index - 1)}><ArrowUp size={14}/></button><button type="button" aria-label={`Move photo ${index + 1} down`} disabled={index === photos.length - 1} onClick={() => void reorder(index, index + 1)}><ArrowDown size={14}/></button><button type="button" className="remove" aria-label={`Remove photo ${index + 1}`} onClick={() => setRemoveId(photo.id)}><Trash2 size={14}/></button></div></div>
     </article>)}</div>}
     {progress && <div className="listing-photo-progress" role="status"><LoaderCircle size={15} /> Uploading photos · {progress.total === 100 ? `${progress.done}%` : `${progress.done} of ${progress.total}`}</div>}

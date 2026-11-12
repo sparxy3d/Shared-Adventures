@@ -1,3 +1,4 @@
+import ActivityPhoto from "@/components/activity-photo";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useReducedMotion } from "framer-motion";
@@ -249,7 +250,7 @@ export default function Home() {
                 <source media="(max-width: 767px)" srcSet="/images/category-sports-400.webp 400w" sizes="(max-width: 600px) 69vw, 160px" />
                 <img src={category.image} srcSet="/images/category-sports-400.webp 400w, /images/category-sports-800.webp 800w" sizes="(max-width: 900px) 160px, (min-width: 1248px) 230px, calc((100vw - 100px) / 5)" width={800} height={600} alt="Friends playing futsal together at sunset" loading="lazy" style={{ objectFit: "cover", objectPosition: "50% 45%" }} />
               </picture>
-            ) : <img src={category.image} alt={`${category.title} activities`} loading="lazy" />}
+            ) : <ActivityPhoto src={category.image} sizes="(max-width: 600px) 69vw, (max-width: 900px) 160px, 230px" alt={`${category.title} activities`} />}
             <span className="home-category-shade" /><span className="home-category-copy"><strong>{category.title}</strong><span>{category.line}</span></span><ArrowRight size={18} className="home-category-arrow" aria-hidden="true" /></Link>)}</div>
         </section>
 
@@ -270,7 +271,7 @@ export default function Home() {
         </section>
 
         <section className="home-final-cta" aria-labelledby="final-cta-title">
-          <img src="/images/rafting.png" alt="Rafting together on a river" loading="lazy" />
+          <ActivityPhoto src="/images/rafting.png" sizes="(max-width: 1248px) calc(100vw - 32px), 1200px" alt="Rafting together on a river" />
           <div className="home-final-shade" />
           <div className="home-final-content"><p className="home-eyebrow">Make room for a good story</p><h2 id="final-cta-title">Great memories<br />start with a plan.</h2><div className="home-final-actions"><button type="button" className="home-button home-button--orange" onClick={scrollToDiscovery}>Find something to do <ArrowRight size={17} /></button><Link href="/for-vendors" className="home-button home-button--outline">List your experience</Link></div></div>
         </section>

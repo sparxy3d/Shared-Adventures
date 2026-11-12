@@ -127,3 +127,16 @@ logic to an effect did not fix the cancelled click.
 same form, correcting one before testing the other. Wait for the actual invalid
 control's focus and confirm it is in the viewport. Assert each single click
 actually dispatches submit, not just that blur made a summary appear.
+
+## Read-only browser fixtures must fail closed
+
+Block all non-read API requests by default in a read-only browser context, then
+explicitly fulfil synthetic mutations in the browser. Match endpoint descendants
+with a regex, not a glob that only covers the collection URL.
+
+**Why:** A favorites collection mock missed the item DELETE path, so an initial
+read-only interaction check reached the development server instead of the fixture.
+
+**How to apply:** Cover collection and item routes, assert interception, and never
+claim no data changed from a successful UI mock alone. Authentication setup and
+logout can use explicit request-context calls.

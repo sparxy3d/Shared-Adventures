@@ -1,6 +1,6 @@
 # 017 Proposed design
 
-Status: proposed, not implemented. Subject to Madushan's approval of spec.md.
+Status: implemented following Madushan's approval and go-ahead on 12 November 2026.
 
 ## Current findings
 
@@ -53,3 +53,29 @@ Capture the baseline before changing assets or call sites. Disable browser cache
 ## Decisions
 
 No irreversible architectural choice or new service is proposed, so no new ADR is required. Exact derivative paths and encoding quality will be selected during approved implementation and recorded for reproducibility.
+
+## Implementation details
+
+- `script/generate-activity-photos.ts` uses existing sharp, quality 85 and effort 6.
+  Outputs live under `client/public/images/responsive/`; the deterministic manifest
+  is `client/src/lib/curated-photos.json`. All original files remain unchanged.
+- Fourteen inputs: the twelve shared catalog choices, fallback, and the existing
+  hero-bg artwork (kept compatible, not substituted for the special homepage hero).
+  Each has 400/800/1600 target files. Sources are 1024, 1280 or 1408 pixels wide;
+  the 1600 target retains native width, declared truthfully in the srcset.
+- `ActivityPhoto` uses explicit layout-specific sizes, native lazy loading by
+  default, intrinsic dimensions, and asynchronous decoding. Main detail images
+  and the first row of the vendor hero load eagerly with high priority.
+- Automatic sizes were trialled but measured excessive source-sized candidates
+  on absolutely positioned category tiles. Explicit sizes avoid this.
+- Uploaded cover URLs can derive the existing three protected variant URLs when a
+  list API omits srcSet. An explicitly supplied uploaded srcSet remains unchanged.
+- A failed identity switches both src and srcSet to the responsive fallback once.
+  Changing the image identity allows the new image to load normally.
+- The homepage hero picture/preload and existing sports tile art direction remain
+  byte-for-byte unchanged. Admin listing thumbnails also use the shared renderer,
+  discovered while auditing the shared admin editor's entry points.
+- The existing onboarding regression script lacked its isolated session table after
+  migration-managed sessions were introduced. Its fixture now applies the existing
+  013 session-table SQL inside its disposable schema. No application/backend
+  behaviour or migration file changed.

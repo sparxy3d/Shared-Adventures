@@ -1,3 +1,4 @@
+import ActivityPhoto from "@/components/activity-photo";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
@@ -100,7 +101,7 @@ export default function VendorListings() {
       {experiences.map(exp => {
         const next = nextOpenSession(slotsQueries.data?.[exp.id]);
         return <article key={exp.id} className="v5-listing">
-          {exp.imageUrl ? <img className="v5-thumb" src={exp.imageUrl} alt={imageAlt(exp.imageUrl, `${exp.title} photo`)} onError={e=>{e.currentTarget.style.visibility="hidden";}}/> : <div className="v5-thumb v5-thumb-empty" aria-label={`No photo for ${exp.title}`}>{exp.title.slice(0,1).toUpperCase()}</div>}
+          {exp.imageUrl ? <ActivityPhoto className="v5-thumb" src={exp.imageUrl} sizes="(max-width: 767px) 78px, 116px" alt={imageAlt(exp.imageUrl, `${exp.title} photo`)}/> : <div className="v5-thumb v5-thumb-empty" aria-label={`No photo for ${exp.title}`}>{exp.title.slice(0,1).toUpperCase()}</div>}
           <div>
             <div style={{display:"flex",alignItems:"center",gap:9,flexWrap:"wrap"}}><h2>{exp.title}</h2><Status status={exp.status}/></div>
             <p className="v5-meta">{categoryLabel(exp.category)} · {exp.city || "City not set"}</p>

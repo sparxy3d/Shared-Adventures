@@ -40,6 +40,8 @@ let listening = false;
 try {
   await pool.query(`CREATE SCHEMA ${quoted}`);
   isolatePricingPool(pool, schema);
+  // Production sessions are migration-managed; this fixture needs its own table too.
+  await pool.query(await readFile(path.resolve("migrations/013_session_table.sql"), "utf8"));
   for (const table of ["users", "countries", "vendors", "vendor_documents", "experiences", "experience_images", "availability_slots", "bookings", "pricing_settings", "site_settings", "waiting_list", "favorites", "reviews"]) {
     await pool.query(`CREATE TABLE ${quoted}.${table} (LIKE public.${table} INCLUDING ALL)`);
     await pool.query(`CREATE SEQUENCE ${quoted}.${table}_fixture_seq START 1000`);

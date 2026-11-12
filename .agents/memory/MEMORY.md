@@ -10,3 +10,4 @@
 - [Vendor terms legal status](vendor-terms-legal-status.md) — lawyer review and company registration pending as of 2026-11-12; preserve old acceptances and avoid finality claims.
 - [Photo bucket isolation](photo-bucket-isolation.md) — separate DEV/PROD photo buckets selected by LISTING_PHOTOS_BUCKET_DEV/PROD; no fallback.
 - [Automated migrations](automated-migrations.md) — immutable numbered SQL at startup replaces manual production SQL; branch production for new environments.
+- [Responsive photos](responsive-photo-decisions.md) — retain originals, never upscale curated art, and verify explicit sizes on phones and high-density displays.

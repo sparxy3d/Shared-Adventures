@@ -129,5 +129,6 @@ Confirmed by reading the code on 2026-10-27. Ordered by risk.
 6. **Photo uploads are not atomic across storage and database.** Failures clean up best effort.
 7. **Binds to `127.0.0.1`.** Must change before hosting anywhere but Replit.
 8. **No automated tests in CI.** The test scripts need a database, so they run in Replit only.
-9. **Large client bundle** (about 600 kB, Vite warning) and 1.5 to 2.4 MB curated PNGs without
-   responsive variants.
+9. **Large client bundle** (Vite chunk-size warning). Original curated PNGs remain for
+   compatibility, but the named activity-photo surfaces render static responsive WebPs
+   through the shared photo component (spec 017).

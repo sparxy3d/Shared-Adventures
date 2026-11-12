@@ -1,3 +1,4 @@
+import ActivityPhoto from "@/components/activity-photo";
 import { useMemo, useState } from "react";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -124,7 +125,7 @@ export default function AdminListings() {
     const next = slotFor(listing);
     const isDemo = listing.isDemo ?? vendor?.isDemo ?? false;
     return <tr key={listing.id}>
-      <td><div className="av-listing-cell">{listing.imageUrl ? <img className="av-thumb" src={listing.imageUrl} alt="" loading="lazy"/> : <div className="av-thumb av-thumb-empty"/>}<div><strong>{listing.title}</strong><small>{listing.city || "City not set"}</small></div></div></td>
+      <td><div className="av-listing-cell">{listing.imageUrl ? <ActivityPhoto className="av-thumb" src={listing.imageUrl} sizes="52px" alt=""/> : <div className="av-thumb av-thumb-empty"/>}<div><strong>{listing.title}</strong><small>{listing.city || "City not set"}</small></div></div></td>
       <td>{vendor?.businessName || listing.vendorName || `Vendor ${listing.vendorId}`}{isDemo && <span className="av-tag av-demo">Demo</span>}</td>
       <td>{CATEGORIES.find((c) => c.value === listing.category)?.label ?? listing.category}</td>
       <td>{listing.city || "—"}</td>
@@ -145,7 +146,7 @@ export default function AdminListings() {
     const next = slotFor(listing);
     const isDemo = listing.isDemo ?? vendor?.isDemo ?? false;
     return <article className="av-phone-card" key={listing.id}>
-      <div className="av-listing-cell">{listing.imageUrl ? <img className="av-thumb" src={listing.imageUrl} alt="" loading="lazy"/> : <div className="av-thumb av-thumb-empty"/>}<div><strong>{listing.title}</strong><small>{vendor?.businessName || listing.vendorName || `Vendor ${listing.vendorId}`}{isDemo && <span className="av-tag av-demo">Demo</span>}</small></div></div>
+      <div className="av-listing-cell">{listing.imageUrl ? <ActivityPhoto className="av-thumb" src={listing.imageUrl} sizes="52px" alt=""/> : <div className="av-thumb av-thumb-empty"/>}<div><strong>{listing.title}</strong><small>{vendor?.businessName || listing.vendorName || `Vendor ${listing.vendorId}`}{isDemo && <span className="av-tag av-demo">Demo</span>}</small></div></div>
       <div className="av-phone-meta"><span>{CATEGORIES.find((c)=>c.value===listing.category)?.label ?? listing.category} · {listing.city || "No city"}</span><b className={`av-status av-status-${listing.status}`}>{statusTitle(listing.status)}</b><span>{listing.priceAmount == null ? "Price unset" : formatPrice(listing.priceAmount, "LKR")}</span><span>{next ? `Next: ${formatVendorDate(next.date)} · ${formatVendorTime(next.startTime)}` : "No upcoming session"}</span></div>
       <div className="av-row-actions">
         {listing.status === "published" ? <button className="av-link-button av-danger-text" onClick={() => { setUnpublish(listing); setReason(""); setConfirmed(false); }}>Unpublish</button> : <button className="av-link-button" disabled={statusMutation.isPending || !listing.imageUrl || !next} onClick={() => statusMutation.mutate({id:listing.id,status:"published"})}>Publish</button>}

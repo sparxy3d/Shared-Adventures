@@ -14,6 +14,7 @@ import { useSiteConfig } from "@/hooks/use-site-config";
 import NotifyDialog from "@/components/notify-dialog";
 import { formatLkr, formatUsd, validExchangeRate } from "@/lib/pricing";
 import "./activity-card.css";
+import ActivityPhoto from "@/components/activity-photo";
 
 interface SavedActivity { experienceId: number }
 
@@ -66,9 +67,8 @@ export default function ExperienceCard({ experience, saved, onRemove, removePend
   return <article className="activity-card" data-testid={`card-experience-${experience.id}`}>
     <div className="activity-card-photo">
       <Link href={href} aria-label={`View ${experience.title}`}>
-        <img src={experience.imageUrl || "/images/fallback.png"} srcSet={(experience as Activity & { photoSrcSet?: string | null }).photoSrcSet || undefined}
-          sizes="(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw" alt={experience.title} loading="lazy"
-          onError={event => { if (!event.currentTarget.src.endsWith("/images/fallback.png")) event.currentTarget.src = "/images/fallback.png"; }} />
+        <ActivityPhoto src={experience.imageUrl} srcSet={(experience as Activity & { photoSrcSet?: string | null }).photoSrcSet}
+          sizes="(max-width: 700px) calc(100vw - 32px), (max-width: 1100px) 50vw, 290px" alt={experience.title} />
       </Link>
       <div className="activity-card-badges">
         {chip && <span data-testid={`chip-session-${experience.id}`}>{chip}</span>}

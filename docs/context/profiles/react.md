@@ -32,7 +32,9 @@ to change it.
   helpers in `lib/pricing.ts`; never compute a booking total in the browser.
 - Dates and times: Sri Lanka time helpers in `lib/discovery.ts` and `lib/dates.ts`.
 - Images: listing photos may be curated files or `/api/listing-images/...` URLs. Fall back to
-  `/images/fallback.png`.
+  `/images/fallback.png`. Use `ActivityPhoto` with layout-specific `sizes` for activity
+  photos; it resolves curated derivatives and existing uploaded variants with a finite
+  responsive fallback. Keep caller crops/classes and the homepage hero's special picture.
 - Add `data-testid` attributes on interactive elements, following the existing pattern.
 - No em dashes in user-facing text.
 

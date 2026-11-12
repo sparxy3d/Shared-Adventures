@@ -1,3 +1,4 @@
+import ActivityPhoto from "@/components/activity-photo";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "wouter";
@@ -216,7 +217,7 @@ export default function VendorDetail() {
       {listingParam ? <ListingEditor adminVendorId={vendorId} adminListingId={adminListingId ?? "new"} backHref={`/admin/vendors/${vendorId}?tab=listings`}/> : <>
         <div className="av-section-heading"><div><p className="av-kicker">Catalog</p><h2>Listings</h2><p>{experiencesQuery.data?.length ?? 0} experiences attached to this vendor.</p></div><button className="av-button" onClick={()=>setListing("new")}>Add listing</button></div>
         {experiencesQuery.isLoading ? <div className="av-skeleton av-skel-table"/> : experiencesQuery.isError ? <div className="av-alert" role="alert">Vendor listings couldn’t be loaded. <button className="av-link-button" onClick={()=>void experiencesQuery.refetch()}>Retry</button></div> : experiencesQuery.data?.length ? <div className="av-vendor-listings">{experiencesQuery.data.map((experience)=><article className="av-vendor-listing" key={experience.id}>
-          {experience.imageUrl ? <img src={experience.imageUrl} alt="" loading="lazy"/> : <div className="av-thumb av-thumb-empty"/>}
+          {experience.imageUrl ? <ActivityPhoto src={experience.imageUrl} sizes="52px" alt=""/> : <div className="av-thumb av-thumb-empty"/>}
           <div className="av-vendor-listing-copy"><strong>{experience.title}</strong><span>{experience.category} · {experience.city || "No city"}</span></div>
           <span className={`av-status av-status-${experience.status}`}>{experience.status}</span>
           <button className="av-button av-button-soft" onClick={()=>setListing(experience.id)}>Edit listing</button>

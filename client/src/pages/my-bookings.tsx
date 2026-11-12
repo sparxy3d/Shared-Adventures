@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ActivityPhoto from "@/components/activity-photo";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -53,7 +54,7 @@ export default function MyBookings() {
     <div id="booking-panel" role="tabpanel" aria-labelledby={`tab-${tab}`}>
       {query.isLoading ? <MemberLoading /> : query.isError ? <MemberError retry={() => query.refetch()} message="We couldn’t load your bookings." /> : rows.length ? <div className="space-y-4">
         {rows.map(booking => <button key={booking.id} data-testid={`card-booking-${booking.id}`} onClick={() => { setSelected(booking); setShareError(""); }} className="flex w-full flex-col gap-4 rounded-2xl bg-white p-4 text-left shadow-sm sm:flex-row sm:items-center">
-          <img className="h-32 w-full rounded-xl object-cover sm:h-24 sm:w-32" src={booking.experience.imageUrl || "/images/fallback.png"} alt={booking.experience.title} />
+          <ActivityPhoto className="h-32 w-full rounded-xl object-cover sm:h-24 sm:w-32" src={booking.experience.imageUrl} sizes="(max-width: 639px) calc(100vw - 64px), 128px" alt={booking.experience.title} />
           <span className="min-w-0 flex-1 space-y-2">
             <span className="block text-lg font-bold">{booking.experience.title}</span>
             <span className="block text-slate-600">{booking.vendor.businessName || "Vendor name unavailable"}</span>

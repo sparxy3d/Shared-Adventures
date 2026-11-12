@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import "./public-photo-gallery.css";
+import ActivityPhoto from "@/components/activity-photo";
 
 export type PublicPhoto = { id: number; imageUrl: string; srcSet?: string | null; sortOrder: number };
 
@@ -24,15 +25,14 @@ export default function PublicPhotoGallery({ experienceId, fallbackUrl, title }:
 
   return <div className="public-gallery" aria-label={`${title} photo gallery`}>
     <div className="public-gallery-main">
-      <img src={active.imageUrl} srcSet={active.srcSet || undefined} sizes="(max-width: 800px) 100vw, 1200px"
-        alt={`${title}, photo ${Math.min(selected + 1, gallery.length)}`} fetchPriority="high"
-        onError={event => { if (!event.currentTarget.src.endsWith("/images/fallback.png")) event.currentTarget.src = "/images/fallback.png"; }} />
+      <ActivityPhoto src={active.imageUrl} srcSet={active.srcSet} sizes="(max-width: 800px) calc(100vw - 32px), (max-width: 1248px) calc(100vw - 48px), 1200px"
+        alt={`${title}, photo ${Math.min(selected + 1, gallery.length)}`} loading="eager" fetchPriority="high" />
       {photos.isError && <button type="button" className="public-gallery-retry" onClick={() => { void photos.refetch(); }}>Retry gallery</button>}
     </div>
     {gallery.length > 1 && <div className="public-gallery-thumbnails" aria-label="More photos">
       {gallery.map((photo, index) => <button key={photo.id} type="button" className={index === selected ? "is-current" : ""}
         onClick={() => setSelected(index)} aria-label={`Show photo ${index + 1}`} aria-pressed={index === selected}>
-        <img src={photo.imageUrl} srcSet={photo.srcSet || undefined} sizes="92px" alt="" loading="lazy" />
+        <ActivityPhoto src={photo.imageUrl} srcSet={photo.srcSet} sizes="92px" alt="" />
       </button>)}
     </div>}
   </div>;
