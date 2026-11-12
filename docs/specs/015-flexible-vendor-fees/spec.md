@@ -11,9 +11,10 @@ Existing bookings keep their original financial snapshots.
 
 ## Approval
 
-Approved in the owner's supplied request: "Approved: make Free Spirit fees flexible
-per vendor and stop publishing fixed percentages." The request explicitly authorises
-implementation without another specification approval.
+| Who | Decision | Date | Their words |
+|---|---|---|---|
+| Madushan | Approved as built | 2026-11-12 | "Approve 015 as built: per-vendor fees 0 to 30%, introductory period 0 to 12 months." |
+
 Category: Risky, because commission validation and vendor-facing financial wording change.
 
 ## Acceptance criteria

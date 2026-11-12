@@ -1,6 +1,6 @@
 # 017 Responsive activity photos
 
-- Status: awaiting approval
+- Status: approved
 - Category: Risky (tier 2), shared presentation across public, member, vendor and admin areas
 - Requested by: Madushan
 - Created: 2026-11-12
@@ -13,9 +13,9 @@ Activity photos should download faster on phones without changing their subjects
 
 | Who | Decision | Date | Their words |
 |---|---|---|---|
-| Madushan | Awaiting approval | | |
+| Madushan | Approved; implementation on hold | 2026-11-12 | "Spec 017 approved as written, 12 Nov 2026. Do not start building it yet; one more request comes first." |
 
-Madushan's notes are design input, not approval. No implementation starts until his own approval words are recorded here.
+Implementation is not started. Madushan has explicitly instructed that another request comes first; wait for his instruction to begin.
 
 ## Problem
 

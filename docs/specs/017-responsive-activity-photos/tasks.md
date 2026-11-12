@@ -1,8 +1,8 @@
 # 017 Implementation checklist
 
-Status: not started, awaiting Madushan's approval.
+Status: approved, not started. On hold at Madushan's instruction until the preceding request is handled and he instructs implementation to begin.
 
-- [ ] Record Madushan's exact approval in spec.md before application edits.
+- [x] Record Madushan's exact approval in spec.md before application edits.
 - [ ] Capture reproducible before measurements and screenshots for home, For vendors and a populated listing editor at 375px/1440px. Inventory referenced activity photos. Covers AC1, AC2, AC7.
 - [ ] Add static derivative generation and curated manifest; retain originals and validate output dimensions/content. Covers AC1, AC2.
 - [ ] Implement shared responsive renderer with uploaded-srcset support, accurate sizing, priority, reserved space and finite fallback. Test source selection and failed requests in the same change. Covers AC1–AC5.
