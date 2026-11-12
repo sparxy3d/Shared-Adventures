@@ -7,5 +7,6 @@
 - [Neon test isolation](neon-test-isolation.md) — pooled Neon requires transaction-local schema scoping; session-level search_path can leak test state across requests.
 - [Typed JSON validation](json-column-validation.md) — drizzle-zod typed JSON arrays need explicit shared schema overrides, not casts around insert errors.
 - [Vendor fee policy](vendor-fee-policy.md) — agreed plans may have no-fee introductions; no fixed public fee promise; booking snapshots stay immutable.
+- [Vendor terms legal status](vendor-terms-legal-status.md) — lawyer review and company registration pending as of 2026-11-12; preserve old acceptances and avoid finality claims.
 - [Photo bucket isolation](photo-bucket-isolation.md) — separate DEV/PROD photo buckets selected by LISTING_PHOTOS_BUCKET_DEV/PROD; no fallback.
 - [Automated migrations](automated-migrations.md) — immutable numbered SQL at startup replaces manual production SQL; branch production for new environments.
