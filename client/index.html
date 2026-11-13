@@ -8,8 +8,31 @@
     <link rel="icon" type="image/png" sizes="512x512" href="/brand/icon-512.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/brand/icon-180.png" />
     <link rel="apple-touch-icon" sizes="360x360" href="/brand/icon-360.png" />
-    <link rel="preload" as="image" type="image/webp" media="(max-width: 767px)" href="/images/hero-sunset-768.webp" imagesrcset="/images/hero-sunset-768.webp 768w" imagesizes="100vw" fetchpriority="high" />
-    <link rel="preload" as="image" type="image/webp" media="(min-width: 768px)" href="/images/hero-sunset-2400.webp" imagesrcset="/images/hero-sunset-1440.webp 1440w, /images/hero-sunset-2400.webp 2400w" imagesizes="100vw" fetchpriority="high" />
+    <script>
+      if (location.pathname === "/") {
+        [
+          {
+            media: "(max-width: 767px)",
+            href: "/images/hero-sunset-768.webp",
+            imagesrcset: "/images/hero-sunset-768.webp 768w",
+          },
+          {
+            media: "(min-width: 768px)",
+            href: "/images/hero-sunset-2400.webp",
+            imagesrcset: "/images/hero-sunset-1440.webp 1440w, /images/hero-sunset-2400.webp 2400w",
+          },
+        ].forEach(function (attributes) {
+          var link = document.createElement("link");
+          Object.entries({
+            rel: "preload", as: "image", type: "image/webp",
+            imagesizes: "100vw", fetchpriority: "high", ...attributes,
+          }).forEach(function (attribute) {
+            link.setAttribute(attribute[0], attribute[1]);
+          });
+          document.head.appendChild(link);
+        });
+      }
+    </script>
     <title>Free Spirit | What should we do right now?</title>
     <meta name="description" content="Find activities open now near you: sports, adventure, classes, wellness and game nights for your group." />
     <meta property="og:type" content="website" />

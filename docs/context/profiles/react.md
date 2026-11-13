@@ -35,6 +35,8 @@ to change it.
   `/images/fallback.png`. Use `ActivityPhoto` with layout-specific `sizes` for activity
   photos; it resolves curated derivatives and existing uploaded variants with a finite
   responsive fallback. Keep caller crops/classes and the homepage hero's special picture.
+  Keep its early preload hints conditional on `/` in the shared HTML entry so other
+  pages do not download homepage-only artwork.
 - Add `data-testid` attributes on interactive elements, following the existing pattern.
 - No em dashes in user-facing text.
 
