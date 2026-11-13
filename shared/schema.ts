@@ -1,8 +1,18 @@
-import { pgTable, text, serial, integer, boolean, timestamp, customType, numeric, uniqueIndex, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, customType, numeric, uniqueIndex, jsonb, index } from "drizzle-orm/pg-core";
 import type { ApplicationActivity } from "./application-activities";
 import { applicationActivitiesSchema } from "./application-activities";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+export const applicationSubmissionAttempts = pgTable("application_submission_attempts", {
+  id: serial("id").primaryKey(),
+  scope: text("scope").$type<"ip" | "email">().notNull(),
+  keyHash: text("key_hash").notNull(),
+  attemptedAt: timestamp("attempted_at", { withTimezone: true }).notNull().defaultNow(),
+}, table => [
+  index("application_attempt_key_time_idx").on(table.scope, table.keyHash, table.attemptedAt),
+  index("application_attempt_expiry_idx").on(table.attemptedAt),
+]);
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),

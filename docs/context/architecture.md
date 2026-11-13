@@ -60,6 +60,13 @@ application or creates the vendor.
 - Server-side sessions in Postgres, 30-day cookie, `httpOnly`, `sameSite: lax`, `secure` and
   `trust proxy` in production. Login regenerates the session.
 - Login limiter: 10 attempts per 15 minutes per IP and email, held in memory.
+- Application admission (spec 019): shared Postgres rolling limits, 3/IP/hour
+  and 10/IP/day before document parsing, 3/normalized-email/day after parsing
+  but before application writes. Keyed digests use SESSION_SECRET; limiter
+  failures return 503, quota refusals 429 with Retry-After. The multipart form
+  is unchanged. Application-only proxy resolution skips trusted internal hops;
+  login/waiting-list enforcement is unchanged. Replit DEV also enables the
+  existing one-hop Express trust setting for platform testing.
 - Temporary passwords (application approval, admin-created accounts, resets) set
   `must_change_password`; such sessions can only change the password or log out.
 
@@ -75,7 +82,9 @@ application or creates the vendor.
 - **Commission**: vendor fee plan (introductory rate, months, standard rate) or the global
   `pricing_settings`, with introductory time counted from first publication (ADR 012).
 - **Vendor application**: public form with up to ten activities and identity documents.
-  Approval creates the vendor's draft listings in the same transaction.
+  Approval creates the vendor's draft listings in the same transaction. Public
+  admins are refused before buffering; their guarded create-vendor flow remains.
+  Eligible declined owners reapply within the same public limits.
 - **Listing photos**: uploads are resized to 1600, 800 and 400 px WebP without metadata and
   stored in App Storage under `listing-photos/<uuid>/`. `/api/listing-images/:id/:width.webp`
   checks the listing is public, or the viewer owns it or is an admin.
@@ -84,7 +93,8 @@ application or creates the vendor.
 
 - Tables: `users`, `countries`, `vendors`, `experiences`, `experience_images`,
   `availability_slots`, `bookings`, `favorites`, `reviews`, `vendor_documents`,
-  `pricing_settings`, `site_settings`, `waiting_list`, `session`, `schema_migrations`.
+  `pricing_settings`, `site_settings`, `waiting_list`, `session`, `schema_migrations`,
+  `application_submission_attempts`.
 - Primary keys are `serial`. Foreign keys are declared, with no cascade rules.
 - Status values (free text, validated by zod in routes):
   - experiences: `draft`, `published`, `unpublished` (set by admin)
@@ -119,8 +129,10 @@ Confirmed by reading the code on 2026-10-27. Ordered by risk.
 1. **Demo accounts with public passwords exist in production** (`@freespirit.com`, passwords in
    `product.md`). Kept on purpose for sales demos. The demo admin can see vendor documents,
    so change its password before real vendors apply in volume.
-2. **Anonymous vendor application uploads are not rate-limited.** Each request can buffer up to
-   30 MB in memory and store it in Postgres.
+2. **Application upload limits do not stop distributed attacks.** Spec 019 bounds
+   attempts per IP/email, but an admitted request may still buffer 30 MB. The email
+   check is after parsing, by owner approval. Many unrelated IPs/emails can still
+   consume resources; no global storage budget or CAPTCHA is included.
 3. **In-memory rate limiters** (login, waiting list) reset on restart and are per instance under
    autoscale.
 4. **`SESSION_SECRET` fallback** to a hard-coded string if the secret is missing.

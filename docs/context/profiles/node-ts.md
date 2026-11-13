@@ -51,8 +51,9 @@ Dependency direction: routes → `storage.ts` → `db.ts`. `storage.ts` never to
   `/api/vendor`), plus an ownership check in each vendor handler.
 - Passwords use scrypt (`hashPassword` / `comparePasswords`). Never return the `password`
   column. Temporary passwords set `mustChangePassword`.
-- Rate limits exist for login and the waiting list (in memory). Add one to any new public
-  endpoint that accepts uploads or creates records.
+- Application upload limits are shared Postgres rolling events (spec 019).
+  Login and waiting-list limits remain in memory. Add appropriate shared admission
+  to new public endpoints that accept uploads or create records.
 
 ## Testing
 

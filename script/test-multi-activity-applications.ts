@@ -21,6 +21,7 @@ try {
   isolatePricingPool(pool, schema);
   // Sessions are migration-managed now; keep auth sessions inside the disposable schema.
   await pool.query(await readFile(path.resolve("migrations/013_session_table.sql"), "utf8"));
+  await pool.query(await readFile(path.resolve("migrations/014_application_submission_limits.sql"), "utf8"));
   for (const table of ["users", "countries", "vendors", "vendor_documents", "experiences", "experience_images", "availability_slots", "bookings", "pricing_settings", "site_settings", "waiting_list", "favorites", "reviews"]) {
     await pool.query(`CREATE TABLE ${quoted}.${table} (LIKE public.${table} INCLUDING ALL)`);
     await pool.query(`CREATE SEQUENCE ${quoted}.${table}_fixture_seq START 1000`);
@@ -33,6 +34,8 @@ try {
   await pool.query("INSERT INTO pricing_settings(id) VALUES(1)");
   await pool.query("INSERT INTO site_settings(id,show_demo_content,bookings_open) VALUES(1,true,false)");
   await registerRoutes(server, app);
+  // These peers connect directly to localhost, not through the Replit proxy.
+  app.set("trust proxy", false);
   app.use((error: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => res.status(500).json({ message: error.message }));
   await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
   listening = true;
@@ -47,6 +50,9 @@ try {
   ];
   const application = { businessName: "Two activity test business", contactName: "Test host", contactEmail: "two-activities@test.invalid", contactPhone: "+94771234567", city: "Colombo", address: "Test meeting place", description: "A studio and sports host.", acceptTerms: true, activities };
   const submit = async (body: unknown, withId = true) => {
+    // Independent validation cases must not spend one another's admission quota.
+    // Limiter enforcement/concurrency is tested without resets in test-application-limits.ts.
+    await pool.query("TRUNCATE application_submission_attempts");
     const form = new FormData(); form.append("application", JSON.stringify(body));
     if (withId) form.append("idCopy", new Blob([Buffer.from("%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF")], { type: "application/pdf" }), "test-id.pdf");
     return fetch(base + "/api/vendor-applications", { method: "POST", body: form });

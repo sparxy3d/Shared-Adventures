@@ -131,7 +131,7 @@ export default function VendorApplicationForm({ onBack }: { onBack?: () => void 
   const applicationMutation = useMutation({
     mutationFn: async (payload: FormData) => {
       const response = await fetch("/api/vendor-applications", { method: "POST", credentials: "include", body: payload });
-      if (!response.ok) throw new Error(await applicationError(response));
+      if (!response.ok) throw Object.assign(new Error(await applicationError(response)), { status: response.status });
       return response;
     },
   });
@@ -242,7 +242,8 @@ export default function VendorApplicationForm({ onBack }: { onBack?: () => void 
       const message = error instanceof Error ? error.message : "";
       const isDuplicate = message.toLowerCase().includes("already has an account");
       setDuplicateEmail(isDuplicate);
-      setServerError(isDuplicate ? message : "We couldn't send your application. Please try again.");
+      const admissionFailure = error instanceof Error && "status" in error && [429, 503].includes(Number(error.status));
+      setServerError(isDuplicate || admissionFailure ? message : "We couldn't send your application. Please try again.");
     }
   };
 

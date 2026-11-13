@@ -68,6 +68,40 @@ function sessionWindow(filters: SearchFilters): { from: string; to: string; date
 }
 
 export class DatabaseStorage {
+  /** Shared rolling admission. No raw IP/email leaves the HTTP service. */
+  async reserveApplicationAttempt(scope: "ip" | "email", keyHash: string): Promise<{ allowed: boolean; retryAfter: number }> {
+    return db.transaction(async tx => {
+      // Lock lifetime is exactly this transaction, including on pooled Neon.
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${`application:${scope}:${keyHash}`}, 0))`);
+      await tx.execute(sql`DELETE FROM application_submission_attempts WHERE id IN (
+        SELECT id FROM application_submission_attempts
+        WHERE attempted_at < clock_timestamp() - interval '48 hours'
+        ORDER BY attempted_at LIMIT 500 FOR UPDATE SKIP LOCKED
+      )`);
+      // Read time AFTER acquiring the lock, not the transaction start timestamp.
+      const clock = await tx.execute<{ now_ms: string }>(sql`SELECT extract(epoch FROM clock_timestamp()) * 1000 AS now_ms`);
+      const now = Number(clock.rows[0].now_ms);
+      const events = await tx.execute<{ at_ms: string }>(sql`
+        SELECT extract(epoch FROM attempted_at) * 1000 AS at_ms
+        FROM application_submission_attempts
+        WHERE scope = ${scope} AND key_hash = ${keyHash}
+          AND attempted_at > ${new Date(now - 86400_000)}
+        ORDER BY attempted_at
+      `);
+      const times = events.rows.map(row => Number(row.at_ms));
+      const windows = scope === "ip" ? [[3600_000, 3], [86400_000, 10]] : [[86400_000, 3]];
+      let retryAt = now;
+      for (const [duration, limit] of windows) {
+        const recent = times.filter(time => time > now - duration);
+        if (recent.length >= limit) retryAt = Math.max(retryAt, recent[recent.length - limit] + duration);
+      }
+      if (retryAt > now) return { allowed: false, retryAfter: Math.max(1, Math.ceil((retryAt - now) / 1000)) };
+      await tx.execute(sql`INSERT INTO application_submission_attempts(scope, key_hash, attempted_at)
+        VALUES (${scope}, ${keyHash}, ${new Date(now)})`);
+      return { allowed: true, retryAfter: 0 };
+    });
+  }
+
   async getSiteSettings() {
     const [settings] = await db.select().from(siteSettings).where(eq(siteSettings.id, 1));
     if (!settings) throw new Error("Site settings migration is required");

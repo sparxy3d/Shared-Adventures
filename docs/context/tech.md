@@ -90,7 +90,7 @@ Production must have its own value for every variable marked PROD below.
 | `DATABASE_URL` | Neither, ideally | Fallback when the matching Neon variable is absent. Should not be relied on |
 | `LISTING_PHOTOS_BUCKET_DEV` | Workspace | FreeSpiritDevBucket ID. No fallback to the default bucket |
 | `LISTING_PHOTOS_BUCKET_PROD` | Deployment | FreeSpiritBucket ID. Uploads fail closed with 503 if missing |
-| `SESSION_SECRET` | Both, different values | Cookie signing. Falls back to a hard-coded string if missing (known debt) |
+| `SESSION_SECRET` | Both, different values | Cookie signing and application-limiter HMAC keys. Application admission fails closed if absent; legacy session fallback remains known debt |
 | `ENABLE_SEED` | Workspace only | `true` runs the demo seed at boot. Must be absent or `false` in the deployment |
 | `PORT` | `.replit` | Listen port, default 5000 |
 | `NODE_ENV`, `REPLIT_DEPLOYMENT` | Set by scripts and Replit | Select production behaviour and the PROD database and bucket |
@@ -110,6 +110,29 @@ Production must have its own value for every variable marked PROD below.
   remaining records were copied into Neon production (ADR 014).
 - New environments (staging, test copies) are Neon branches of `production`, never empty
   databases. Delete test branches when done: they contain copies of real data.
+
+## Application abuse checks (spec 019)
+
+- `NODE_ENV=development npx tsx script/test-application-limits.ts`: disposable
+  shared SQL and two-app HTTP tests, including parser order, outages and reapplication.
+- `NODE_ENV=development npx tsx script/test-application-restart.ts`: separate-process
+  persistence and missing-secret test. Its child-only empty secret does not change
+  workspace/deployment configuration.
+- `node script/test-application-feedback.cjs`: browser-only 429/503 fixtures at
+  375/1440px; all non-read API requests are intercepted, no real submissions.
+- Real DEV proxy verification: temporarily stop the app workflow; run
+  `NODE_ENV=development npx tsx script/verify-application-proxy.ts --observe`,
+  then restore the workflow and run the same script without `--observe`.
+  The isolated listener exposes no identity and saves only a private temporary
+  digest. Do not run against production. Do not compare workspace internet
+  egress with DEV ingress: workspace requests can travel through internal proxies.
+- Migration 014 adds only scoped digest/time admission events and indexes.
+  Transaction advisory locks serialize each key across instances; database clock
+  defines rolling windows. Cleanup removes at most 500 events older than 48 hours
+  per check, including denied checks. Idle services do not run timed cleanup.
+- No new service, secret, setting or production hand SQL. SESSION_SECRET rotation
+  changes limiter keys and resets effective allowances; do not rotate it as a
+  quota-reset technique. No raw admission identities are logged.
 - The server binds to `127.0.0.1`, which works on Replit because `.replit` sets
   `exposeLocalhost = true`. Elsewhere it must bind to `0.0.0.0`.
 

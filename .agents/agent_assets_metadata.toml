@@ -933,3 +933,17 @@ mtime_ms = 1794492116777
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/bea63280-f986-4b35-a06c-7f4ac2c16af5/790aa001-8f31-43cd-adcb-54f4535c5d0b"
 storage_version_token = "1794492197067308"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "wtH3dlRs_0B94WuNx86Nj"
+uri = "file://generated-artifacts/application-limits/error-375.jpg"
+type = "image"
+title = "Application limit message on phone"
+description = "Browser fixture showing the retry time. Entered values and the selected file were verified to remain in place."
+logical_id = "668bdb4b-538f-4eea-b2be-4672a114c30e"
+content_hash = "sha256:dc2735ce7cd11b6ad72c7a26e524de732b97371e01542bfa7d39f501cf4e5e49"
+size = 11873
+mtime_ms = 1794544251466
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:346ee64a-894e-42d6-bc5a-4e710741b147/668bdb4b-538f-4eea-b2be-4672a114c30e/48796acb-1d53-48a3-b735-447e3d5cd28b"
+storage_version_token = "1794544808834348"
+content_type = "image/jpeg"

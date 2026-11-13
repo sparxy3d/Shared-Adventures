@@ -121,7 +121,8 @@ try {
 
   const built = await isolated();
   const tables = await root.query<{ tablename: string }>(
-    "SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename NOT IN ('schema_migrations','session')");
+    // Reconstruct the legacy baseline, not tables introduced by pending migrations.
+    "SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename NOT IN ('schema_migrations','session','application_submission_attempts')");
   for (const { tablename } of tables.rows) {
     const safe = tablename.replace(/"/g, '""');
     await built.client.query(`CREATE TABLE "${safe}" (LIKE public."${safe}" INCLUDING ALL)`);
@@ -136,8 +137,9 @@ try {
   }
   await builtServer(built.schema, true);
   assert.ok((await built.client.query("SELECT to_regclass('session') AS name")).rows[0].name);
+  assert.ok((await built.client.query("SELECT to_regclass('application_submission_attempts') AS name")).rows[0].name);
   console.log("PASS baseline records legacy files without execution; packaged SQL matches source");
-  console.log("PASS production bundle starts, applies 013 and serves HTTP 200 against disposable DEV schema");
+  console.log("PASS production bundle starts, applies 013/014 and serves HTTP 200 against disposable DEV schema");
   await built.client.query("UPDATE schema_migrations SET checksum=repeat('0',64) WHERE filename='013_session_table.sql'");
   await builtServer(built.schema, false);
   console.log("PASS production bundle exits non-zero without listening on migration integrity failure");

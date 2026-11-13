@@ -16,6 +16,7 @@ import { colomboToday, colomboNowHHMM, normaliseHHMM, addMinutesHHMM } from "./t
 import { sessionPlan } from "./vendor-session-plan";
 import { withApprovalDate } from "./admin-insights";
 import { applicationUpload, validateDocuments } from "./vendor-documents";
+import { admitApplication, limitApplicationIp } from "./application-limits";
 import { CONTACT_DETAILS_MESSAGE, GOOGLE_MAPS_MESSAGE, containsContactDetails, isGoogleBusinessUrl } from "@shared/contact-policy";
 import { commissionForVendor } from "@shared/pricing";
 import { applicationActivitiesSchema, GROUP_SIZE_VALUES } from "@shared/application-activities";
@@ -313,7 +314,7 @@ async function changeBookingStatus(
 export async function registerRoutes(httpServer: Server, app: Express, options: { photoObjects?: PhotoObjects } = {}): Promise<Server> {
   const PgStore = pgSession(session);
   const isProduction = process.env.NODE_ENV === "production";
-  if (isProduction) app.set("trust proxy", 1);
+  if (isProduction || process.env.REPLIT_DEV_DOMAIN) app.set("trust proxy", 1);
   if (!process.env.SESSION_SECRET) {
     console.warn("[auth] SESSION_SECRET is not set; using an insecure fallback. Set it before go-live.");
   }
@@ -570,7 +571,13 @@ export async function registerRoutes(httpServer: Server, app: Express, options: 
   app.post("/api/vendor-applications", (req, res, next) => {
     if (req.session.userId) return requireAuth(req, res, next);
     next();
-  }, applicationUpload, h(async (req, res) => {
+  }, (_req, res, next) => {
+    if (res.locals.user?.role === "admin") {
+      res.status(400).json({ message: "Admins can't apply as vendors" });
+      return;
+    }
+    next();
+  }, limitApplicationIp, applicationUpload, h(async (req, res) => {
     let body: unknown;
     try { body = JSON.parse(req.body.application); }
     catch { return res.status(400).json({ message: "Enter valid application details." }); }
@@ -584,7 +591,7 @@ export async function registerRoutes(httpServer: Server, app: Express, options: 
       return res.status(400).json({ message: "Upload your ID copy to apply." });
     }
     const user = res.locals.user;
-    if (user?.role === "admin") return res.status(400).json({ message: "Admins can't apply as vendors" });
+    if (!await admitApplication("email", data.contactEmail.trim().toLowerCase(), res)) return;
     const duplicateMessage = "This email already has an account. Log in first, then apply";
     if (!user && await storage.getUserByEmail(data.contactEmail)) {
       return res.status(400).json({ message: duplicateMessage });
