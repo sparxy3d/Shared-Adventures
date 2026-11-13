@@ -11,3 +11,4 @@
 - [Photo bucket isolation](photo-bucket-isolation.md) — separate DEV/PROD photo buckets selected by LISTING_PHOTOS_BUCKET_DEV/PROD; no fallback.
 - [Automated migrations](automated-migrations.md) — immutable numbered SQL at startup replaces manual production SQL; branch production for new environments.
 - [Responsive photos](responsive-photo-decisions.md) — retain originals, never upscale curated art, and verify explicit sizes on phones and high-density displays.
+- [Shared request limits](shared-request-limits.md) — Madushan confirms production uses multiple autoscale instances; limits must be shared and survive restarts.
